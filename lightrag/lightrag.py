@@ -951,6 +951,8 @@ class LightRAG(_RoleLLMMixin, _StorageMigrationMixin, _PipelineMixin):
         global_config["hybrid_search_mode"] = self._addon_params.get(
             "hybrid_search_mode", "hybrid"
         )
+        global_config["bm25_update_entities"] = self._update_bm25_entities
+        global_config["bm25_update_relations"] = self._update_bm25_relations
         return global_config
 
     def _build_role_llm_cache_identity(
@@ -1325,12 +1327,36 @@ class LightRAG(_RoleLLMMixin, _StorageMigrationMixin, _PipelineMixin):
             if self._addon_params.get("enable_hybrid_search", False):
                 await self._build_bm25_indices()
 
+    def _bm25_file_path(self, name: str) -> str:
+        return os.path.join(self.working_dir, f"bm25_{name}.json")
+
     async def _build_bm25_indices(self) -> None:
-        """Build BM25 keyword indices from VDB content for hybrid retrieval."""
+        """Load BM25 indices from disk, or build from VDB content if missing."""
         from lightrag.bm25_index import BM25Index
 
         try:
-            # --- Chunks BM25 (from text_chunks KV) ---
+            chunks_path = self._bm25_file_path("chunks")
+            entities_path = self._bm25_file_path("entities")
+            relations_path = self._bm25_file_path("relations")
+
+            # Try loading from disk first
+            if all(os.path.exists(p) for p in [chunks_path, entities_path, relations_path]):
+                logger.info("Loading BM25 indices from disk ...")
+                self._bm25_chunks = BM25Index.load(chunks_path)
+                self._bm25_entities = BM25Index.load(entities_path)
+                self._bm25_relations = BM25Index.load(relations_path)
+                self._bm25_stale = False
+                logger.info(
+                    f"BM25 indices loaded: chunks={len(self._bm25_chunks.corpus_ids)}, "
+                    f"entities={len(self._bm25_entities.corpus_ids)}, "
+                    f"relations={len(self._bm25_relations.corpus_ids)}"
+                )
+                return
+
+            logger.info("Building BM25 keyword indices for hybrid search ...")
+
+            # --- Stage 1/3: Chunks BM25 (from text_chunks KV) ---
+            logger.info("BM25 indexing stage 1/3: Chunks (from text_chunks KV)")
             chunks_bm25 = BM25Index()
             chunk_docs: dict[str, str] = {}
             if hasattr(self.text_chunks, "_data"):
@@ -1341,8 +1367,10 @@ class LightRAG(_RoleLLMMixin, _StorageMigrationMixin, _PipelineMixin):
             if chunk_docs:
                 chunks_bm25.build(chunk_docs)
             self._bm25_chunks = chunks_bm25
+            logger.info(f"BM25 stage 1/3 done: {len(chunk_docs)} chunks indexed")
 
-            # --- Entities BM25 (from entities_vdb) ---
+            # --- Stage 2/3: Entities BM25 (from entities_vdb) ---
+            logger.info("BM25 indexing stage 2/3: Entities (from entities VDB)")
             entities_bm25 = BM25Index()
             entity_docs: dict[str, str] = {}
             vdb_data = await self._extract_vdb_data(self.entities_vdb)
@@ -1354,8 +1382,10 @@ class LightRAG(_RoleLLMMixin, _StorageMigrationMixin, _PipelineMixin):
             if entity_docs:
                 entities_bm25.build(entity_docs)
             self._bm25_entities = entities_bm25
+            logger.info(f"BM25 stage 2/3 done: {len(entity_docs)} entities indexed")
 
-            # --- Relations BM25 (from relationships_vdb) ---
+            # --- Stage 3/3: Relations BM25 (from relationships_vdb) ---
+            logger.info("BM25 indexing stage 3/3: Relations (from relationships VDB)")
             relations_bm25 = BM25Index()
             relation_docs: dict[str, str] = {}
             vdb_data = await self._extract_vdb_data(self.relationships_vdb)
@@ -1369,8 +1399,10 @@ class LightRAG(_RoleLLMMixin, _StorageMigrationMixin, _PipelineMixin):
             if relation_docs:
                 relations_bm25.build(relation_docs)
             self._bm25_relations = relations_bm25
+            logger.info(f"BM25 stage 3/3 done: {len(relation_docs)} relations indexed")
 
             self._bm25_stale = False
+            self._save_bm25_indices()
             logger.info(
                 f"BM25 indices built: chunks={len(chunk_docs)}, "
                 f"entities={len(entity_docs)}, relations={len(relation_docs)}"
@@ -1378,6 +1410,62 @@ class LightRAG(_RoleLLMMixin, _StorageMigrationMixin, _PipelineMixin):
         except Exception as e:
             logger.warning(f"Failed to build BM25 indices: {e}")
             self._bm25_stale = True
+
+    def _ensure_bm25_indices(self) -> None:
+        """Ensure BM25 index objects exist (empty) for incremental adds."""
+        from lightrag.bm25_index import BM25Index
+
+        if self._bm25_chunks is None:
+            self._bm25_chunks = BM25Index()
+        if self._bm25_entities is None:
+            self._bm25_entities = BM25Index()
+        if self._bm25_relations is None:
+            self._bm25_relations = BM25Index()
+
+    def _update_bm25_chunks(self, chunks_data: dict[str, dict]) -> None:
+        """Incrementally add chunks to BM25 index. Called after chunks VDB upsert."""
+        if not self._addon_params.get("enable_hybrid_search", False):
+            return
+        self._ensure_bm25_indices()
+        docs = {}
+        for cid, cval in chunks_data.items():
+            content = cval.get("content", "") if isinstance(cval, dict) else ""
+            if content:
+                docs[cid] = content
+        if docs:
+            self._bm25_chunks.add(docs)
+            logger.info(f"[BM25] Chunks index updated: +{len(docs)} → {len(self._bm25_chunks.corpus_ids)} total")
+
+    def _update_bm25_entities(self, entity_vdb_data: dict[str, dict]) -> None:
+        """Incrementally add entities to BM25 index. Called after entities VDB upsert."""
+        if not self._addon_params.get("enable_hybrid_search", False):
+            return
+        self._ensure_bm25_indices()
+        docs = {}
+        for eid, edata in entity_vdb_data.items():
+            content = edata.get("content", "") if isinstance(edata, dict) else ""
+            if content:
+                docs[eid] = content
+        if docs:
+            self._bm25_entities.add(docs)
+            logger.info(f"[BM25] Entities index updated: +{len(docs)} → {len(self._bm25_entities.corpus_ids)} total")
+
+    def _update_bm25_relations(self, relation_vdb_data: dict[str, dict]) -> None:
+        """Incrementally add relations to BM25 index. Called after relations VDB upsert."""
+        if not self._addon_params.get("enable_hybrid_search", False):
+            return
+        self._ensure_bm25_indices()
+        docs = {}
+        for rid, rdata in relation_vdb_data.items():
+            content = rdata.get("content", "") if isinstance(rdata, dict) else ""
+            if content:
+                src = rdata.get("src_id", "")
+                tgt = rdata.get("tgt_id", "")
+                key = f"{src}->{tgt}" if src and tgt else rid
+                docs[key] = content
+        if docs:
+            self._bm25_relations.add(docs)
+            logger.info(f"[BM25] Relations index updated: +{len(docs)} → {len(self._bm25_relations.corpus_ids)} total")
 
     async def _extract_vdb_data(self, vdb: Any) -> list[dict]:
         """Extract all documents from a vector DB for BM25 indexing."""

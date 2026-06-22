@@ -2509,6 +2509,8 @@ class _PipelineMixin:
 
                 await asyncio.gather(*first_stage_tasks)
 
+                self._update_bm25_chunks(chunks)
+
                 # Stage 2: entity/relation extraction (after text_chunks are
                 # saved).  When the user opted out via process_options '!',
                 # skip extraction entirely; chunks remain in the vector

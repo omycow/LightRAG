@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import json
+import os
 import re
 
 from rank_bm25 import BM25Okapi
@@ -34,6 +36,19 @@ class BM25Index:
         self.bm25 = BM25Okapi(tokenized)
         logger.info(f"BM25 index built with {len(self.corpus_ids)} documents")
 
+    def add(self, documents: dict[str, str]) -> None:
+        """Incrementally add documents and rebuild the index."""
+        if not documents:
+            return
+        new_docs = {k: v for k, v in documents.items() if k not in self.corpus_texts}
+        if not new_docs:
+            return
+        self.corpus_texts.update(new_docs)
+        self.corpus_ids = list(self.corpus_texts.keys())
+        tokenized = [_tokenize(doc) for doc in self.corpus_texts.values()]
+        self.bm25 = BM25Okapi(tokenized)
+        logger.info(f"BM25 index updated: +{len(new_docs)} docs → {len(self.corpus_ids)} total")
+
     def query(self, query_text: str, top_k: int = 20) -> list[dict]:
         """BM25 search returning [{id, score, content}, ...]."""
         if not self.bm25 or not self.corpus_ids:
@@ -43,6 +58,11 @@ class BM25Index:
             return []
         scores = self.bm25.get_scores(tokens)
         top_indices = scores.argsort()[-top_k:][::-1]
+        # BM25Okapi yields negative IDF (and thus negative scores) when a
+        # term appears in every document — common with small corpora.  Keep
+        # any result whose score differs from the minimum (i.e. it matched
+        # at least one query term more than the worst candidate).
+        min_score = float(scores.min()) if len(scores) > 0 else 0.0
         return [
             {
                 "id": self.corpus_ids[i],
@@ -50,12 +70,35 @@ class BM25Index:
                 "content": self.corpus_texts.get(self.corpus_ids[i], ""),
             }
             for i in top_indices
-            if scores[i] > 0
+            if scores[i] > min_score or scores[i] > 0
         ]
 
     @property
     def is_built(self) -> bool:
         return self.bm25 is not None and len(self.corpus_ids) > 0
+
+    def save(self, path: str) -> None:
+        """Persist corpus to a JSON file. BM25 state is rebuilt on load."""
+        data = {"corpus_texts": self.corpus_texts}
+        tmp_path = path + ".tmp"
+        with open(tmp_path, "w") as f:
+            json.dump(data, f, ensure_ascii=False)
+        os.replace(tmp_path, path)
+        logger.info(f"BM25 index saved: {len(self.corpus_ids)} docs → {path}")
+
+    @classmethod
+    def load(cls, path: str) -> "BM25Index":
+        """Load corpus from JSON and rebuild BM25."""
+        idx = cls()
+        if not os.path.exists(path):
+            return idx
+        with open(path, "r") as f:
+            data = json.load(f)
+        corpus_texts = data.get("corpus_texts", {})
+        if corpus_texts:
+            idx.build(corpus_texts)
+            logger.info(f"BM25 index loaded: {len(idx.corpus_ids)} docs ← {path}")
+        return idx
 
 
 def reciprocal_rank_fusion(

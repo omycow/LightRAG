@@ -1537,6 +1537,10 @@ async def _rebuild_single_entity(
                 retry_delay=0.1,
             )
 
+            bm25_update_fn = global_config.get("bm25_update_entities")
+            if bm25_update_fn:
+                bm25_update_fn(vdb_data)
+
         except Exception as e:
             error_msg = f"Failed to update entity storage for `{entity_name}`: {e}"
             logger.error(error_msg)
@@ -1929,6 +1933,9 @@ async def _rebuild_single_relationship(
                     max_retries=3,
                     retry_delay=0.1,
                 )
+                bm25_update_fn = global_config.get("bm25_update_entities")
+                if bm25_update_fn:
+                    bm25_update_fn(vdb_data)
 
     await knowledge_graph_inst.upsert_edge(src, tgt, updated_relationship_data)
 
@@ -1971,6 +1978,10 @@ async def _rebuild_single_relationship(
             max_retries=3,
             retry_delay=0.2,
         )
+
+        bm25_update_fn = global_config.get("bm25_update_relations")
+        if bm25_update_fn:
+            bm25_update_fn(vdb_data)
 
     except Exception as e:
         error_msg = f"Failed to rebuild relationship storage for `{src}-{tgt}`: {e}"
@@ -2317,6 +2328,9 @@ async def _merge_nodes_then_upsert(
                 max_retries=3,
                 retry_delay=0.1,
             )
+            bm25_update_fn = global_config.get("bm25_update_entities")
+            if bm25_update_fn:
+                bm25_update_fn(data_for_vdb)
         return node_data
     finally:
         performance_timing_log(
@@ -2901,6 +2915,10 @@ async def _merge_edges_then_upsert(
                 log_start=False,
                 success_log_threshold_seconds=5.0,
             )
+
+            bm25_update_fn = global_config.get("bm25_update_relations")
+            if bm25_update_fn:
+                bm25_update_fn(vdb_data)
 
         return edge_data
     finally:
@@ -4289,7 +4307,7 @@ async def _get_vector_context(
 
         if search_mode == "keyword_only" and chunks_bm25 and getattr(chunks_bm25, "is_built", False):
             results = chunks_bm25.query(query, top_k=search_top_k)
-            logger.info(f"Keyword-only chunk search: {len(results)} results from BM25")
+            logger.info(f"[Hybrid Search] Chunk retrieval mode=keyword_only: {len(results)} results from BM25")
         else:
             results = await chunks_vdb.query(
                 query, top_k=search_top_k, query_embedding=query_embedding
@@ -4297,11 +4315,17 @@ async def _get_vector_context(
             if search_mode == "hybrid" and chunks_bm25 and getattr(chunks_bm25, "is_built", False):
                 from lightrag.bm25_index import reciprocal_rank_fusion
 
+                vector_count = len(results or [])
                 bm25_results = chunks_bm25.query(query, top_k=search_top_k)
+                logger.info(
+                    f"[Hybrid Search] Chunk retrieval: Vector={vector_count}, BM25={len(bm25_results)} → RRF merging"
+                )
                 results = reciprocal_rank_fusion(
                     results or [], bm25_results, vector_id_field="id", bm25_id_field="id"
                 )
-                logger.info(f"Hybrid chunk search: {len(results)} results after RRF")
+                logger.info(f"[Hybrid Search] Chunk retrieval mode=hybrid: {len(results)} results after RRF")
+            else:
+                logger.info(f"[Hybrid Search] Chunk retrieval mode=vector_only: {len(results or [])} results")
 
         if not results:
             logger.info(
@@ -5187,7 +5211,7 @@ async def _get_node_data(
     if search_mode == "keyword_only" and entities_bm25 and getattr(entities_bm25, "is_built", False):
         bm25_results = entities_bm25.query(query, top_k=query_param.top_k)
         results = [{"entity_name": r["id"], **r} for r in bm25_results]
-        logger.info(f"Keyword-only entity search: {len(results)} results from BM25")
+        logger.info(f"[Hybrid Search] Entity retrieval mode=keyword_only: {len(results)} results from BM25")
     else:
         results = await entities_vdb.query(
             query, top_k=query_param.top_k, query_embedding=query_embedding
@@ -5195,7 +5219,11 @@ async def _get_node_data(
         if search_mode == "hybrid" and entities_bm25 and getattr(entities_bm25, "is_built", False):
             from lightrag.bm25_index import reciprocal_rank_fusion
 
+            vector_count = len(results or [])
             bm25_results = entities_bm25.query(query, top_k=query_param.top_k)
+            logger.info(
+                f"[Hybrid Search] Entity retrieval: Vector={vector_count}, BM25={len(bm25_results)} → RRF merging"
+            )
             bm25_as_vec = [{"entity_name": r["id"], **r} for r in bm25_results]
             results = reciprocal_rank_fusion(
                 results or [],
@@ -5203,7 +5231,9 @@ async def _get_node_data(
                 vector_id_field="entity_name",
                 bm25_id_field="entity_name",
             )
-            logger.info(f"Hybrid entity search: {len(results)} results after RRF")
+            logger.info(f"[Hybrid Search] Entity retrieval mode=hybrid: {len(results)} results after RRF")
+        else:
+            logger.info(f"[Hybrid Search] Entity retrieval mode=vector_only: {len(results or [])} results")
 
     if not len(results):
         return [], []
@@ -5492,7 +5522,7 @@ async def _get_edge_data(
     if search_mode == "keyword_only" and relations_bm25 and getattr(relations_bm25, "is_built", False):
         bm25_results = relations_bm25.query(keywords, top_k=query_param.top_k)
         results = _bm25_to_relation_format(bm25_results)
-        logger.info(f"Keyword-only relation search: {len(results)} results from BM25")
+        logger.info(f"[Hybrid Search] Relation retrieval mode=keyword_only: {len(results)} results from BM25")
     else:
         results = await relationships_vdb.query(
             keywords, top_k=query_param.top_k, query_embedding=query_embedding
@@ -5500,7 +5530,11 @@ async def _get_edge_data(
         if search_mode == "hybrid" and relations_bm25 and getattr(relations_bm25, "is_built", False):
             from lightrag.bm25_index import reciprocal_rank_fusion
 
+            vector_count = len(results or [])
             bm25_results = relations_bm25.query(keywords, top_k=query_param.top_k)
+            logger.info(
+                f"[Hybrid Search] Relation retrieval: Vector={vector_count}, BM25={len(bm25_results)} → RRF merging"
+            )
             bm25_as_vec = _bm25_to_relation_format(bm25_results)
             results = reciprocal_rank_fusion(
                 results or [],
@@ -5508,7 +5542,9 @@ async def _get_edge_data(
                 vector_id_field="src_id",
                 bm25_id_field="src_id",
             )
-            logger.info(f"Hybrid relation search: {len(results)} results after RRF")
+            logger.info(f"[Hybrid Search] Relation retrieval mode=hybrid: {len(results)} results after RRF")
+        else:
+            logger.info(f"[Hybrid Search] Relation retrieval mode=vector_only: {len(results or [])} results")
 
     if not len(results):
         return [], []

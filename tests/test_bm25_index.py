@@ -44,6 +44,32 @@ class TestBM25Index:
         idx.build({})
         assert not idx.is_built
 
+    def test_add_incremental(self):
+        idx = BM25Index()
+        idx.add({"d1": "machine learning deep neural network"})
+        assert idx.is_built
+        assert len(idx.corpus_ids) == 1
+        idx.add({"d2": "natural language processing nlp text"})
+        idx.add({"d3": "computer vision image recognition deep"})
+        assert len(idx.corpus_ids) == 3
+        results = idx.query("machine learning", top_k=2)
+        assert len(results) > 0
+        assert results[0]["id"] == "d1"
+
+    def test_add_dedup(self):
+        idx = BM25Index()
+        idx.add({"d1": "hello world"})
+        idx.add({"d1": "hello world", "d2": "foo bar"})
+        assert len(idx.corpus_ids) == 2
+
+    def test_add_to_existing_build(self):
+        idx = self._build_sample_index()
+        assert len(idx.corpus_ids) == 6
+        idx.add({"d7": "quantum computing qubit entanglement"})
+        assert len(idx.corpus_ids) == 7
+        results = idx.query("quantum computing", top_k=1)
+        assert results[0]["id"] == "d7"
+
 
 class TestReciprocalRankFusion:
     def test_basic_fusion(self):
