@@ -4283,21 +4283,25 @@ async def _get_vector_context(
         search_top_k = query_param.chunk_top_k or query_param.top_k
         cosine_threshold = chunks_vdb.cosine_better_than_threshold
 
-        results = await chunks_vdb.query(
-            query, top_k=search_top_k, query_embedding=query_embedding
-        )
-
-        # BM25 hybrid search for chunks
         bm25_indices = (global_config or {}).get("bm25_indices", {})
         chunks_bm25 = bm25_indices.get("chunks")
-        if chunks_bm25 and getattr(chunks_bm25, "is_built", False):
-            from lightrag.bm25_index import reciprocal_rank_fusion
+        search_mode = (global_config or {}).get("hybrid_search_mode", "hybrid")
 
-            bm25_results = chunks_bm25.query(query, top_k=search_top_k)
-            results = reciprocal_rank_fusion(
-                results or [], bm25_results, vector_id_field="id", bm25_id_field="id"
+        if search_mode == "keyword_only" and chunks_bm25 and getattr(chunks_bm25, "is_built", False):
+            results = chunks_bm25.query(query, top_k=search_top_k)
+            logger.info(f"Keyword-only chunk search: {len(results)} results from BM25")
+        else:
+            results = await chunks_vdb.query(
+                query, top_k=search_top_k, query_embedding=query_embedding
             )
-            logger.info(f"Hybrid chunk search: {len(results)} results after RRF")
+            if search_mode == "hybrid" and chunks_bm25 and getattr(chunks_bm25, "is_built", False):
+                from lightrag.bm25_index import reciprocal_rank_fusion
+
+                bm25_results = chunks_bm25.query(query, top_k=search_top_k)
+                results = reciprocal_rank_fusion(
+                    results or [], bm25_results, vector_id_field="id", bm25_id_field="id"
+                )
+                logger.info(f"Hybrid chunk search: {len(results)} results after RRF")
 
         if not results:
             logger.info(
@@ -5176,25 +5180,30 @@ async def _get_node_data(
         f"Query nodes: {query} (top_k:{query_param.top_k}, cosine:{entities_vdb.cosine_better_than_threshold})"
     )
 
-    results = await entities_vdb.query(
-        query, top_k=query_param.top_k, query_embedding=query_embedding
-    )
-
-    # BM25 hybrid search for entities
     bm25_indices = (global_config or {}).get("bm25_indices", {})
     entities_bm25 = bm25_indices.get("entities")
-    if entities_bm25 and getattr(entities_bm25, "is_built", False):
-        from lightrag.bm25_index import reciprocal_rank_fusion
+    search_mode = (global_config or {}).get("hybrid_search_mode", "hybrid")
 
+    if search_mode == "keyword_only" and entities_bm25 and getattr(entities_bm25, "is_built", False):
         bm25_results = entities_bm25.query(query, top_k=query_param.top_k)
-        bm25_as_vec = [{"entity_name": r["id"], **r} for r in bm25_results]
-        results = reciprocal_rank_fusion(
-            results or [],
-            bm25_as_vec,
-            vector_id_field="entity_name",
-            bm25_id_field="entity_name",
+        results = [{"entity_name": r["id"], **r} for r in bm25_results]
+        logger.info(f"Keyword-only entity search: {len(results)} results from BM25")
+    else:
+        results = await entities_vdb.query(
+            query, top_k=query_param.top_k, query_embedding=query_embedding
         )
-        logger.info(f"Hybrid entity search: {len(results)} results after RRF")
+        if search_mode == "hybrid" and entities_bm25 and getattr(entities_bm25, "is_built", False):
+            from lightrag.bm25_index import reciprocal_rank_fusion
+
+            bm25_results = entities_bm25.query(query, top_k=query_param.top_k)
+            bm25_as_vec = [{"entity_name": r["id"], **r} for r in bm25_results]
+            results = reciprocal_rank_fusion(
+                results or [],
+                bm25_as_vec,
+                vector_id_field="entity_name",
+                bm25_id_field="entity_name",
+            )
+            logger.info(f"Hybrid entity search: {len(results)} results after RRF")
 
     if not len(results):
         return [], []
@@ -5468,31 +5477,38 @@ async def _get_edge_data(
         f"Query edges: {keywords} (top_k:{query_param.top_k}, cosine:{relationships_vdb.cosine_better_than_threshold})"
     )
 
-    results = await relationships_vdb.query(
-        keywords, top_k=query_param.top_k, query_embedding=query_embedding
-    )
-
-    # BM25 hybrid search for relations
     bm25_indices = (global_config or {}).get("bm25_indices", {})
     relations_bm25 = bm25_indices.get("relations")
-    if relations_bm25 and getattr(relations_bm25, "is_built", False):
-        from lightrag.bm25_index import reciprocal_rank_fusion
+    search_mode = (global_config or {}).get("hybrid_search_mode", "hybrid")
 
-        bm25_results = relations_bm25.query(keywords, top_k=query_param.top_k)
-        bm25_as_vec = []
+    def _bm25_to_relation_format(bm25_results):
+        formatted = []
         for r in bm25_results:
             parts = r["id"].split("->", 1)
             if len(parts) == 2:
-                bm25_as_vec.append(
-                    {"src_id": parts[0], "tgt_id": parts[1], **r}
-                )
-        results = reciprocal_rank_fusion(
-            results or [],
-            bm25_as_vec,
-            vector_id_field="src_id",
-            bm25_id_field="src_id",
+                formatted.append({"src_id": parts[0], "tgt_id": parts[1], **r})
+        return formatted
+
+    if search_mode == "keyword_only" and relations_bm25 and getattr(relations_bm25, "is_built", False):
+        bm25_results = relations_bm25.query(keywords, top_k=query_param.top_k)
+        results = _bm25_to_relation_format(bm25_results)
+        logger.info(f"Keyword-only relation search: {len(results)} results from BM25")
+    else:
+        results = await relationships_vdb.query(
+            keywords, top_k=query_param.top_k, query_embedding=query_embedding
         )
-        logger.info(f"Hybrid relation search: {len(results)} results after RRF")
+        if search_mode == "hybrid" and relations_bm25 and getattr(relations_bm25, "is_built", False):
+            from lightrag.bm25_index import reciprocal_rank_fusion
+
+            bm25_results = relations_bm25.query(keywords, top_k=query_param.top_k)
+            bm25_as_vec = _bm25_to_relation_format(bm25_results)
+            results = reciprocal_rank_fusion(
+                results or [],
+                bm25_as_vec,
+                vector_id_field="src_id",
+                bm25_id_field="src_id",
+            )
+            logger.info(f"Hybrid relation search: {len(results)} results after RRF")
 
     if not len(results):
         return [], []

@@ -18,21 +18,24 @@ class BM25Index:
 
     def __init__(self) -> None:
         self.corpus_ids: list[str] = []
+        self.corpus_texts: dict[str, str] = {}
         self.bm25: BM25Okapi | None = None
 
     def build(self, documents: dict[str, str]) -> None:
         """Build index from {id: text} mapping."""
         if not documents:
             self.corpus_ids = []
+            self.corpus_texts = {}
             self.bm25 = None
             return
         self.corpus_ids = list(documents.keys())
+        self.corpus_texts = dict(documents)
         tokenized = [_tokenize(doc) for doc in documents.values()]
         self.bm25 = BM25Okapi(tokenized)
         logger.info(f"BM25 index built with {len(self.corpus_ids)} documents")
 
     def query(self, query_text: str, top_k: int = 20) -> list[dict]:
-        """BM25 search returning [{id, score}, ...]."""
+        """BM25 search returning [{id, score, content}, ...]."""
         if not self.bm25 or not self.corpus_ids:
             return []
         tokens = _tokenize(query_text)
@@ -41,7 +44,11 @@ class BM25Index:
         scores = self.bm25.get_scores(tokens)
         top_indices = scores.argsort()[-top_k:][::-1]
         return [
-            {"id": self.corpus_ids[i], "score": float(scores[i])}
+            {
+                "id": self.corpus_ids[i],
+                "score": float(scores[i]),
+                "content": self.corpus_texts.get(self.corpus_ids[i], ""),
+            }
             for i in top_indices
             if scores[i] > 0
         ]

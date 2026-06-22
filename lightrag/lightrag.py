@@ -948,6 +948,9 @@ class LightRAG(_RoleLLMMixin, _StorageMigrationMixin, _PipelineMixin):
             "entities": getattr(self, "_bm25_entities", None),
             "relations": getattr(self, "_bm25_relations", None),
         }
+        global_config["hybrid_search_mode"] = self._addon_params.get(
+            "hybrid_search_mode", "hybrid"
+        )
         return global_config
 
     def _build_role_llm_cache_identity(
@@ -1379,10 +1382,15 @@ class LightRAG(_RoleLLMMixin, _StorageMigrationMixin, _PipelineMixin):
     async def _extract_vdb_data(self, vdb: Any) -> list[dict]:
         """Extract all documents from a vector DB for BM25 indexing."""
         try:
-            if hasattr(vdb, "client_storage"):
-                storage = vdb.client_storage
-                if asyncio.iscoroutine(storage) or asyncio.isfuture(storage):
-                    storage = await storage
+            # Check for client_storage via class MRO to avoid triggering
+            # async property descriptors (which causes RuntimeWarning).
+            has_client_storage = any(
+                "client_storage" in cls.__dict__
+                for cls in type(vdb).__mro__
+                if cls is not object
+            )
+            if has_client_storage:
+                storage = await vdb.client_storage
                 if isinstance(storage, dict):
                     return storage.get("data", [])
                 if hasattr(storage, "data"):
@@ -1827,7 +1835,7 @@ class LightRAG(_RoleLLMMixin, _StorageMigrationMixin, _PipelineMixin):
             raise errors[0]
 
         if self._addon_params.get("enable_hybrid_search", False):
-            self._bm25_stale = True
+            await self._build_bm25_indices()
 
         log_message = "In memory DB persist to disk"
         logger.info(log_message)

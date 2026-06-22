@@ -55,6 +55,7 @@ def default_addon_params() -> dict[str, Any]:
         # are not affected by later runtime mutations.
         "chunker": default_chunker_config(),
         "enable_hybrid_search": False,
+        "hybrid_search_mode": "hybrid",
     }
 
 
