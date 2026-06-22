@@ -943,6 +943,11 @@ class LightRAG(_RoleLLMMixin, _StorageMigrationMixin, _PipelineMixin):
             )
             for spec in ROLES
         }
+        global_config["bm25_indices"] = {
+            "chunks": self._bm25_chunks,
+            "entities": self._bm25_entities,
+            "relations": self._bm25_relations,
+        }
         return global_config
 
     def _build_role_llm_cache_identity(
@@ -1263,6 +1268,12 @@ class LightRAG(_RoleLLMMixin, _StorageMigrationMixin, _PipelineMixin):
 
         self._storages_status = StoragesStatus.CREATED
 
+        # BM25 hybrid search indices (lazy-built on first query when enabled)
+        self._bm25_chunks: Any = None
+        self._bm25_entities: Any = None
+        self._bm25_relations: Any = None
+        self._bm25_stale: bool = True
+
     async def initialize_storages(self):
         """Storage initialization must be called one by one to prevent deadlock"""
         if self._storages_status == StoragesStatus.CREATED:
@@ -1307,6 +1318,87 @@ class LightRAG(_RoleLLMMixin, _StorageMigrationMixin, _PipelineMixin):
 
             self._storages_status = StoragesStatus.INITIALIZED
             logger.debug("All storage types initialized")
+
+            if self._addon_params.get("enable_hybrid_search", False):
+                await self._build_bm25_indices()
+
+    async def _build_bm25_indices(self) -> None:
+        """Build BM25 keyword indices from VDB content for hybrid retrieval."""
+        from lightrag.bm25_index import BM25Index
+
+        try:
+            # --- Chunks BM25 (from text_chunks KV) ---
+            chunks_bm25 = BM25Index()
+            chunk_docs: dict[str, str] = {}
+            if hasattr(self.text_chunks, "_data"):
+                for cid, cval in self.text_chunks._data.items():
+                    content = cval.get("content", "") if isinstance(cval, dict) else ""
+                    if content:
+                        chunk_docs[cid] = content
+            if chunk_docs:
+                chunks_bm25.build(chunk_docs)
+            self._bm25_chunks = chunks_bm25
+
+            # --- Entities BM25 (from entities_vdb) ---
+            entities_bm25 = BM25Index()
+            entity_docs: dict[str, str] = {}
+            vdb_data = await self._extract_vdb_data(self.entities_vdb)
+            for doc in vdb_data:
+                eid = doc.get("entity_name") or doc.get("__id__", "")
+                content = doc.get("content", "")
+                if eid and content:
+                    entity_docs[eid] = content
+            if entity_docs:
+                entities_bm25.build(entity_docs)
+            self._bm25_entities = entities_bm25
+
+            # --- Relations BM25 (from relationships_vdb) ---
+            relations_bm25 = BM25Index()
+            relation_docs: dict[str, str] = {}
+            vdb_data = await self._extract_vdb_data(self.relationships_vdb)
+            for doc in vdb_data:
+                src = doc.get("src_id", "")
+                tgt = doc.get("tgt_id", "")
+                rid = f"{src}->{tgt}" if src and tgt else doc.get("__id__", "")
+                content = doc.get("content", "")
+                if rid and content:
+                    relation_docs[rid] = content
+            if relation_docs:
+                relations_bm25.build(relation_docs)
+            self._bm25_relations = relations_bm25
+
+            self._bm25_stale = False
+            logger.info(
+                f"BM25 indices built: chunks={len(chunk_docs)}, "
+                f"entities={len(entity_docs)}, relations={len(relation_docs)}"
+            )
+        except Exception as e:
+            logger.warning(f"Failed to build BM25 indices: {e}")
+            self._bm25_stale = True
+
+    async def _extract_vdb_data(self, vdb: Any) -> list[dict]:
+        """Extract all documents from a vector DB for BM25 indexing."""
+        try:
+            if hasattr(vdb, "client_storage"):
+                storage = vdb.client_storage
+                if asyncio.iscoroutine(storage) or asyncio.isfuture(storage):
+                    storage = await storage
+                if isinstance(storage, dict):
+                    return storage.get("data", [])
+                if hasattr(storage, "data"):
+                    return list(storage.data)
+            if hasattr(vdb, "_client") and hasattr(vdb._client, "__storage_file__"):
+                import json
+                from pathlib import Path
+
+                storage_file = Path(vdb._client.__storage_file__)
+                if storage_file.exists():
+                    with open(storage_file, "r") as f:
+                        data = json.load(f)
+                    return data.get("data", [])
+        except Exception as e:
+            logger.warning(f"Failed to extract VDB data: {e}")
+        return []
 
     async def finalize_storages(self):
         """Asynchronously finalize the storages with improved error handling"""
@@ -1733,6 +1825,9 @@ class LightRAG(_RoleLLMMixin, _StorageMigrationMixin, _PipelineMixin):
             for extra in errors[1:]:
                 logger.error(f"Additional index flush failure: {extra}")
             raise errors[0]
+
+        if self._addon_params.get("enable_hybrid_search", False):
+            self._bm25_stale = True
 
         log_message = "In memory DB persist to disk"
         logger.info(log_message)
@@ -2359,6 +2454,9 @@ class LightRAG(_RoleLLMMixin, _StorageMigrationMixin, _PipelineMixin):
             dict[str, Any]: Complete response with structured data and LLM response.
         """
         logger.debug(f"[aquery_llm] Query param: {param}")
+
+        if self._addon_params.get("enable_hybrid_search", False) and self._bm25_stale:
+            await self._build_bm25_indices()
 
         global_config = self._build_global_config()
 

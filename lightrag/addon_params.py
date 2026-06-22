@@ -54,6 +54,7 @@ def default_addon_params() -> dict[str, Any]:
         # ``full_docs[doc_id]["chunk_options"]`` at enqueue time and
         # are not affected by later runtime mutations.
         "chunker": default_chunker_config(),
+        "enable_hybrid_search": False,
     }
 
 

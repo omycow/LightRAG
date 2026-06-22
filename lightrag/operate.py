@@ -3867,6 +3867,7 @@ async def kg_query(
         text_chunks_db,
         query_param,
         chunks_vdb,
+        global_config=global_config,
     )
 
     if context_result is None:
@@ -4260,6 +4261,7 @@ async def _get_vector_context(
     chunks_vdb: BaseVectorStorage,
     query_param: QueryParam,
     query_embedding: list[float] = None,
+    global_config: dict = None,
 ) -> list[dict]:
     """
     Retrieve text chunks from the vector database without reranking or truncation.
@@ -4284,6 +4286,19 @@ async def _get_vector_context(
         results = await chunks_vdb.query(
             query, top_k=search_top_k, query_embedding=query_embedding
         )
+
+        # BM25 hybrid search for chunks
+        bm25_indices = (global_config or {}).get("bm25_indices", {})
+        chunks_bm25 = bm25_indices.get("chunks")
+        if chunks_bm25 and getattr(chunks_bm25, "is_built", False):
+            from lightrag.bm25_index import reciprocal_rank_fusion
+
+            bm25_results = chunks_bm25.query(query, top_k=search_top_k)
+            results = reciprocal_rank_fusion(
+                results or [], bm25_results, vector_id_field="id", bm25_id_field="id"
+            )
+            logger.info(f"Hybrid chunk search: {len(results)} results after RRF")
+
         if not results:
             logger.info(
                 f"Naive query: 0 chunks (chunk_top_k:{search_top_k} cosine:{cosine_threshold})"
@@ -4322,6 +4337,7 @@ async def _perform_kg_search(
     text_chunks_db: BaseKVStorage,
     query_param: QueryParam,
     chunks_vdb: BaseVectorStorage = None,
+    global_config: dict = None,
 ) -> dict[str, Any]:
     """
     Pure search logic that retrieves raw entities, relations, and vector chunks.
@@ -4404,6 +4420,7 @@ async def _perform_kg_search(
             entities_vdb,
             query_param,
             query_embedding=ll_embedding,
+            global_config=global_config,
         )
 
     elif query_param.mode == "global" and len(hl_keywords) > 0:
@@ -4413,6 +4430,7 @@ async def _perform_kg_search(
             relationships_vdb,
             query_param,
             query_embedding=hl_embedding,
+            global_config=global_config,
         )
 
     else:  # hybrid or mix mode
@@ -4423,6 +4441,7 @@ async def _perform_kg_search(
                 entities_vdb,
                 query_param,
                 query_embedding=ll_embedding,
+                global_config=global_config,
             )
         if len(hl_keywords) > 0:
             global_relations, global_entities = await _get_edge_data(
@@ -4431,6 +4450,7 @@ async def _perform_kg_search(
                 relationships_vdb,
                 query_param,
                 query_embedding=hl_embedding,
+                global_config=global_config,
             )
 
         # Get vector chunks for mix mode
@@ -4440,6 +4460,7 @@ async def _perform_kg_search(
                 chunks_vdb,
                 query_param,
                 query_embedding,
+                global_config=global_config,
             )
             # Track vector chunks with source metadata
             for i, chunk in enumerate(vector_chunks):
@@ -5031,6 +5052,7 @@ async def _build_query_context(
     text_chunks_db: BaseKVStorage,
     query_param: QueryParam,
     chunks_vdb: BaseVectorStorage = None,
+    global_config: dict = None,
 ) -> QueryContextResult | None:
     """
     Main query context building function using the new 4-stage architecture:
@@ -5054,6 +5076,7 @@ async def _build_query_context(
         text_chunks_db,
         query_param,
         chunks_vdb,
+        global_config=global_config,
     )
 
     if not search_result["final_entities"] and not search_result["final_relations"]:
@@ -5147,6 +5170,7 @@ async def _get_node_data(
     entities_vdb: BaseVectorStorage,
     query_param: QueryParam,
     query_embedding=None,
+    global_config: dict = None,
 ):
     logger.info(
         f"Query nodes: {query} (top_k:{query_param.top_k}, cosine:{entities_vdb.cosine_better_than_threshold})"
@@ -5155,6 +5179,22 @@ async def _get_node_data(
     results = await entities_vdb.query(
         query, top_k=query_param.top_k, query_embedding=query_embedding
     )
+
+    # BM25 hybrid search for entities
+    bm25_indices = (global_config or {}).get("bm25_indices", {})
+    entities_bm25 = bm25_indices.get("entities")
+    if entities_bm25 and getattr(entities_bm25, "is_built", False):
+        from lightrag.bm25_index import reciprocal_rank_fusion
+
+        bm25_results = entities_bm25.query(query, top_k=query_param.top_k)
+        bm25_as_vec = [{"entity_name": r["id"], **r} for r in bm25_results]
+        results = reciprocal_rank_fusion(
+            results or [],
+            bm25_as_vec,
+            vector_id_field="entity_name",
+            bm25_id_field="entity_name",
+        )
+        logger.info(f"Hybrid entity search: {len(results)} results after RRF")
 
     if not len(results):
         return [], []
@@ -5422,6 +5462,7 @@ async def _get_edge_data(
     relationships_vdb: BaseVectorStorage,
     query_param: QueryParam,
     query_embedding=None,
+    global_config: dict = None,
 ):
     logger.info(
         f"Query edges: {keywords} (top_k:{query_param.top_k}, cosine:{relationships_vdb.cosine_better_than_threshold})"
@@ -5430,6 +5471,28 @@ async def _get_edge_data(
     results = await relationships_vdb.query(
         keywords, top_k=query_param.top_k, query_embedding=query_embedding
     )
+
+    # BM25 hybrid search for relations
+    bm25_indices = (global_config or {}).get("bm25_indices", {})
+    relations_bm25 = bm25_indices.get("relations")
+    if relations_bm25 and getattr(relations_bm25, "is_built", False):
+        from lightrag.bm25_index import reciprocal_rank_fusion
+
+        bm25_results = relations_bm25.query(keywords, top_k=query_param.top_k)
+        bm25_as_vec = []
+        for r in bm25_results:
+            parts = r["id"].split("->", 1)
+            if len(parts) == 2:
+                bm25_as_vec.append(
+                    {"src_id": parts[0], "tgt_id": parts[1], **r}
+                )
+        results = reciprocal_rank_fusion(
+            results or [],
+            bm25_as_vec,
+            vector_id_field="src_id",
+            bm25_id_field="src_id",
+        )
+        logger.info(f"Hybrid relation search: {len(results)} results after RRF")
 
     if not len(results):
         return [], []
@@ -5781,7 +5844,9 @@ async def naive_query(
         logger.error("Tokenizer not found in global configuration.")
         return QueryResult(content=PROMPTS["fail_response"])
 
-    chunks = await _get_vector_context(query, chunks_vdb, query_param, None)
+    chunks = await _get_vector_context(
+        query, chunks_vdb, query_param, None, global_config=global_config
+    )
 
     if chunks is None or len(chunks) == 0:
         logger.info(
