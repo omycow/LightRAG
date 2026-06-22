@@ -22,5 +22,8 @@ class WikiGraphConfig:
     # EVALUATE
     quality_evolve_threshold: float = 0.5
 
+    # Auto-evolve: run EVOLVE every N queries regardless of quality
+    auto_evolve_interval: int = 5
+
     # Query log
     max_query_log_size: int = 1000

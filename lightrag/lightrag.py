@@ -1411,6 +1411,18 @@ class LightRAG(_RoleLLMMixin, _StorageMigrationMixin, _PipelineMixin):
             logger.warning(f"Failed to build BM25 indices: {e}")
             self._bm25_stale = True
 
+    def _save_bm25_indices(self) -> None:
+        """Persist BM25 indices to disk."""
+        try:
+            if self._bm25_chunks and self._bm25_chunks.is_built:
+                self._bm25_chunks.save(self._bm25_file_path("chunks"))
+            if self._bm25_entities and self._bm25_entities.is_built:
+                self._bm25_entities.save(self._bm25_file_path("entities"))
+            if self._bm25_relations and self._bm25_relations.is_built:
+                self._bm25_relations.save(self._bm25_file_path("relations"))
+        except Exception as e:
+            logger.warning(f"Failed to save BM25 indices: {e}")
+
     def _ensure_bm25_indices(self) -> None:
         """Ensure BM25 index objects exist (empty) for incremental adds."""
         from lightrag.bm25_index import BM25Index

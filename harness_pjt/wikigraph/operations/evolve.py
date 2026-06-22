@@ -100,8 +100,9 @@ async def evolve_node(
     # Strategy 1: Strengthen co-retrieved connections
     pairs = _find_co_retrieved_pairs(query_log, config.co_retrieval_min_count)
     for a, b, count in pairs[: config.evolve_max_mutations]:
-        has = await graph.has_edge(a, b)
-        if not has:
+        has_ab = await graph.has_edge(a, b)
+        has_ba = await graph.has_edge(b, a)
+        if not has_ab and not has_ba:
             desc = f"Frequently co-retrieved ({count} times)"
             if llm_func:
                 node_a = await graph.get_node(a)
@@ -156,8 +157,11 @@ async def evolve_node(
     # Strategy 3: Create shortcut edges for frequent multi-hop paths
     shortcuts = _find_shortcut_paths(query_log, config.shortcut_path_min_count)
     for a, b, c in shortcuts[: config.evolve_max_mutations - len(mutations)]:
-        edge_ab = await graph.get_edge(a, b)
-        edge_bc = await graph.get_edge(b, c)
+        has_ac = await graph.has_edge(a, c) or await graph.has_edge(c, a)
+        if has_ac:
+            continue
+        edge_ab = await graph.get_edge(a, b) or await graph.get_edge(b, a)
+        edge_bc = await graph.get_edge(b, c) or await graph.get_edge(c, b)
         desc_parts = []
         if edge_ab:
             desc_parts.append(edge_ab.get("description", "")[:100])

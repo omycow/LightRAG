@@ -103,21 +103,35 @@ class WikiGraphAgent:
         self._state["operation"] = "ingest"
         self._state["documents"] = documents
         self._state["file_paths"] = file_paths or []
+        self._state["messages"] = []
         result = await self._graph.ainvoke(self._state)
         self._state.update(result)
         self._save_persistent_state()
         return {"messages": result.get("messages", []), "track_id": result.get("last_track_id")}
 
     async def query(self, query: str) -> dict:
-        """Query with automatic evaluation and optional evolution."""
+        """Query with automatic evaluation and optional evolution.
+
+        EVOLVE triggers when:
+        1. Result quality is below threshold (reactive), OR
+        2. Every auto_evolve_interval queries (proactive background improvement)
+        """
         self._state["operation"] = "query"
         self._state["current_query"] = query
         self._state["should_evolve"] = False
+        self._state["messages"] = []
+
+        # Proactive: force evolve every N queries
+        total = len(self._state.get("query_log", [])) + 1
+        if total % self.config.auto_evolve_interval == 0:
+            self._state["should_evolve"] = True
+
         result = await self._graph.ainvoke(self._state)
         self._state.update(result)
         self._save_persistent_state()
+        new_messages = result.get("messages", [])
         return {
-            "messages": result.get("messages", []),
+            "messages": new_messages,
             "result": result.get("query_result"),
             "evolved": result.get("evolve_applied", 0) > 0,
         }
@@ -125,6 +139,7 @@ class WikiGraphAgent:
     async def evolve(self) -> dict:
         """Manually trigger knowledge evolution."""
         self._state["operation"] = "evolve"
+        self._state["messages"] = []
         result = await self._graph.ainvoke(self._state)
         self._state.update(result)
         self._save_persistent_state()
@@ -137,6 +152,7 @@ class WikiGraphAgent:
     async def lint(self) -> dict:
         """Run graph health checks."""
         self._state["operation"] = "lint"
+        self._state["messages"] = []
         result = await self._graph.ainvoke(self._state)
         self._state.update(result)
         return {

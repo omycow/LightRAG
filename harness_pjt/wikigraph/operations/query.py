@@ -87,8 +87,10 @@ def evaluate_node(state: WikiGraphState, config: WikiGraphConfig) -> dict:
     if query_log:
         query_log[-1]["result_quality"] = quality
 
-    should_evolve = quality < config.quality_evolve_threshold
-    msg = f"EVALUATE: quality={quality:.2f}, evolve={'YES' if should_evolve else 'NO'}"
+    already_flagged = state.get("should_evolve", False)
+    should_evolve = quality < config.quality_evolve_threshold or already_flagged
+    reason = "low quality" if quality < config.quality_evolve_threshold else ("scheduled" if already_flagged else "no")
+    msg = f"EVALUATE: quality={quality:.2f}, evolve={reason.upper()}"
     return {
         "should_evolve": should_evolve,
         "query_log": query_log,
