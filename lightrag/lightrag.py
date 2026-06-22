@@ -944,9 +944,9 @@ class LightRAG(_RoleLLMMixin, _StorageMigrationMixin, _PipelineMixin):
             for spec in ROLES
         }
         global_config["bm25_indices"] = {
-            "chunks": self._bm25_chunks,
-            "entities": self._bm25_entities,
-            "relations": self._bm25_relations,
+            "chunks": getattr(self, "_bm25_chunks", None),
+            "entities": getattr(self, "_bm25_entities", None),
+            "relations": getattr(self, "_bm25_relations", None),
         }
         return global_config
 
@@ -2338,6 +2338,9 @@ class LightRAG(_RoleLLMMixin, _StorageMigrationMixin, _PipelineMixin):
             actual data is nested under the 'data' field, with 'status' and 'message'
             fields at the top level.
         """
+        if self._addon_params.get("enable_hybrid_search", False) and self._bm25_stale:
+            await self._build_bm25_indices()
+
         global_config = self._build_global_config()
 
         # Create a copy of param to avoid modifying the original
