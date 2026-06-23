@@ -160,6 +160,35 @@ class WikiGraphAgent:
             "findings": result.get("lint_findings", []),
         }
 
+    async def watch(self, directory: str, interval: float = 0) -> dict:
+        """Scan directory for new/changed files and auto-ingest them.
+
+        Uses content hash to detect changes. Only modified files are processed.
+        Call periodically or once after adding files to the watched directory.
+        """
+        from wikigraph.sources import detect_changed_files
+        import os
+
+        hash_path = os.path.join(self.rag.working_dir, "wikigraph_meta", "file_hashes.json")
+        changed = detect_changed_files(directory, hash_path)
+        if not changed:
+            return {"messages": ["WATCH: no changes detected"], "ingested": 0}
+
+        docs = [text for _, text in changed]
+        paths = [name for name, _ in changed]
+        result = await self.ingest(docs, file_paths=paths)
+        result["messages"] = [f"WATCH: {len(changed)} file(s) changed"] + result["messages"]
+        result["ingested"] = len(changed)
+        return result
+
+    async def ingest_artifact(self, text: str, label: str = "agent_artifact") -> dict:
+        """Ingest agent-generated knowledge artifact into the graph.
+
+        Use this to feed back high-quality query answers, summaries, or
+        analysis results into the RAG so they become searchable.
+        """
+        return await self.ingest([text], file_paths=[label])
+
     @property
     def stats(self) -> dict:
         return {
