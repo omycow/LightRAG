@@ -1376,9 +1376,15 @@ class LightRAG(_RoleLLMMixin, _StorageMigrationMixin, _PipelineMixin):
             vdb_data = await self._extract_vdb_data(self.entities_vdb)
             for doc in vdb_data:
                 eid = doc.get("entity_name") or doc.get("__id__", "")
-                content = doc.get("content", "")
-                if eid and content:
-                    entity_docs[eid] = content
+                parts = [
+                    doc.get("entity_name", ""),
+                    doc.get("entity_type", ""),
+                    doc.get("content", ""),
+                    doc.get("description", ""),
+                ]
+                text = " ".join(p for p in parts if p)
+                if eid and text.strip():
+                    entity_docs[eid] = text
             if entity_docs:
                 entities_bm25.build(entity_docs)
             self._bm25_entities = entities_bm25
@@ -1393,9 +1399,16 @@ class LightRAG(_RoleLLMMixin, _StorageMigrationMixin, _PipelineMixin):
                 src = doc.get("src_id", "")
                 tgt = doc.get("tgt_id", "")
                 rid = f"{src}->{tgt}" if src and tgt else doc.get("__id__", "")
-                content = doc.get("content", "")
-                if rid and content:
-                    relation_docs[rid] = content
+                parts = [
+                    src,
+                    tgt,
+                    doc.get("keywords", ""),
+                    doc.get("content", ""),
+                    doc.get("description", ""),
+                ]
+                text = " ".join(p for p in parts if p)
+                if rid and text.strip():
+                    relation_docs[rid] = text
             if relation_docs:
                 relations_bm25.build(relation_docs)
             self._bm25_relations = relations_bm25
@@ -1455,9 +1468,17 @@ class LightRAG(_RoleLLMMixin, _StorageMigrationMixin, _PipelineMixin):
         self._ensure_bm25_indices()
         docs = {}
         for eid, edata in entity_vdb_data.items():
-            content = edata.get("content", "") if isinstance(edata, dict) else ""
-            if content:
-                docs[eid] = content
+            if not isinstance(edata, dict):
+                continue
+            parts = [
+                edata.get("entity_name", ""),
+                edata.get("entity_type", ""),
+                edata.get("content", ""),
+                edata.get("description", ""),
+            ]
+            text = " ".join(p for p in parts if p)
+            if text.strip():
+                docs[eid] = text
         if docs:
             self._bm25_entities.add(docs)
             logger.info(f"[BM25] Entities index updated: +{len(docs)} → {len(self._bm25_entities.corpus_ids)} total")
@@ -1469,12 +1490,21 @@ class LightRAG(_RoleLLMMixin, _StorageMigrationMixin, _PipelineMixin):
         self._ensure_bm25_indices()
         docs = {}
         for rid, rdata in relation_vdb_data.items():
-            content = rdata.get("content", "") if isinstance(rdata, dict) else ""
-            if content:
-                src = rdata.get("src_id", "")
-                tgt = rdata.get("tgt_id", "")
-                key = f"{src}->{tgt}" if src and tgt else rid
-                docs[key] = content
+            if not isinstance(rdata, dict):
+                continue
+            src = rdata.get("src_id", "")
+            tgt = rdata.get("tgt_id", "")
+            key = f"{src}->{tgt}" if src and tgt else rid
+            parts = [
+                src,
+                tgt,
+                rdata.get("keywords", ""),
+                rdata.get("content", ""),
+                rdata.get("description", ""),
+            ]
+            text = " ".join(p for p in parts if p)
+            if text.strip():
+                docs[key] = text
         if docs:
             self._bm25_relations.add(docs)
             logger.info(f"[BM25] Relations index updated: +{len(docs)} → {len(self._bm25_relations.corpus_ids)} total")

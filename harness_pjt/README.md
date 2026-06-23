@@ -62,6 +62,20 @@ RRF(d) = Σ 1/(k + rank_r(d)),  k=60
 
 ![RRF Fusion](images/rrf_fusion.png)
 
+### BM25 인덱싱 대상
+
+BM25는 청크뿐 아니라 **그래프의 엔티티(노드)와 릴레이션(엣지)의 모든 텍스트 필드**를 인덱싱합니다.
+
+![BM25 Indexed Fields](images/bm25_indexed_fields.png)
+
+| 대상 | 인덱싱 필드 |
+|---|---|
+| **Chunks** | `content` (원본 텍스트) |
+| **Entities (Nodes)** | `entity_name` + `entity_type` + `content` + `description` |
+| **Relations (Edges)** | `src_id` + `tgt_id` + `keywords` + `content` + `description` |
+
+엔티티의 타입 정보("artifact", "organization" 등)나 릴레이션의 키워드("developed by", "uses" 등)도 키워드 검색에 포함되어, 벡터 유사도만으로는 매칭하기 어려운 **구조적 메타데이터 기반 검색**이 가능합니다.
+
 ### 점진적 BM25 인덱싱
 
 전체 재빌드 대신 각 VDB upsert 시점에 `BM25Index.add()`를 호출하여 즉시 반영합니다. 디스크 영속화(`save()/load()`)도 지원하여 재시작 시 재빌드가 불필요합니다.
