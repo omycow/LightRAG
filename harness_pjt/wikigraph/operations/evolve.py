@@ -131,28 +131,61 @@ async def evolve_node(
             })
             messages.append(f"EVOLVE: co-retrieval edge {a} → {b} (count={count})")
 
-    # Strategy 2: Fill knowledge gaps from failed queries
-    failed = _find_failed_queries(query_log, config.gap_quality_threshold)
-    if failed and llm_func and len(mutations) < config.evolve_max_mutations:
-        for fq in failed[:2]:
-            prompt = (
-                f"The query '{fq}' returned poor results from our knowledge graph. "
-                f"Suggest one entity (name + type + description) and one relationship "
-                f"that should exist to answer this query. "
-                f"Format exactly:\n"
-                f"ENTITY: name | type | description\n"
-                f"RELATIONSHIP: src | tgt | description"
-            )
-            try:
-                response = await llm_func(prompt)
-                entity, rel = _parse_gap_fill_response(response)
-                if entity:
-                    mutations.append({"type": "gap_fill", "entity": entity})
-                if rel:
-                    mutations.append({"type": "gap_fill", "relationship": rel})
-                messages.append(f"EVOLVE: gap-fill for '{fq[:50]}' → entity={bool(entity)}, rel={bool(rel)}")
-            except Exception:
-                pass
+    # Strategy 2: Fill knowledge gaps — only when raw chunks have evidence
+    # If a query failed on graph (0 entities) but chunks were found,
+    # the extraction missed something. Re-extract from those chunks.
+    # If chunks are also empty, just report the gap — don't hallucinate.
+    failed_entries = [
+        e for e in query_log
+        if e.get("result_quality") is not None
+        and e["result_quality"] < config.gap_quality_threshold
+    ]
+    if failed_entries and llm_func and len(mutations) < config.evolve_max_mutations:
+        for entry in failed_entries[:2]:
+            fq = entry.get("query", "")
+            chunks_found = entry.get("retrieved_chunks", [])
+            entities_found = entry.get("retrieved_entities", [])
+
+            if chunks_found and not entities_found:
+                # Chunks exist but no graph entities → extraction gap
+                # Re-extract entities/relations from the found chunks
+                chunk_texts = []
+                if hasattr(rag, "text_chunks") and hasattr(rag.text_chunks, "_data"):
+                    for cid in chunks_found[:3]:
+                        cval = rag.text_chunks._data.get(cid, {})
+                        if isinstance(cval, dict) and cval.get("content"):
+                            chunk_texts.append(cval["content"][:500])
+
+                if chunk_texts and llm_func:
+                    context = "\n---\n".join(chunk_texts)
+                    prompt = (
+                        f"The following text chunks are relevant to the query '{fq}' "
+                        f"but no entities/relationships were extracted from them.\n\n"
+                        f"Text:\n{context}\n\n"
+                        f"Extract one entity and one relationship from this text.\n"
+                        f"Format exactly:\n"
+                        f"ENTITY: name | type | description\n"
+                        f"RELATIONSHIP: src | tgt | description"
+                    )
+                    try:
+                        response = await llm_func(prompt)
+                        entity, rel = _parse_gap_fill_response(response)
+                        if entity:
+                            mutations.append({"type": "gap_fill", "entity": entity})
+                        if rel:
+                            mutations.append({"type": "gap_fill", "relationship": rel})
+                        messages.append(
+                            f"EVOLVE: gap-fill from chunks for '{fq[:40]}' "
+                            f"→ entity={bool(entity)}, rel={bool(rel)}"
+                        )
+                    except Exception:
+                        pass
+            elif not chunks_found and not entities_found:
+                # Nothing in raw or graph → genuine gap, report only
+                messages.append(
+                    f"EVOLVE: gap detected for '{fq[:40]}' — no raw data found, "
+                    f"consider adding relevant documents"
+                )
 
     # Strategy 3: Create shortcut edges for frequent multi-hop paths
     shortcuts = _find_shortcut_paths(query_log, config.shortcut_path_min_count)
