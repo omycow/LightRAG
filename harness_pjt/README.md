@@ -161,6 +161,16 @@ Wiki 계층에 해당합니다. 쿼리 로그를 분석하여 그래프에 새 �
 
 **효과**: 자주 사용되는 다중 홉 경로를 **1홉으로 단축**합니다. "LightRAG → Bun → React" 경로가 자주 쓰이면 "LightRAG → React" 직접 관계가 생겨 다음 쿼리에서 즉시 접근됩니다.
 
+### 전략의 이론적 배경
+
+세 전략 모두 Knowledge Graph Completion(KGC) 분야의 기존 연구에 기반합니다.
+
+**Co-retrieval → Link Prediction**: 엔티티 공동 출현(co-occurrence)으로 누락된 엣지를 예측하는 것은 KGC의 표준 접근법입니다. [NoGE(Node Co-occurrence based GNN)](https://arxiv.org/abs/2104.07396)는 엔티티-릴레이션 간 공동 출현 빈도를 그래프 임베딩에 통합하여 link prediction 성능을 개선합니다. 우리의 co-retrieval 전략은 이를 쿼리 로그 기반으로 단순화한 것입니다.
+
+**Gap Filling → Extraction Repair**: [Self-Improving RAG for KG Construction](https://ojs.iscram.org/index.php/Proceedings/article/view/154)은 RAG 파이프라인의 추출 누락을 피드백 루프로 보강하는 프레임워크를 제안합니다. 우리의 gap filling은 이를 "청크에 근거가 있는 경우에만 재추출"로 제한하여 hallucination을 방지합니다.
+
+**Shortcut → Transitive Closure**: 그래프에서 A→B→C 경로로부터 A→C 관계를 추론하는 것은 transitive closure 기반 KGC의 기본 원리입니다. [SMORE](https://arxiv.org/abs/2110.14890)는 대규모 KG에서 multi-hop reasoning을 통한 graph completion을, [Practical GraphRAG](https://arxiv.org/abs/2507.03226)는 그래프 순회와 벡터 검색을 RRF로 결합하는 hybrid retrieval을 제안합니다.
+
 ### EVOLVE 트리거 조건
 
 | 조건 | 설명 |
@@ -288,8 +298,16 @@ await agent.lint()
 
 ## References
 
+**Architecture**
 - [Karpathy's LLM Wiki](https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f) (2026.04)
 - [LLM Wiki v2](https://gist.github.com/rohitg00/2067ab416f7bbe447c1977edaaa681e2)
 - [LightRAG](https://arxiv.org/abs/2410.05779) (HKUDS, 2024)
 - [What LLM Wiki Is Missing](https://dev.to/penfieldlabs/what-karpathys-llm-wiki-is-missing-and-how-to-fix-it-1988)
 - [RAG vs Agent Memory vs LLM Wiki](https://dev.to/vishalmysore/rag-vs-agent-memory-vs-llm-wiki-a-practical-comparison-1oo6)
+
+**EVOLVE Strategy Foundations**
+- [NoGE: Node Co-occurrence based GNN for KG Link Prediction](https://arxiv.org/abs/2104.07396) — co-occurrence 기반 link prediction
+- [SMORE: KG Completion and Multi-hop Reasoning](https://arxiv.org/abs/2110.14890) — transitive closure 기반 multi-hop
+- [Practical GraphRAG: Hybrid Retrieval at Scale](https://arxiv.org/abs/2507.03226) — graph + vector RRF fusion
+- [Self-Improving RAG for KG Construction](https://ojs.iscram.org/index.php/Proceedings/article/view/154) — extraction gap repair
+- [Calibrated Fusion for Multi-Hop QA](https://arxiv.org/abs/2603.28886) — RRF in graph-vector retrieval
