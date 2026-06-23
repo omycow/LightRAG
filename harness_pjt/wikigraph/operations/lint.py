@@ -122,8 +122,51 @@ async def lint_node(
     if not findings:
         messages.append("LINT: no issues found")
 
+    # AUTO-FIX: Remove stale evolved edges that are never accessed
+    fixed = 0
+    if state.get("entity_metadata"):
+        try:
+            all_edges = []
+            for node_id in all_labels:
+                edges = await graph.get_node_edges(node_id)
+                if edges:
+                    all_edges.extend(edges)
+            seen_pairs = set()
+            for src, tgt in all_edges:
+                pair = tuple(sorted((src, tgt)))
+                if pair in seen_pairs:
+                    continue
+                seen_pairs.add(pair)
+                edge = await graph.get_edge(src, tgt)
+                if not edge:
+                    continue
+                source_id = edge.get("source_id", "")
+                if "wikigraph_evolve" not in source_id:
+                    continue
+                weight = float(edge.get("weight", 1.0))
+                if weight > 0.5:
+                    continue
+                meta = state.get("entity_metadata", {})
+                src_access = meta.get(src, {}).get("access_count", 0)
+                tgt_access = meta.get(tgt, {}).get("access_count", 0)
+                if src_access + tgt_access == 0:
+                    await graph.remove_edges([(src, tgt)])
+                    findings.append(LintFinding(
+                        finding_type="stale_evolved_edge",
+                        severity="info",
+                        entity_name=f"{src} → {tgt}",
+                        details="Evolved edge with low weight and zero access — removed",
+                        suggested_action="deleted",
+                        auto_fixable=True,
+                    ))
+                    fixed += 1
+            if fixed:
+                messages.append(f"LINT: auto-removed {fixed} stale evolved edge(s)")
+        except Exception as e:
+            messages.append(f"LINT: auto-fix failed: {e}")
+
     return {
         "lint_findings": [asdict(f) for f in findings],
-        "lint_fixes": 0,
+        "lint_fixes": fixed,
         "messages": messages,
     }
