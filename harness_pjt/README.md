@@ -204,21 +204,28 @@ Wiki 계층에 해당합니다. 쿼리 로그를 분석하여 그래프에 새 �
 
 **Shortcut → Transitive Closure**: 그래프에서 A→B→C 경로로부터 A→C 관계를 추론하는 것은 transitive closure 기반 KGC의 기본 원리입니다. [SMORE](https://arxiv.org/abs/2110.14890)는 대규모 KG에서 multi-hop reasoning을 통한 graph completion을, [Practical GraphRAG](https://arxiv.org/abs/2507.03226)는 그래프 순회와 벡터 검색을 RRF로 결합하는 hybrid retrieval을 제안합니다.
 
-### 엣지 가중치(weight)의 역할
+### 엣지 가중치(weight)
 
-LightRAG 그래프의 모든 릴레이션(엣지)에는 `weight` 값이 있습니다. 이 값은 **해당 관계가 얼마나 신뢰할 수 있는지**를 나타냅니다.
+LightRAG 그래프의 모든 릴레이션(엣지)에는 `weight` 값이 있습니다. 이것은 LightRAG에 **원래 존재하는 필드**로, 같은 관계가 여러 문서에서 추출되면 LightRAG가 자동으로 weight를 합산합니다 (`operate.py`의 `_merge_edges_then_upsert`). 검색 시에도 weight가 높은 관계가 우선 정렬됩니다.
 
-| 출처 | weight | 의미 |
+Evolving LightRAG는 이 기존 메커니즘을 활용하여 **원본 추출 지식과 추론 지식을 구분**합니다.
+
+| 출처 | weight | 예시 |
 |---|---|---|
-| 원본 문서에서 LLM이 추출 | **1.0** | 원본 근거가 있는 관계 |
-| 같은 관계가 여러 문서에서 재등장 | **누적 합산** (1.0 + 1.0 = 2.0) | 여러 소스가 뒷받침하는 관계 |
-| EVOLVE가 추론으로 생성 | **0.5** | 쿼리 패턴에서 추론된 관계 (원본 근거 없음) |
+| 원본 문서에서 LLM이 추출 | **1.0** | 문서 A에서 "HKUDS developed LightRAG" 추출 |
+| 같은 관계가 다른 문서에서도 추출 | **누적 합산** (2.0, 3.0...) | 문서 B에서도 같은 관계 → weight = 2.0 |
+| EVOLVE 전략 1(co-retrieval)이 생성 | **0.5** | 쿼리 패턴에서 추론 |
+| EVOLVE 전략 3(shortcut)이 생성 | **0.5** | 경로 단축으로 추론 |
 
-가중치는 두 곳에서 활용됩니다:
-1. **검색 시 순위 결정**: 가중치가 높은 관계가 검색 결과에서 우선됩니다
-2. **LINT 자동 정리**: `source_id="wikigraph_evolve"` + `weight ≤ 0.5` + 미사용 → 추론이 틀렸을 가능성이 높으므로 자동 제거 대상
+#### weight가 Evolving LightRAG에서 활용되는 3곳
 
-즉 **원본에서 추출된 관계(1.0+)는 절대 자동 삭제되지 않고**, EVOLVE가 만든 관계(0.5)만 검증 대상이 됩니다.
+**1. 검색 순위**: LightRAG가 관계를 정렬할 때 `(rank, weight)` 기준으로 내림차순 정렬합니다. weight=2.0인 원본 관계가 weight=0.5인 추론 관계보다 항상 먼저 나옵니다. 추론 관계는 원본이 부족할 때 보조적으로 검색됩니다.
+
+**2. LINT 자동 정리 기준**: LINT는 `weight ≤ 0.5`(추론) + `source_id`에 `wikigraph_evolve` 포함 + 양쪽 엔티티의 `access_count`가 0인 엣지를 자동 제거합니다. weight가 1.0 이상인 원본 관계는 자동 삭제 대상에서 제외됩니다.
+
+**3. Source Verification(전략 4) 판단**: 전략 4는 `source_id`에 `wikigraph_evolve`가 **없는** 엣지(= 원본 추출 관계)만 검사합니다. 이 관계의 source chunk가 사라졌으면 근거 상실로 제거합니다. EVOLVE 관계는 원래 source chunk이 없으므로 이 검사에서 제외됩니다.
+
+즉 weight 시스템은 **"이 관계가 얼마나 확실한가"를 숫자로 표현**하고, EVOLVE와 LINT가 이를 기준으로 추가/유지/제거를 판단합니다.
 
 ### EVOLVE 트리거 조건
 
