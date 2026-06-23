@@ -132,21 +132,30 @@ async def evolve_node(
             messages.append(f"EVOLVE: co-retrieval edge {a} → {b} (count={count})")
 
     # Strategy 2: Fill knowledge gaps — only when raw chunks have evidence
-    # If a query failed on graph (0 entities) but chunks were found,
-    # the extraction missed something. Re-extract from those chunks.
-    # If chunks are also empty, just report the gap — don't hallucinate.
-    failed_entries = [
+    # Trigger condition: chunks were retrieved but no entities (extraction gap).
+    # This is checked directly, not via quality threshold — quality 0.4
+    # (chunks-only) would miss the old threshold of 0.3.
+    # Also report queries where nothing was found at all.
+    gap_entries = [
         e for e in query_log
-        if e.get("result_quality") is not None
-        and e["result_quality"] < config.gap_quality_threshold
+        if e.get("retrieved_chunks") and not e.get("retrieved_entities")
     ]
-    if failed_entries and llm_func and len(mutations) < config.evolve_max_mutations:
-        for entry in failed_entries[:2]:
+    empty_entries = [
+        e for e in query_log
+        if not e.get("retrieved_chunks") and not e.get("retrieved_entities")
+        and e.get("result_quality") is not None and e["result_quality"] < config.gap_quality_threshold
+    ]
+    for entry in empty_entries[:2]:
+        messages.append(
+            f"EVOLVE: gap detected for '{entry.get('query', '')[:40]}' — "
+            f"no raw data found, consider adding relevant documents"
+        )
+    if gap_entries and llm_func and len(mutations) < config.evolve_max_mutations:
+        for entry in gap_entries[:2]:
             fq = entry.get("query", "")
             chunks_found = entry.get("retrieved_chunks", [])
-            entities_found = entry.get("retrieved_entities", [])
 
-            if chunks_found and not entities_found:
+            if chunks_found:
                 # Chunks exist but no graph entities → extraction gap
                 # Re-extract entities/relations from the found chunks
                 chunk_texts = []
@@ -180,12 +189,6 @@ async def evolve_node(
                         )
                     except Exception:
                         pass
-            elif not chunks_found and not entities_found:
-                # Nothing in raw or graph → genuine gap, report only
-                messages.append(
-                    f"EVOLVE: gap detected for '{fq[:40]}' — no raw data found, "
-                    f"consider adding relevant documents"
-                )
 
     # Strategy 3: Create shortcut edges for frequent multi-hop paths
     shortcuts = _find_shortcut_paths(query_log, config.shortcut_path_min_count)

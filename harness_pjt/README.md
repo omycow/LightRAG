@@ -146,9 +146,9 @@ EVALUATE 단계에서 **LLM 호출 없이** 산출하는 0.0~1.0 점수입니다
 | 청크만 있고 엔티티 없음 | **0.4** | 원본 텍스트는 있지만 추출이 누락됨 |
 | 엔티티 + 관계 + 청크 | **0.5~1.0** | 정상 (수량에 비례) |
 
-quality는 두 곳에서 사용됩니다:
+quality는 EVOLVE 트리거에 사용됩니다:
 - **EVOLVE 트리거**: quality < 0.5이면 EVOLVE 실행 (reactive)
-- **Gap Filling 대상**: quality < 0.3인 쿼리에서 청크는 있지만 엔티티가 없는 경우 재추출
+- **Gap Filling**: quality와 별개로, "청크는 검색됐지만 엔티티가 없는" 쿼리를 직접 탐지하여 재추출 (quality 임계값에 의존하지 않음)
 
 ### access_count / last_accessed (엔티티 접근 빈도) — Evolving LightRAG 추가
 
