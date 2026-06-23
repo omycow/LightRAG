@@ -404,6 +404,54 @@ await agent.lint()
 
 ---
 
+## 그래프 진화의 의미와 한계
+
+### 왜 그래프를 고쳐나가는가
+
+정적인 knowledge graph는 시간이 지날수록 현실과 괴리가 생깁니다. [On the Evolution of Knowledge Graphs (2023)](https://arxiv.org/abs/2310.04835)에 따르면, 실세계 지식은 지속적으로 변하며, 새 엔티티가 등장하고, 기존 지식이 수정되고, 관계가 추가/삭제됩니다. 정적 그래프는 이를 반영하지 못합니다.
+
+LightRAG(vanilla)의 그래프는 문서 삽입 시점에 고정됩니다. 이후 아무리 많이 쿼리해도:
+- 자주 함께 필요한 엔티티 사이에 관계가 없으면 **영원히 없습니다**
+- 추출이 누락된 엔티티는 **영원히 누락됩니다**
+- 문서가 업데이트되어도 기존 관계는 **그대로 남습니다**
+- 모순되는 description이 쌓여도 **아무도 정리하지 않습니다**
+
+Evolving LightRAG의 EVOLVE/LINT 사이클은 이 문제를 쿼리 사용 패턴과 원본 데이터 검증을 기반으로 자동 해결합니다.
+
+### 알려진 한계와 위험
+
+그래프 자동 진화에는 실질적인 위험이 있습니다. 이를 인지하고 대응 방안을 설계에 반영하였습니다.
+
+**1. 노이즈 누적 (Noise Accumulation)**
+
+EVOLVE가 추가한 관계가 반복적으로 쌓이면 그래프에 노이즈가 증가할 수 있습니다. [RAG 종합 서베이(2025)](https://arxiv.org/abs/2506.00054)에 따르면, 검색 노이즈와 중복은 출력 품질을 저하시키며, 특히 복잡한 질문에서 유용한 정보보다 더 많은 노이즈를 유입합니다.
+
+**대응**: EVOLVE가 만든 모든 관계에 `weight=0.5`, `source_id="wikigraph_evolve"`를 마킹합니다. LINT가 미사용 + 저가중치 추론 엣지를 자동 정리하여 노이즈 축적을 방지합니다. 원본 추출 관계(weight ≥ 1.0)는 삭제 대상에서 제외됩니다.
+
+**2. 수확 체감 (Diminishing Returns)**
+
+[Iterative GraphRAG 연구(2025)](https://arxiv.org/abs/2509.25530)에 따르면, 그래프 검색을 3회 이상 반복하면 추가 이득이 급감합니다. EVOLVE도 마찬가지로, 초기 몇 사이클에서 가장 큰 개선이 발생하고 이후에는 의미 없는 관계만 추가될 위험이 있습니다.
+
+**대응**: `evolve_max_mutations` (기본 10)으로 사이클당 최대 변경 수를 제한합니다. co-retrieval 임계값(기본 3회)과 shortcut 임계값(기본 3회)이 낮은 빈도의 패턴을 필터링합니다.
+
+**3. LLM 추출 정확도**
+
+LightRAG의 엔티티/관계 추출 정확도는 도메인에 따라 [60-85%](https://arxiv.org/abs/2506.00054) 수준입니다. EVOLVE의 gap filling이 재추출을 시도해도, LLM이 다시 같은 실수를 할 수 있습니다.
+
+**대응**: gap filling은 원본 청크 근거가 있는 경우에만 수행합니다. 또한 contradiction resolution(전략 5)이 충돌하는 추출 결과를 통합하여 품질을 개선합니다.
+
+**4. 평가 프레임워크 부재**
+
+[RAG 시스템의 70%](https://arxiv.org/abs/2506.00054)가 체계적 평가 프레임워크를 갖추지 않고 있으며, 품질 저하를 감지하지 못합니다. 현재 Evolving LightRAG의 quality 점수는 엔티티/관계/청크 수 기반 휴리스틱으로, 답변의 **실제 정확도**를 반영하지 않습니다.
+
+**대응**: 현재는 휴리스틱 기반이며, 향후 LLM-as-judge 또는 사용자 피드백 기반 평가로 확장이 필요합니다.
+
+**5. 최소 코퍼스 규모**
+
+[GraphRAG 분석](https://www.articsledge.com/post/graphrag-retrieval-augmented-generation)에 따르면, 그래프 기반 검색은 최소 100K 토큰(~100페이지) 이상에서 인덱싱 오버헤드 대비 효과가 있습니다. 소규모 코퍼스에서는 vanilla LightRAG나 LLM Wiki가 더 단순하고 효과적일 수 있습니다.
+
+---
+
 ## References
 
 **Architecture**
@@ -412,6 +460,11 @@ await agent.lint()
 - [LightRAG](https://arxiv.org/abs/2410.05779) (HKUDS, 2024)
 - [What LLM Wiki Is Missing](https://dev.to/penfieldlabs/what-karpathys-llm-wiki-is-missing-and-how-to-fix-it-1988)
 - [RAG vs Agent Memory vs LLM Wiki](https://dev.to/vishalmysore/rag-vs-agent-memory-vs-llm-wiki-a-practical-comparison-1oo6)
+
+**Knowledge Graph Evolution**
+- [On the Evolution of Knowledge Graphs: A Survey](https://arxiv.org/abs/2310.04835) — KG가 왜 업데이트되어야 하는가
+- [Iterative Retrieval in GraphRAG: Diminishing Returns](https://arxiv.org/abs/2509.25530) — 반복 검색의 수확 체감
+- [RAG Comprehensive Survey: Noise and Robustness](https://arxiv.org/abs/2506.00054) — 노이즈 누적 위험
 
 **EVOLVE Strategy Foundations**
 - [NoGE: Node Co-occurrence based GNN for KG Link Prediction](https://arxiv.org/abs/2104.07396) — co-occurrence 기반 link prediction
