@@ -438,15 +438,25 @@ LLM Wiki가 가진 장점 중 현재 Evolving LightRAG에 반영되지 않은 �
 | **사용자 피드백 반영** — 사람이 위키 내용을 직접 수정/승인 | 완전 자동, 사람 개입 없음 | Human-in-the-loop 승인 단계 |
 | **디렉토리 감시 자동화** — 파일 변경 시 자동 ingest | `detect_changed_files()` 함수만 있고 자동 실행 안 됨 | File watcher 기반 자동 INGEST 루프 |
 
+### 열린 질문
+
+현재 구현은 아키텍처 제안과 프로토타입 단계이며, 실제로 vanilla LightRAG나 LLM Wiki 대비 이점이 있는지는 추가 검증이 필요합니다.
+
+- **EVOLVE가 실제로 검색 품질을 개선하는가?** — 현재 구현 결과에서 그래프 엣지 수가 늘어나는 것은 확인했지만, 추가된 관계가 실제 쿼리 정확도를 올리는지는 정량적으로 비교하지 않았습니다. 같은 쿼리셋에 대해 vanilla LightRAG vs Evolving LightRAG의 검색 결과를 비교하는 평가가 필요합니다.
+- **복잡성 대비 효용이 있는가?** — LangGraph 에이전트, 쿼리 로그 관리, 5가지 EVOLVE 전략, LINT 등의 추가 복잡성이 vanilla LightRAG에 문서 몇 개 더 넣는 것보다 실질적으로 나은지 확인이 필요합니다. 단순한 시스템이 충분할 수도 있습니다.
+- **LLM Wiki가 이미 충분한 규모에서 이 시스템이 필요한가?** — LLM Wiki는 ~1000페이지 이하에서 잘 동작하며, 많은 실제 유스케이스가 이 범위에 들어갑니다. 그래프 기반 진화가 필요한 규모와 도메인이 어디인지 구체적 사례가 필요합니다.
+- **EVOLVE 전략 간 상호작용** — co-retrieval이 추가한 관계가 shortcut 탐지에 영향을 주고, 그것이 다시 co-retrieval에 영향을 주는 피드백 루프가 발생할 수 있습니다. 장기 운영 시 예측하지 못한 그래프 변형이 발생할 수 있습니다.
+
 ### TODO
 
+- [ ] vanilla LightRAG vs Evolving LightRAG 검색 품질 정량 비교
 - [ ] 엔티티별 마크다운 요약 페이지 자동 생성 (인간 가독성 확보)
 - [ ] 고품질 쿼리 답변을 그래프에 재삽입하는 경로
 - [ ] timestamp 기반 confidence decay (오래된 지식 신뢰도 감소)
 - [ ] Human-in-the-loop: EVOLVE 결과를 사용자가 승인/거부
 - [ ] File watcher 기반 디렉토리 감시 → 자동 INGEST
-- [ ] EVOLVE 전략별 효과 측정 (Before/After 검색 품질 비교)
-- [ ] 대규모 코퍼스(1000+ 문서)에서의 성능/노이즈 검증
+- [ ] 대규모 코퍼스(1000+ 문서)에서의 성능/노이즈 장기 검증
+- [ ] EVOLVE 전략 간 피드백 루프 안정성 검증
 
 ---
 
