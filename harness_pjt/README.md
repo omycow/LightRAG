@@ -161,9 +161,42 @@ Wiki 계층에 해당합니다. 쿼리 로그를 분석하여 그래프에 새 �
 
 **효과**: 자주 사용되는 다중 홉 경로를 **1홉으로 단축**합니다. "LightRAG → Bun → React" 경로가 자주 쓰이면 "LightRAG → React" 직접 관계가 생겨 다음 쿼리에서 즉시 접근됩니다.
 
+### 전략 4: Source Verification (근거 상실 관계 제거)
+
+**문제**: 문서가 업데이트되거나 삭제되면, 기존에 추출된 릴레이션의 근거(source chunk)가 사라집니다. 그래프에는 남아있지만 더 이상 원본 데이터가 뒷받침하지 않는 관계가 됩니다.
+
+**동작**:
+1. 그래프의 모든 엣지를 순회합니다
+2. 각 엣지의 `source_id`에 기록된 청크 ID가 `text_chunks`에 실제로 존재하는지 확인합니다
+3. 모든 source chunk가 사라진 엣지 → 근거 상실로 판단하여 **제거**합니다
+4. EVOLVE가 생성한 엣지(`source_id`에 `wikigraph_evolve` 포함)는 원래 원본 근거가 없으므로 이 검사에서 제외합니다
+
+**효과**: 문서가 업데이트/삭제될 때 그래프가 **자동으로 따라갑니다**. 오래된 정보가 잔류하지 않습니다.
+
+### 전략 5: Contradiction Resolution (모순 description 통합)
+
+**문제**: 같은 엔티티가 여러 문서에서 추출되면 LightRAG가 description을 `<SEP>` 구분자로 병합합니다. 시간이 지나면 서로 충돌하는 설명이 하나의 엔티티에 쌓일 수 있습니다.
+
+**동작**:
+1. `<SEP>`로 구분된 description이 2개 이상인 엔티티를 탐지합니다
+2. 모든 description을 LLM에 전달하여 **하나의 정확한 설명으로 통합**을 요청합니다
+3. 통합된 description으로 그래프 노드를 업데이트합니다
+
+**효과**: 모순되는 정보를 LLM이 판단하여 최신/정확한 내용으로 정리합니다. 예를 들어 "React v17을 사용" + "React v19를 사용"이 병합되어 있으면, LLM이 문맥에서 최신 정보를 선택하여 통합합니다.
+
+### 전략 요약
+
+| 전략 | 동작 | 그래프 변경 |
+|---|---|---|
+| 1. Co-retrieval | 공동 검색 패턴 → 새 엣지 | **추가** |
+| 2. Gap Filling | 청크 근거로 누락 재추출 | **추가** (노드+엣지) |
+| 3. Shortcut | 다중 홉 단축 | **추가** |
+| 4. Source Verification | 근거 청크 소멸 확인 | **제거** |
+| 5. Contradiction | 모순 description 통합 | **수정** |
+
 ### 전략의 이론적 배경
 
-세 전략 모두 Knowledge Graph Completion(KGC) 분야의 기존 연구에 기반합니다.
+전략 1~3은 Knowledge Graph Completion(KGC) 분야의 기존 연구에 기반합니다.
 
 **Co-retrieval → Link Prediction**: 엔티티 공동 출현(co-occurrence)으로 누락된 엣지를 예측하는 것은 KGC의 표준 접근법입니다. [NoGE(Node Co-occurrence based GNN)](https://arxiv.org/abs/2104.07396)는 엔티티-릴레이션 간 공동 출현 빈도를 그래프 임베딩에 통합하여 link prediction 성능을 개선합니다. 우리의 co-retrieval 전략은 이를 쿼리 로그 기반으로 단순화한 것입니다.
 

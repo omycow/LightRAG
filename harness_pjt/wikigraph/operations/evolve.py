@@ -215,6 +215,74 @@ async def evolve_node(
         })
         messages.append(f"EVOLVE: shortcut {a} → {c} (via {b})")
 
+    # Strategy 4: Source verification — remove relations whose source chunks no longer exist
+    removed_edges = 0
+    try:
+        all_labels = await graph.get_all_labels()
+        text_chunks_data = getattr(rag.text_chunks, "_data", {}) if hasattr(rag, "text_chunks") else {}
+        if text_chunks_data:
+            for node_id in all_labels:
+                edges = await graph.get_node_edges(node_id)
+                if not edges:
+                    continue
+                for src, tgt in edges:
+                    if src != node_id:
+                        continue
+                    edge = await graph.get_edge(src, tgt)
+                    if not edge:
+                        continue
+                    source_id = edge.get("source_id", "")
+                    if not source_id or "wikigraph_evolve" in source_id:
+                        continue
+                    chunk_ids = [s.strip() for s in source_id.split("<SEP>") if s.strip()]
+                    all_missing = all(cid not in text_chunks_data for cid in chunk_ids)
+                    if chunk_ids and all_missing:
+                        await graph.remove_edges([(src, tgt)])
+                        removed_edges += 1
+                        if removed_edges >= config.evolve_max_mutations:
+                            break
+                if removed_edges >= config.evolve_max_mutations:
+                    break
+        if removed_edges:
+            messages.append(f"EVOLVE: removed {removed_edges} edge(s) with missing source chunks")
+    except Exception as e:
+        messages.append(f"EVOLVE: source verification failed: {e}")
+
+    # Strategy 5: Contradiction resolution — merge conflicting descriptions
+    resolved = 0
+    try:
+        if llm_func:
+            FIELD_SEP = "<SEP>"
+            for node_id in (await graph.get_all_labels())[:50]:
+                node = await graph.get_node(node_id)
+                if not node:
+                    continue
+                desc = node.get("description", "")
+                if FIELD_SEP not in desc:
+                    continue
+                parts = [p.strip() for p in desc.split(FIELD_SEP) if p.strip()]
+                if len(parts) < 2:
+                    continue
+                prompt = (
+                    f"Entity: {node_id}\n"
+                    f"Multiple descriptions from different sources:\n"
+                    + "\n".join(f"- {p[:200]}" for p in parts[:5])
+                    + "\n\nWrite a single, accurate, consolidated description (1-2 sentences)."
+                )
+                try:
+                    merged = await llm_func(prompt)
+                    if merged and len(merged.strip()) > 10:
+                        node["description"] = merged.strip()
+                        await graph.upsert_node(node_id, node)
+                        resolved += 1
+                        messages.append(f"EVOLVE: merged {len(parts)} descriptions for '{node_id}'")
+                except Exception:
+                    pass
+                if resolved >= 3:
+                    break
+    except Exception as e:
+        messages.append(f"EVOLVE: contradiction resolution failed: {e}")
+
     # Apply mutations via ainsert_custom_kg
     rels_to_inject = [m["relationship"] for m in mutations if "relationship" in m]
     ents_to_inject = [m["entity"] for m in mutations if "entity" in m]
