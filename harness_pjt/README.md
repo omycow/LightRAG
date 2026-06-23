@@ -116,9 +116,65 @@ if changed:
 
 ---
 
+## 주요 지표
+
+EVOLVE와 LINT가 판단에 사용하는 핵심 지표들입니다. weight는 LightRAG에 원래 존재하고, 나머지는 Evolving LightRAG가 추가한 것입니다.
+
+### weight (엣지 가중치) — LightRAG 기본 제공
+
+그래프의 모든 릴레이션에 붙어있는 숫자로, **해당 관계의 확실한 정도**를 나타냅니다. LightRAG가 같은 관계를 여러 문서에서 추출하면 자동으로 합산합니다 (`operate.py`의 `_merge_edges_then_upsert`). 검색 시 `(rank, weight)` 기준으로 내림차순 정렬되어, weight가 높은 관계가 먼저 반환됩니다.
+
+| 출처 | weight | 예시 |
+|---|---|---|
+| 원본 문서에서 LLM 추출 | **1.0** | "HKUDS developed LightRAG" |
+| 같은 관계가 다른 문서에서도 추출 | **누적** (2.0, 3.0...) | 두 문서 모두 같은 관계 언급 |
+| EVOLVE가 추론으로 생성 | **0.5** | co-retrieval, shortcut 전략 |
+
+Evolving LightRAG는 이 기존 메커니즘을 활용합니다:
+- **검색**: 원본 관계(1.0+)가 추론 관계(0.5)보다 항상 우선
+- **LINT 정리**: `weight ≤ 0.5` + `wikigraph_evolve` + 미사용 → 자동 제거 대상
+- **Source Verification**: `wikigraph_evolve`가 **아닌** 관계만 source chunk 존재 여부 검사
+
+### quality (쿼리 품질 점수) — Evolving LightRAG 추가
+
+EVALUATE 단계에서 **LLM 호출 없이** 산출하는 0.0~1.0 점수입니다. 쿼리 결과에 포함된 엔티티/관계/청크 수로 계산합니다.
+
+| 결과 | quality | 의미 |
+|---|---|---|
+| 엔티티 0 + 청크 0 | **0.0** | 그래프에 관련 지식이 전혀 없음 |
+| 엔티티 있으나 관계 없음 | **0.3** | 노드는 있지만 연결 정보 부족 |
+| 청크만 있고 엔티티 없음 | **0.4** | 원본 텍스트는 있지만 추출이 누락됨 |
+| 엔티티 + 관계 + 청크 | **0.5~1.0** | 정상 (수량에 비례) |
+
+quality는 두 곳에서 사용됩니다:
+- **EVOLVE 트리거**: quality < 0.5이면 EVOLVE 실행 (reactive)
+- **Gap Filling 대상**: quality < 0.3인 쿼리에서 청크는 있지만 엔티티가 없는 경우 재추출
+
+### access_count / last_accessed (엔티티 접근 빈도) — Evolving LightRAG 추가
+
+쿼리할 때마다 검색된 엔티티의 `access_count`를 1 증가시키고 `last_accessed`를 갱신합니다. 쿼리 로그와 함께 JSON으로 영속화됩니다.
+
+| 활용 | 조건 |
+|---|---|
+| LINT 방치 엔티티 탐지 | `access_count < 2`이면서 일정 쿼리 수 동안 미접근 |
+| LINT 추론 엣지 자동 정리 | 양쪽 엔티티의 `access_count`가 모두 0 |
+| Co-retrieval 분석 | 어떤 엔티티가 함께 검색되는지 쿼리 로그에서 집계 |
+
+### source_id (출처 추적) — LightRAG 기본 제공
+
+모든 엔티티와 릴레이션에 **어떤 청크에서 추출되었는지** `source_id`가 기록됩니다. 여러 청크에서 추출된 경우 `<SEP>`로 구분하여 병합됩니다. EVOLVE가 생성한 관계는 `source_id="wikigraph_evolve"`로 표시됩니다.
+
+| 활용 | 조건 |
+|---|---|
+| Source Verification (전략 4) | source_id의 청크가 text_chunks에 존재하는지 확인 |
+| LINT 추론 엣지 식별 | `wikigraph_evolve` 포함 여부로 원본 vs 추론 구분 |
+| 원본 검증 | source_id → 원본 청크 텍스트 참조 가능 |
+
+---
+
 ## EVOLVE — 쿼리 패턴 기반 그래프 진화
 
-Wiki 계층에 해당합니다. 쿼리 로그를 분석하여 그래프에 새 릴레이션(또는 엔티티)을 **증분 추가**합니다. `ainsert_custom_kg()`를 통해 주입하므로 벡터 DB와 BM25 인덱스도 자동으로 갱신됩니다.
+Wiki 계층에 해당합니다. 쿼리 로그를 분석하여 그래프에 새 릴레이션(또는 엔티티)을 **증분 추가**하거나, 근거가 사라진 관계를 **제거**하거나, 모순된 description을 **수정**합니다. 추가 시 `ainsert_custom_kg()`를 통해 주입하므로 벡터 DB와 BM25 인덱스도 자동으로 갱신됩니다.
 
 ![EVOLVE Strategies](images/evolve_strategies.png)
 
@@ -203,29 +259,6 @@ Wiki 계층에 해당합니다. 쿼리 로그를 분석하여 그래프에 새 �
 **Gap Filling → Extraction Repair**: [Self-Improving RAG for KG Construction](https://ojs.iscram.org/index.php/Proceedings/article/view/154)은 RAG 파이프라인의 추출 누락을 피드백 루프로 보강하는 프레임워크를 제안합니다. 우리의 gap filling은 이를 "청크에 근거가 있는 경우에만 재추출"로 제한하여 hallucination을 방지합니다.
 
 **Shortcut → Transitive Closure**: 그래프에서 A→B→C 경로로부터 A→C 관계를 추론하는 것은 transitive closure 기반 KGC의 기본 원리입니다. [SMORE](https://arxiv.org/abs/2110.14890)는 대규모 KG에서 multi-hop reasoning을 통한 graph completion을, [Practical GraphRAG](https://arxiv.org/abs/2507.03226)는 그래프 순회와 벡터 검색을 RRF로 결합하는 hybrid retrieval을 제안합니다.
-
-### 엣지 가중치(weight)
-
-LightRAG 그래프의 모든 릴레이션(엣지)에는 `weight` 값이 있습니다. 이것은 LightRAG에 **원래 존재하는 필드**로, 같은 관계가 여러 문서에서 추출되면 LightRAG가 자동으로 weight를 합산합니다 (`operate.py`의 `_merge_edges_then_upsert`). 검색 시에도 weight가 높은 관계가 우선 정렬됩니다.
-
-Evolving LightRAG는 이 기존 메커니즘을 활용하여 **원본 추출 지식과 추론 지식을 구분**합니다.
-
-| 출처 | weight | 예시 |
-|---|---|---|
-| 원본 문서에서 LLM이 추출 | **1.0** | 문서 A에서 "HKUDS developed LightRAG" 추출 |
-| 같은 관계가 다른 문서에서도 추출 | **누적 합산** (2.0, 3.0...) | 문서 B에서도 같은 관계 → weight = 2.0 |
-| EVOLVE 전략 1(co-retrieval)이 생성 | **0.5** | 쿼리 패턴에서 추론 |
-| EVOLVE 전략 3(shortcut)이 생성 | **0.5** | 경로 단축으로 추론 |
-
-#### weight가 Evolving LightRAG에서 활용되는 3곳
-
-**1. 검색 순위**: LightRAG가 관계를 정렬할 때 `(rank, weight)` 기준으로 내림차순 정렬합니다. weight=2.0인 원본 관계가 weight=0.5인 추론 관계보다 항상 먼저 나옵니다. 추론 관계는 원본이 부족할 때 보조적으로 검색됩니다.
-
-**2. LINT 자동 정리 기준**: LINT는 `weight ≤ 0.5`(추론) + `source_id`에 `wikigraph_evolve` 포함 + 양쪽 엔티티의 `access_count`가 0인 엣지를 자동 제거합니다. weight가 1.0 이상인 원본 관계는 자동 삭제 대상에서 제외됩니다.
-
-**3. Source Verification(전략 4) 판단**: 전략 4는 `source_id`에 `wikigraph_evolve`가 **없는** 엣지(= 원본 추출 관계)만 검사합니다. 이 관계의 source chunk가 사라졌으면 근거 상실로 제거합니다. EVOLVE 관계는 원래 source chunk이 없으므로 이 검사에서 제외됩니다.
-
-즉 weight 시스템은 **"이 관계가 얼마나 확실한가"를 숫자로 표현**하고, EVOLVE와 LINT가 이를 기준으로 추가/유지/제거를 판단합니다.
 
 ### EVOLVE 트리거 조건
 
