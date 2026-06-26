@@ -1,0 +1,1090 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Technology Trends Dashboard 2026</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: #0a0e1a;
+    color: #e0e6f0;
+    min-height: 100vh;
+  }
+
+  .dashboard {
+    max-width: 1440px;
+    margin: 0 auto;
+    padding: 32px 40px;
+  }
+
+  .header {
+    text-align: center;
+    margin-bottom: 48px;
+    position: relative;
+  }
+
+  .header::after {
+    content: '';
+    position: absolute;
+    bottom: -16px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 120px;
+    height: 3px;
+    background: linear-gradient(90deg, #6366f1, #06b6d4);
+    border-radius: 2px;
+  }
+
+  .header h1 {
+    font-size: 36px;
+    font-weight: 800;
+    background: linear-gradient(135deg, #818cf8, #06b6d4, #34d399);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin-bottom: 8px;
+    letter-spacing: -0.5px;
+  }
+
+  .header .subtitle {
+    font-size: 15px;
+    color: #64748b;
+    font-weight: 400;
+  }
+
+  .kpi-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 20px;
+    margin-bottom: 36px;
+  }
+
+  .kpi-card {
+    background: linear-gradient(135deg, rgba(99,102,241,0.08), rgba(6,182,212,0.05));
+    border: 1px solid rgba(99,102,241,0.2);
+    border-radius: 16px;
+    padding: 24px;
+    text-align: center;
+    transition: transform 0.2s, border-color 0.2s;
+  }
+
+  .kpi-card:hover {
+    transform: translateY(-2px);
+    border-color: rgba(99,102,241,0.4);
+  }
+
+  .kpi-value {
+    font-size: 32px;
+    font-weight: 800;
+    background: linear-gradient(135deg, #818cf8, #06b6d4);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    line-height: 1.1;
+  }
+
+  .kpi-label {
+    font-size: 13px;
+    color: #94a3b8;
+    margin-top: 6px;
+    font-weight: 500;
+  }
+
+  .kpi-change {
+    font-size: 12px;
+    color: #34d399;
+    margin-top: 4px;
+    font-weight: 600;
+  }
+
+  .kpi-change.warn { color: #fbbf24; }
+
+  .grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    margin-bottom: 24px;
+  }
+
+  .grid-3 {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 24px;
+    margin-bottom: 24px;
+  }
+
+  .chart-card {
+    background: rgba(15, 23, 42, 0.7);
+    border: 1px solid rgba(99,102,241,0.15);
+    border-radius: 16px;
+    padding: 28px;
+    position: relative;
+    backdrop-filter: blur(10px);
+  }
+
+  .chart-card h3 {
+    font-size: 16px;
+    font-weight: 700;
+    color: #e2e8f0;
+    margin-bottom: 4px;
+  }
+
+  .chart-card .chart-desc {
+    font-size: 12px;
+    color: #64748b;
+    margin-bottom: 20px;
+  }
+
+  .chart-container {
+    position: relative;
+    width: 100%;
+  }
+
+  .chart-container.tall { height: 340px; }
+  .chart-container.medium { height: 300px; }
+  .chart-container.short { height: 260px; }
+
+  .full-width {
+    grid-column: 1 / -1;
+  }
+
+  .timeline-section {
+    margin-bottom: 36px;
+  }
+
+  .timeline-section h2 {
+    font-size: 22px;
+    font-weight: 700;
+    color: #e2e8f0;
+    margin-bottom: 24px;
+    padding-left: 16px;
+    border-left: 3px solid #6366f1;
+  }
+
+  .timeline {
+    position: relative;
+    padding: 0 20px;
+  }
+
+  .timeline::before {
+    content: '';
+    position: absolute;
+    left: 50%;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: linear-gradient(180deg, #6366f1, #06b6d4, #34d399);
+    transform: translateX(-50%);
+  }
+
+  .tl-item {
+    display: flex;
+    align-items: flex-start;
+    margin-bottom: 20px;
+    position: relative;
+  }
+
+  .tl-item:nth-child(odd) { flex-direction: row; }
+  .tl-item:nth-child(even) { flex-direction: row-reverse; }
+
+  .tl-content {
+    width: 45%;
+    background: rgba(15, 23, 42, 0.8);
+    border: 1px solid rgba(99,102,241,0.2);
+    border-radius: 12px;
+    padding: 16px 20px;
+    position: relative;
+    transition: border-color 0.2s;
+  }
+
+  .tl-content:hover {
+    border-color: rgba(99,102,241,0.5);
+  }
+
+  .tl-dot {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: #6366f1;
+    border: 3px solid #0a0e1a;
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    top: 20px;
+    z-index: 2;
+  }
+
+  .tl-date {
+    font-size: 11px;
+    font-weight: 700;
+    color: #818cf8;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 4px;
+  }
+
+  .tl-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: #e2e8f0;
+    margin-bottom: 4px;
+  }
+
+  .tl-desc {
+    font-size: 12px;
+    color: #94a3b8;
+    line-height: 1.5;
+  }
+
+  .tag {
+    display: inline-block;
+    font-size: 10px;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 4px;
+    margin-right: 4px;
+    margin-top: 6px;
+  }
+
+  .tag-model { background: rgba(99,102,241,0.2); color: #a5b4fc; }
+  .tag-infra { background: rgba(6,182,212,0.2); color: #67e8f9; }
+  .tag-agent { background: rgba(52,211,153,0.2); color: #6ee7b7; }
+  .tag-funding { background: rgba(251,191,36,0.2); color: #fcd34d; }
+  .tag-ipo { background: rgba(244,114,182,0.2); color: #f9a8d4; }
+
+  .insight-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+    margin-bottom: 36px;
+  }
+
+  .insight-card {
+    background: linear-gradient(135deg, rgba(99,102,241,0.06), rgba(6,182,212,0.04));
+    border: 1px solid rgba(99,102,241,0.15);
+    border-radius: 14px;
+    padding: 24px;
+  }
+
+  .insight-card .insight-icon {
+    font-size: 28px;
+    margin-bottom: 12px;
+  }
+
+  .insight-card h4 {
+    font-size: 15px;
+    font-weight: 700;
+    color: #e2e8f0;
+    margin-bottom: 8px;
+  }
+
+  .insight-card p {
+    font-size: 13px;
+    color: #94a3b8;
+    line-height: 1.6;
+  }
+
+  .insight-card .stat-highlight {
+    font-size: 24px;
+    font-weight: 800;
+    background: linear-gradient(135deg, #818cf8, #06b6d4);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    display: block;
+    margin-top: 8px;
+  }
+
+  .footer {
+    text-align: center;
+    padding: 32px;
+    color: #475569;
+    font-size: 12px;
+    border-top: 1px solid rgba(99,102,241,0.1);
+    margin-top: 24px;
+  }
+
+  .section-divider {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(99,102,241,0.3), transparent);
+    margin: 40px 0;
+  }
+
+  .section-title {
+    font-size: 22px;
+    font-weight: 700;
+    color: #e2e8f0;
+    margin-bottom: 24px;
+    padding-left: 16px;
+    border-left: 3px solid #06b6d4;
+  }
+
+  @media (max-width: 1024px) {
+    .kpi-row { grid-template-columns: repeat(2, 1fr); }
+    .grid-2, .grid-3 { grid-template-columns: 1fr; }
+    .insight-grid { grid-template-columns: 1fr; }
+    .timeline::before { left: 20px; }
+    .tl-item, .tl-item:nth-child(even) { flex-direction: row; }
+    .tl-content { width: 80%; margin-left: 40px; }
+    .tl-dot { left: 20px; }
+  }
+
+  @media print {
+    body { background: #fff; color: #1a1a1a; }
+    .chart-card { border-color: #ddd; background: #fff; }
+    .kpi-card { border-color: #ddd; background: #f8f8f8; }
+    .kpi-value, .header h1, .stat-highlight {
+      -webkit-text-fill-color: #4338ca;
+      background: none;
+    }
+  }
+</style>
+</head>
+<body>
+<div class="dashboard">
+
+  <!-- Header -->
+  <div class="header">
+    <h1>AI Technology Trends & Market Intelligence</h1>
+    <div class="subtitle">2026 Q2 Executive Briefing &mdash; Data compiled June 2026</div>
+  </div>
+
+  <!-- KPI Cards -->
+  <div class="kpi-row">
+    <div class="kpi-card">
+      <div class="kpi-value">$900B</div>
+      <div class="kpi-label">Global AI Market Size (2026)</div>
+      <div class="kpi-change">+37.9% YoY (from $653B)</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-value">$725B</div>
+      <div class="kpi-label">Hyperscaler AI CapEx (2026)</div>
+      <div class="kpi-change">+76.8% YoY (from $410B)</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-value">$965B</div>
+      <div class="kpi-label">Anthropic Valuation (Series H)</div>
+      <div class="kpi-change">IPO S-1 Filed June 2026</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-value">90%</div>
+      <div class="kpi-label">Developers Using AI Tools</div>
+      <div class="kpi-change">+14%p from 76% in 2024</div>
+    </div>
+  </div>
+
+  <!-- Row 1: Market Size + CapEx -->
+  <div class="grid-2">
+    <div class="chart-card">
+      <h3>Global AI Market Size Trajectory</h3>
+      <div class="chart-desc">Source: Precedence Research, Grand View Research, MarketsandMarkets (USD Billion)</div>
+      <div class="chart-container tall">
+        <canvas id="marketSizeChart"></canvas>
+      </div>
+    </div>
+    <div class="chart-card">
+      <h3>Hyperscaler AI Infrastructure CapEx</h3>
+      <div class="chart-desc">Combined: Microsoft + Google + Amazon + Meta + Oracle (USD Billion)</div>
+      <div class="chart-container tall">
+        <canvas id="capexChart"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- Row 2: Company Valuations + Agent Market -->
+  <div class="grid-2">
+    <div class="chart-card">
+      <h3>AI Frontier Company Valuations (2026)</h3>
+      <div class="chart-desc">Post-money valuation at latest funding round (USD Billion)</div>
+      <div class="chart-container tall">
+        <canvas id="valuationChart"></canvas>
+      </div>
+    </div>
+    <div class="chart-card">
+      <h3>AI Agent Market Explosion</h3>
+      <div class="chart-desc">CAGR 46.3% | From $7.8B (2025) to $52.6B (2030)</div>
+      <div class="chart-container tall">
+        <canvas id="agentMarketChart"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-divider"></div>
+
+  <!-- Row 3: Developer Tools + Model Benchmarks -->
+  <h2 class="section-title">AI Developer Ecosystem & Model Performance</h2>
+  <div class="grid-2">
+    <div class="chart-card">
+      <h3>AI Coding Tool Market Share (Jan 2026)</h3>
+      <div class="chart-desc">% of professional developers using each tool at work (JetBrains Survey)</div>
+      <div class="chart-container tall">
+        <canvas id="devToolsChart"></canvas>
+      </div>
+    </div>
+    <div class="chart-card">
+      <h3>Frontier Model Benchmark Scores (June 2026)</h3>
+      <div class="chart-desc">GPQA Diamond (Science), SWE-bench (Code), AIME 2025 (Math)</div>
+      <div class="chart-container tall">
+        <canvas id="benchmarkChart"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- Row 4: ARR Race + Enterprise AI Agent Adoption -->
+  <div class="grid-2">
+    <div class="chart-card">
+      <h3>AI Company ARR Growth Race</h3>
+      <div class="chart-desc">Annualized Revenue Run Rate (USD Billion)</div>
+      <div class="chart-container tall">
+        <canvas id="arrChart"></canvas>
+      </div>
+    </div>
+    <div class="chart-card">
+      <h3>Enterprise AI Agent Adoption by Industry</h3>
+      <div class="chart-desc">% of enterprises with at least one AI agent in production (McKinsey/S&P Global, 2026)</div>
+      <div class="chart-container tall">
+        <canvas id="industryAdoptionChart"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-divider"></div>
+
+  <!-- Key Insights -->
+  <h2 class="section-title">Key Strategic Insights</h2>
+  <div class="insight-grid">
+    <div class="insight-card">
+      <div class="insight-icon">&#9889;</div>
+      <h4>Model Scaling Paradigm Shift</h4>
+      <p>Pre-training scaling has plateaued. Innovation has shifted to post-training techniques (RLHF, DPO) and inference-time compute. DeepSeek R1 proved that smaller, efficient models can rival trillion-parameter architectures.</p>
+      <span class="stat-highlight">Efficiency > Scale</span>
+    </div>
+    <div class="insight-card">
+      <div class="insight-icon">&#129302;</div>
+      <h4>Agentic AI: The Next Platform</h4>
+      <p>40% of enterprise apps will embed AI agents by end of 2026 (Gartner). Average ROI of 171%, but only 2% deployed at scale. 40%+ of agentic projects may be cancelled by 2027.</p>
+      <span class="stat-highlight">171% ROI</span>
+    </div>
+    <div class="insight-card">
+      <div class="insight-icon">&#128187;</div>
+      <h4>AI Coding: Fastest Growth Vector</h4>
+      <p>Claude Code grew from 3% to 18% share in 9 months. Anthropic's ARR surged from $1B to $47B in 15 months, driven primarily by coding use cases. 84% of developers now use AI tools.</p>
+      <span class="stat-highlight">6x Growth in 9mo</span>
+    </div>
+  </div>
+
+  <div class="section-divider"></div>
+
+  <!-- Timeline -->
+  <div class="timeline-section">
+    <h2>Major AI Milestones: 2024 &ndash; 2026</h2>
+    <div class="timeline">
+      <div class="tl-item">
+        <div class="tl-content" style="margin-right:auto;">
+          <div class="tl-date">Feb 2024</div>
+          <div class="tl-title">OpenAI Sora / Google Gemini 1.5 Pro</div>
+          <div class="tl-desc">Text-to-video generation and 1M+ context window breakthrough</div>
+          <span class="tag tag-model">Model</span>
+        </div>
+        <div class="tl-dot"></div>
+      </div>
+      <div class="tl-item">
+        <div class="tl-content" style="margin-left:auto;">
+          <div class="tl-date">Mar 2024</div>
+          <div class="tl-title">Claude 3 Opus Launch</div>
+          <div class="tl-desc">Anthropic's first model to match GPT-4 class performance</div>
+          <span class="tag tag-model">Model</span>
+        </div>
+        <div class="tl-dot"></div>
+      </div>
+      <div class="tl-item">
+        <div class="tl-content" style="margin-right:auto;">
+          <div class="tl-date">Sep 2024</div>
+          <div class="tl-title">OpenAI o1 Reasoning Model</div>
+          <div class="tl-desc">First chain-of-thought reasoning model, setting new paradigm for "thinking" AI</div>
+          <span class="tag tag-model">Model</span>
+        </div>
+        <div class="tl-dot"></div>
+      </div>
+      <div class="tl-item">
+        <div class="tl-content" style="margin-left:auto;">
+          <div class="tl-date">Jan 2025</div>
+          <div class="tl-title">DeepSeek R1 Open-Source Shock</div>
+          <div class="tl-desc">Chinese startup releases open-source reasoning model rivaling proprietary frontier models at fraction of the cost</div>
+          <span class="tag tag-model">Model</span><span class="tag tag-funding">Market Shock</span>
+        </div>
+        <div class="tl-dot"></div>
+      </div>
+      <div class="tl-item">
+        <div class="tl-content" style="margin-right:auto;">
+          <div class="tl-date">Feb 2025</div>
+          <div class="tl-title">Microsoft Majorana 1 Quantum Chip</div>
+          <div class="tl-desc">First topological qubit chip - quantum computing enters practical era</div>
+          <span class="tag tag-infra">Infrastructure</span>
+        </div>
+        <div class="tl-dot"></div>
+      </div>
+      <div class="tl-item">
+        <div class="tl-content" style="margin-left:auto;">
+          <div class="tl-date">Q2 2025</div>
+          <div class="tl-title">Claude Code / Cursor Explosive Growth</div>
+          <div class="tl-desc">AI coding assistants reshape software development. GitHub: 43M PRs merged monthly (+23% YoY)</div>
+          <span class="tag tag-agent">Agent</span>
+        </div>
+        <div class="tl-dot"></div>
+      </div>
+      <div class="tl-item">
+        <div class="tl-content" style="margin-right:auto;">
+          <div class="tl-date">H2 2025</div>
+          <div class="tl-title">Hyperscaler CapEx Triples to $410B</div>
+          <div class="tl-desc">Combined AI infrastructure spending nearly triples from $226B in 2024</div>
+          <span class="tag tag-infra">Infrastructure</span><span class="tag tag-funding">Funding</span>
+        </div>
+        <div class="tl-dot"></div>
+      </div>
+      <div class="tl-item">
+        <div class="tl-content" style="margin-left:auto;">
+          <div class="tl-date">Q1 2026</div>
+          <div class="tl-title">GPT-5 / Claude 4 / Gemini 3 Launch</div>
+          <div class="tl-desc">Next-gen frontier models: GPT-5 perfect AIME score, Claude 4.5 77.2% SWE-bench, Gemini 3 advanced multimodal</div>
+          <span class="tag tag-model">Model</span>
+        </div>
+        <div class="tl-dot"></div>
+      </div>
+      <div class="tl-item">
+        <div class="tl-content" style="margin-right:auto;">
+          <div class="tl-date">Apr 2026</div>
+          <div class="tl-title">Anthropic Surpasses OpenAI in ARR</div>
+          <div class="tl-desc">Claude Code drives Anthropic from $1B to $30B+ ARR in 15 months, overtaking OpenAI</div>
+          <span class="tag tag-funding">Revenue</span>
+        </div>
+        <div class="tl-dot"></div>
+      </div>
+      <div class="tl-item">
+        <div class="tl-content" style="margin-left:auto;">
+          <div class="tl-date">Jun 2026</div>
+          <div class="tl-title">Anthropic & OpenAI File for IPO</div>
+          <div class="tl-desc">Anthropic: $965B valuation (Series H $65B). OpenAI: $852B valuation ($122B round). Largest AI IPOs in history.</div>
+          <span class="tag tag-ipo">IPO</span><span class="tag tag-funding">Funding</span>
+        </div>
+        <div class="tl-dot"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-divider"></div>
+
+  <!-- CapEx Breakdown -->
+  <h2 class="section-title">Hyperscaler CapEx Breakdown (2026)</h2>
+  <div class="grid-3">
+    <div class="chart-card">
+      <h3>CapEx by Company (2026 Guided)</h3>
+      <div class="chart-desc">Individual hyperscaler capital expenditure targets</div>
+      <div class="chart-container medium">
+        <canvas id="capexBreakdownChart"></canvas>
+      </div>
+    </div>
+    <div class="chart-card">
+      <h3>AI Agent Framework Popularity</h3>
+      <div class="chart-desc">GitHub Stars (thousands), as of June 2026</div>
+      <div class="chart-container medium">
+        <canvas id="frameworkChart"></canvas>
+      </div>
+    </div>
+    <div class="chart-card">
+      <h3>AI Adoption Maturity (Enterprise)</h3>
+      <div class="chart-desc">Where are enterprises on the AI agent journey?</div>
+      <div class="chart-container medium">
+        <canvas id="maturityChart"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer">
+    AI Trends Dashboard 2026 Q2 | Sources: Statista, Grand View Research, MarketsandMarkets, Gartner, McKinsey, S&P Global, JetBrains, GitHub, Value Add VC, Precedence Research, Futurum Group<br>
+    Compiled June 2026 for executive briefing purposes. Market data subject to revision.
+  </div>
+</div>
+
+<script>
+Chart.register(ChartDataLabels);
+
+const COLORS = {
+  indigo: '#818cf8',
+  cyan: '#06b6d4',
+  emerald: '#34d399',
+  amber: '#fbbf24',
+  rose: '#f472b6',
+  violet: '#a78bfa',
+  sky: '#38bdf8',
+  orange: '#fb923c',
+  lime: '#a3e635',
+  red: '#f87171',
+  teal: '#2dd4bf',
+  pink: '#ec4899'
+};
+
+const gridColor = 'rgba(148,163,184,0.08)';
+const tickColor = '#64748b';
+
+const commonOptions = {
+  responsive: true,
+  maintainAspectRatio: false,
+  plugins: {
+    legend: {
+      labels: { color: '#94a3b8', font: { size: 11, family: 'Inter' }, padding: 16, usePointStyle: true, pointStyleWidth: 8 }
+    },
+    datalabels: { display: false }
+  },
+  scales: {
+    x: { grid: { color: gridColor }, ticks: { color: tickColor, font: { size: 11, family: 'Inter' } } },
+    y: { grid: { color: gridColor }, ticks: { color: tickColor, font: { size: 11, family: 'Inter' } } }
+  }
+};
+
+// 1. AI Market Size
+new Chart(document.getElementById('marketSizeChart'), {
+  type: 'bar',
+  data: {
+    labels: ['2022', '2023', '2024', '2025', '2026', '2027F', '2028F', '2029F', '2030F'],
+    datasets: [{
+      label: 'Market Size ($B)',
+      data: [197, 310, 480, 653, 900, 1180, 1530, 2000, 2600],
+      backgroundColor: [
+        'rgba(99,102,241,0.5)', 'rgba(99,102,241,0.55)', 'rgba(99,102,241,0.6)',
+        'rgba(99,102,241,0.7)', 'rgba(6,182,212,0.8)',
+        'rgba(52,211,153,0.3)', 'rgba(52,211,153,0.3)', 'rgba(52,211,153,0.3)', 'rgba(52,211,153,0.3)'
+      ],
+      borderColor: [
+        '#6366f1','#6366f1','#6366f1','#6366f1','#06b6d4',
+        'rgba(52,211,153,0.5)','rgba(52,211,153,0.5)','rgba(52,211,153,0.5)','rgba(52,211,153,0.5)'
+      ],
+      borderWidth: 1,
+      borderRadius: 6,
+      borderDash: [0,0,0,0,0,5,5,5,5]
+    }]
+  },
+  options: {
+    ...commonOptions,
+    plugins: {
+      ...commonOptions.plugins,
+      legend: { display: false },
+      datalabels: {
+        display: true,
+        anchor: 'end',
+        align: 'top',
+        color: '#94a3b8',
+        font: { size: 11, weight: 600, family: 'Inter' },
+        formatter: v => '$' + v + 'B'
+      },
+      annotation: {}
+    },
+    scales: {
+      x: { ...commonOptions.scales.x },
+      y: {
+        ...commonOptions.scales.y,
+        beginAtZero: true,
+        ticks: { ...commonOptions.scales.y.ticks, callback: v => '$' + v + 'B' }
+      }
+    }
+  }
+});
+
+// 2. Hyperscaler CapEx
+new Chart(document.getElementById('capexChart'), {
+  type: 'line',
+  data: {
+    labels: ['2022', '2023', '2024', '2025', '2026', '2027F'],
+    datasets: [{
+      label: 'Combined CapEx ($B)',
+      data: [120, 160, 226, 410, 725, 1000],
+      borderColor: COLORS.cyan,
+      backgroundColor: 'rgba(6,182,212,0.1)',
+      fill: true,
+      tension: 0.3,
+      pointBackgroundColor: COLORS.cyan,
+      pointRadius: 5,
+      pointHoverRadius: 7,
+      borderWidth: 3
+    }]
+  },
+  options: {
+    ...commonOptions,
+    plugins: {
+      ...commonOptions.plugins,
+      datalabels: {
+        display: true,
+        anchor: 'end',
+        align: 'top',
+        offset: 6,
+        color: '#67e8f9',
+        font: { size: 11, weight: 700, family: 'Inter' },
+        formatter: v => '$' + v + 'B'
+      }
+    },
+    scales: {
+      x: { ...commonOptions.scales.x },
+      y: {
+        ...commonOptions.scales.y,
+        beginAtZero: true,
+        ticks: { ...commonOptions.scales.y.ticks, callback: v => '$' + v + 'B' }
+      }
+    }
+  }
+});
+
+// 3. Company Valuations
+new Chart(document.getElementById('valuationChart'), {
+  type: 'bar',
+  data: {
+    labels: ['Anthropic', 'OpenAI', 'SpaceX*', 'xAI', 'Databricks', 'CoreWeave'],
+    datasets: [{
+      label: 'Valuation ($B)',
+      data: [965, 852, 350, 120, 62, 35],
+      backgroundColor: [COLORS.indigo, COLORS.emerald, COLORS.amber, COLORS.rose, COLORS.sky, COLORS.orange],
+      borderRadius: 8,
+      borderWidth: 0
+    }]
+  },
+  options: {
+    ...commonOptions,
+    indexAxis: 'y',
+    plugins: {
+      ...commonOptions.plugins,
+      legend: { display: false },
+      datalabels: {
+        display: true,
+        anchor: 'end',
+        align: 'right',
+        color: '#e2e8f0',
+        font: { size: 12, weight: 700, family: 'Inter' },
+        formatter: v => '$' + v + 'B'
+      }
+    },
+    scales: {
+      x: {
+        ...commonOptions.scales.x,
+        beginAtZero: true,
+        ticks: { ...commonOptions.scales.x.ticks, callback: v => '$' + v + 'B' }
+      },
+      y: { ...commonOptions.scales.y, grid: { display: false } }
+    }
+  }
+});
+
+// 4. Agent Market
+new Chart(document.getElementById('agentMarketChart'), {
+  type: 'line',
+  data: {
+    labels: ['2024', '2025', '2026', '2027F', '2028F', '2029F', '2030F'],
+    datasets: [{
+      label: 'AI Agent Market ($B)',
+      data: [5.2, 7.8, 11.4, 16.7, 24.4, 35.7, 52.6],
+      borderColor: COLORS.emerald,
+      backgroundColor: 'rgba(52,211,153,0.1)',
+      fill: true,
+      tension: 0.35,
+      pointBackgroundColor: COLORS.emerald,
+      pointRadius: 5,
+      borderWidth: 3
+    }]
+  },
+  options: {
+    ...commonOptions,
+    plugins: {
+      ...commonOptions.plugins,
+      datalabels: {
+        display: true,
+        anchor: 'end',
+        align: 'top',
+        offset: 4,
+        color: '#6ee7b7',
+        font: { size: 11, weight: 700, family: 'Inter' },
+        formatter: v => '$' + v + 'B'
+      }
+    },
+    scales: {
+      x: { ...commonOptions.scales.x },
+      y: {
+        ...commonOptions.scales.y,
+        beginAtZero: true,
+        ticks: { ...commonOptions.scales.y.ticks, callback: v => '$' + v + 'B' }
+      }
+    }
+  }
+});
+
+// 5. Dev Tools Market Share
+new Chart(document.getElementById('devToolsChart'), {
+  type: 'doughnut',
+  data: {
+    labels: ['GitHub Copilot', 'Cursor', 'Claude Code', 'Windsurf (Codeium)', 'Others'],
+    datasets: [{
+      data: [29, 18, 18, 12, 23],
+      backgroundColor: [COLORS.emerald, COLORS.violet, COLORS.indigo, COLORS.amber, 'rgba(148,163,184,0.3)'],
+      borderColor: '#0a0e1a',
+      borderWidth: 3
+    }]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    cutout: '55%',
+    plugins: {
+      legend: {
+        position: 'right',
+        labels: { color: '#94a3b8', font: { size: 12, family: 'Inter' }, padding: 12, usePointStyle: true }
+      },
+      datalabels: {
+        display: true,
+        color: '#e2e8f0',
+        font: { size: 13, weight: 700, family: 'Inter' },
+        formatter: v => v + '%'
+      }
+    }
+  }
+});
+
+// 6. Model Benchmarks
+new Chart(document.getElementById('benchmarkChart'), {
+  type: 'bar',
+  data: {
+    labels: ['Claude Opus 4.6', 'GPT-5.2', 'Gemini 3.1 Pro', 'Grok 4', 'DeepSeek V3.2'],
+    datasets: [
+      {
+        label: 'GPQA Diamond (Science %)',
+        data: [94.6, 92.4, 88.1, 85.3, 83.7],
+        backgroundColor: COLORS.indigo,
+        borderRadius: 4
+      },
+      {
+        label: 'SWE-bench (Code %)',
+        data: [77.2, 72.8, 65.4, 63.1, 61.5],
+        backgroundColor: COLORS.cyan,
+        borderRadius: 4
+      },
+      {
+        label: 'AIME 2025 (Math %)',
+        data: [89.3, 100, 82.6, 78.4, 80.1],
+        backgroundColor: COLORS.emerald,
+        borderRadius: 4
+      }
+    ]
+  },
+  options: {
+    ...commonOptions,
+    plugins: {
+      ...commonOptions.plugins,
+      datalabels: { display: false }
+    },
+    scales: {
+      x: { ...commonOptions.scales.x },
+      y: {
+        ...commonOptions.scales.y,
+        beginAtZero: true,
+        max: 105,
+        ticks: { ...commonOptions.scales.y.ticks, callback: v => v + '%' }
+      }
+    }
+  }
+});
+
+// 7. ARR Growth
+new Chart(document.getElementById('arrChart'), {
+  type: 'line',
+  data: {
+    labels: ['Q1\'25', 'Q2\'25', 'Q3\'25', 'Q4\'25', 'Q1\'26', 'Q2\'26'],
+    datasets: [
+      {
+        label: 'Anthropic ARR ($B)',
+        data: [1.0, 3.5, 8.0, 16.0, 30.0, 47.0],
+        borderColor: COLORS.indigo,
+        backgroundColor: 'rgba(129,140,248,0.1)',
+        fill: true,
+        tension: 0.3,
+        pointRadius: 5,
+        borderWidth: 3
+      },
+      {
+        label: 'OpenAI ARR ($B)',
+        data: [5.0, 8.5, 14.0, 20.0, 26.0, 33.0],
+        borderColor: COLORS.emerald,
+        backgroundColor: 'rgba(52,211,153,0.1)',
+        fill: true,
+        tension: 0.3,
+        pointRadius: 5,
+        borderWidth: 3
+      }
+    ]
+  },
+  options: {
+    ...commonOptions,
+    plugins: {
+      ...commonOptions.plugins,
+      datalabels: {
+        display: function(ctx) {
+          return ctx.dataIndex === ctx.dataset.data.length - 1;
+        },
+        anchor: 'end',
+        align: 'top',
+        color: function(ctx) {
+          return ctx.datasetIndex === 0 ? '#a5b4fc' : '#6ee7b7';
+        },
+        font: { size: 12, weight: 700, family: 'Inter' },
+        formatter: v => '$' + v + 'B'
+      }
+    },
+    scales: {
+      x: { ...commonOptions.scales.x },
+      y: {
+        ...commonOptions.scales.y,
+        beginAtZero: true,
+        ticks: { ...commonOptions.scales.y.ticks, callback: v => '$' + v + 'B' }
+      }
+    }
+  }
+});
+
+// 8. Industry Adoption
+new Chart(document.getElementById('industryAdoptionChart'), {
+  type: 'bar',
+  data: {
+    labels: ['Banking/Insurance', 'Tech/Software', 'Retail/E-commerce', 'Manufacturing', 'Healthcare', 'Government'],
+    datasets: [{
+      label: 'Adoption Rate (%)',
+      data: [47, 42, 35, 28, 18, 14],
+      backgroundColor: [COLORS.indigo, COLORS.cyan, COLORS.emerald, COLORS.amber, COLORS.rose, COLORS.violet],
+      borderRadius: 6
+    }]
+  },
+  options: {
+    ...commonOptions,
+    indexAxis: 'y',
+    plugins: {
+      ...commonOptions.plugins,
+      legend: { display: false },
+      datalabels: {
+        display: true,
+        anchor: 'end',
+        align: 'right',
+        color: '#e2e8f0',
+        font: { size: 12, weight: 700, family: 'Inter' },
+        formatter: v => v + '%'
+      }
+    },
+    scales: {
+      x: {
+        ...commonOptions.scales.x,
+        beginAtZero: true,
+        max: 60,
+        ticks: { ...commonOptions.scales.x.ticks, callback: v => v + '%' }
+      },
+      y: { ...commonOptions.scales.y, grid: { display: false } }
+    }
+  }
+});
+
+// 9. CapEx Breakdown by Company
+new Chart(document.getElementById('capexBreakdownChart'), {
+  type: 'doughnut',
+  data: {
+    labels: ['Amazon ($200B)', 'Alphabet ($180B)', 'Meta ($125B)', 'Microsoft ($120B)', 'Oracle ($50B)'],
+    datasets: [{
+      data: [200, 180, 125, 120, 50],
+      backgroundColor: [COLORS.amber, COLORS.emerald, COLORS.sky, COLORS.indigo, COLORS.rose],
+      borderColor: '#0a0e1a',
+      borderWidth: 3
+    }]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    cutout: '50%',
+    plugins: {
+      legend: {
+        position: 'bottom',
+        labels: { color: '#94a3b8', font: { size: 10, family: 'Inter' }, padding: 8, usePointStyle: true }
+      },
+      datalabels: {
+        display: true,
+        color: '#e2e8f0',
+        font: { size: 11, weight: 700, family: 'Inter' },
+        formatter: (v, ctx) => {
+          const pct = Math.round(v / 675 * 100);
+          return pct + '%';
+        }
+      }
+    }
+  }
+});
+
+// 10. Agent Frameworks
+new Chart(document.getElementById('frameworkChart'), {
+  type: 'bar',
+  data: {
+    labels: ['CrewAI', 'LangGraph', 'AutoGen', 'Semantic Kernel', 'Haystack'],
+    datasets: [{
+      label: 'GitHub Stars (K)',
+      data: [50, 33, 38, 22, 18],
+      backgroundColor: [COLORS.emerald, COLORS.indigo, COLORS.cyan, COLORS.amber, COLORS.violet],
+      borderRadius: 6
+    }]
+  },
+  options: {
+    ...commonOptions,
+    plugins: {
+      ...commonOptions.plugins,
+      legend: { display: false },
+      datalabels: {
+        display: true,
+        anchor: 'end',
+        align: 'top',
+        color: '#94a3b8',
+        font: { size: 11, weight: 600, family: 'Inter' },
+        formatter: v => v + 'K'
+      }
+    },
+    scales: {
+      x: { ...commonOptions.scales.x },
+      y: { ...commonOptions.scales.y, beginAtZero: true }
+    }
+  }
+});
+
+// 11. Maturity
+new Chart(document.getElementById('maturityChart'), {
+  type: 'doughnut',
+  data: {
+    labels: ['Exploration (61%)', 'Pilot (26%)', 'Production (11%)', 'At Scale (2%)'],
+    datasets: [{
+      data: [61, 26, 11, 2],
+      backgroundColor: ['rgba(148,163,184,0.4)', COLORS.amber, COLORS.cyan, COLORS.emerald],
+      borderColor: '#0a0e1a',
+      borderWidth: 3
+    }]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    cutout: '50%',
+    plugins: {
+      legend: {
+        position: 'bottom',
+        labels: { color: '#94a3b8', font: { size: 10, family: 'Inter' }, padding: 8, usePointStyle: true }
+      },
+      datalabels: {
+        display: true,
+        color: '#e2e8f0',
+        font: { size: 12, weight: 700, family: 'Inter' },
+        formatter: (v) => v + '%'
+      }
+    }
+  }
+});
+</script>
+</body>
+</html>
