@@ -1,0 +1,668 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI 기술 발전 트렌드 2026 — Executive Briefing</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700;800;900&family=Inter:wght@400;500;600;700;800;900&display=swap');
+
+  * { margin:0; padding:0; box-sizing:border-box; }
+
+  @page { size: 1600px 900px landscape; margin: 0; }
+
+  body {
+    font-family: 'Noto Sans KR', 'Inter', sans-serif;
+    background: #080c18;
+    color: #e0e6f0;
+    width: 1600px;
+    height: 900px;
+    overflow: hidden;
+  }
+
+  .slide {
+    width: 1600px;
+    height: 900px;
+    padding: 30px 44px 22px;
+    display: flex;
+    flex-direction: column;
+    background:
+      radial-gradient(ellipse at 10% 30%, rgba(99,102,241,0.07) 0%, transparent 50%),
+      radial-gradient(ellipse at 90% 70%, rgba(6,182,212,0.05) 0%, transparent 50%),
+      #080c18;
+  }
+
+  /* ── HEADER ── */
+  .hdr {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    margin-bottom: 20px;
+    padding-bottom: 12px;
+    border-bottom: 2px solid rgba(99,102,241,0.2);
+  }
+  .hdr h1 {
+    font-size: 28px;
+    font-weight: 900;
+    background: linear-gradient(135deg, #a5b4fc, #06b6d4, #34d399);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  .hdr .sub {
+    font-size: 11px;
+    color: #64748b;
+    text-align: right;
+    line-height: 1.6;
+  }
+  .hdr .sub b { color: #94a3b8; }
+
+  /* ── BODY ── */
+  .body {
+    flex: 1;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: auto 1fr auto;
+    gap: 0;
+    min-height: 0;
+  }
+
+  /* ── TOP HEADLINE STRIP ── */
+  .headline {
+    grid-column: 1 / -1;
+    display: flex;
+    gap: 16px;
+    margin-bottom: 16px;
+  }
+
+  .hl-card {
+    flex: 1;
+    background: linear-gradient(135deg, rgba(99,102,241,0.07), rgba(6,182,212,0.04));
+    border: 1px solid rgba(99,102,241,0.18);
+    border-radius: 12px;
+    padding: 14px 18px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+
+  .hl-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+    flex-shrink: 0;
+  }
+
+  .hl-num {
+    font-size: 30px;
+    font-weight: 900;
+    line-height: 1;
+  }
+  .hl-num.g1 { background: linear-gradient(135deg,#a5b4fc,#818cf8); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
+  .hl-num.g2 { background: linear-gradient(135deg,#06b6d4,#67e8f9); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
+  .hl-num.g3 { background: linear-gradient(135deg,#34d399,#6ee7b7); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
+  .hl-num.g4 { background: linear-gradient(135deg,#fbbf24,#fcd34d); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
+
+  .hl-label {
+    font-size: 11px;
+    color: #94a3b8;
+    font-weight: 600;
+    margin-top: 2px;
+  }
+
+  .hl-delta {
+    font-size: 10px;
+    font-weight: 700;
+    margin-top: 1px;
+  }
+  .hl-delta.up { color: #34d399; }
+
+  /* ── CHART PANELS ── */
+  .panel {
+    background: rgba(15, 23, 42, 0.55);
+    border: 1px solid rgba(99,102,241,0.12);
+    border-radius: 12px;
+    padding: 16px 20px;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+  }
+
+  .panel + .panel { margin-left: 16px; }
+
+  .pt {
+    font-size: 12px;
+    font-weight: 700;
+    color: #818cf8;
+    letter-spacing: 0.5px;
+    margin-bottom: 2px;
+  }
+  .ps {
+    font-size: 9px;
+    color: #475569;
+    margin-bottom: 10px;
+  }
+
+  .cw { flex: 1; min-height: 0; position: relative; }
+
+  /* ── BOTTOM TIMELINE ── */
+  .btm {
+    grid-column: 1 / -1;
+    margin-top: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+
+  .tl-row {
+    display: flex;
+    position: relative;
+  }
+
+  .tl-track {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    border-radius: 2px;
+  }
+
+  .tl-track.tech { background: linear-gradient(90deg, rgba(99,102,241,0.5), rgba(6,182,212,0.5)); }
+  .tl-track.money { background: linear-gradient(90deg, rgba(52,211,153,0.5), rgba(251,191,36,0.5)); }
+
+  .tl-node {
+    flex: 1;
+    padding: 8px 6px 0;
+    text-align: center;
+    position: relative;
+  }
+
+  .tl-node::before {
+    content: '';
+    position: absolute;
+    top: -2px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    border: 2px solid #080c18;
+    z-index: 2;
+  }
+
+  .tl-row.tech-row .tl-node::before { background: #818cf8; }
+  .tl-row.money-row .tl-node::before { background: #34d399; }
+
+  .tl-date {
+    font-size: 8px;
+    font-weight: 700;
+    letter-spacing: 0.4px;
+    margin-bottom: 2px;
+  }
+
+  .tech-row .tl-date { color: #818cf8; }
+  .money-row .tl-date { color: #34d399; }
+
+  .tl-label {
+    font-size: 9px;
+    color: #cbd5e1;
+    font-weight: 600;
+    line-height: 1.35;
+  }
+
+  .tl-val {
+    font-size: 8px;
+    color: #94a3b8;
+    margin-top: 1px;
+  }
+
+  .tl-section-label {
+    writing-mode: vertical-rl;
+    text-orientation: mixed;
+    font-size: 8px;
+    font-weight: 800;
+    letter-spacing: 1px;
+    padding: 0 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    flex-shrink: 0;
+  }
+
+  .tl-divider {
+    height: 8px;
+  }
+
+  /* ── CALLOUT ── */
+  .callout {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 14px;
+    border-radius: 6px;
+    margin-top: 4px;
+  }
+
+  .callout-tech {
+    background: rgba(99,102,241,0.06);
+    border: 1px solid rgba(99,102,241,0.15);
+  }
+
+  .callout-money {
+    background: rgba(52,211,153,0.06);
+    border: 1px solid rgba(52,211,153,0.15);
+  }
+
+  .callout-label {
+    font-size: 9px;
+    font-weight: 700;
+  }
+
+  .callout-text {
+    font-size: 9px;
+    color: #94a3b8;
+  }
+
+  .callout-text b { color: #e2e8f0; }
+  .callout-text em { font-style: normal; font-weight: 700; color: #67e8f9; }
+
+  /* ── FOOTER ── */
+  .ftr {
+    margin-top: 10px;
+    padding-top: 6px;
+    border-top: 1px solid rgba(99,102,241,0.1);
+    display: flex;
+    justify-content: space-between;
+    font-size: 8px;
+    color: #3e4a5c;
+  }
+
+  @media print {
+    body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  }
+</style>
+</head>
+<body>
+<div class="slide">
+
+  <!-- HEADER -->
+  <div class="hdr">
+    <h1>AI 기술 발전 속도와 시장 폭발 — 한 눈에 보기</h1>
+    <div class="sub"><b>Executive Briefing</b> · 2026년 6월 기준</div>
+  </div>
+
+  <div class="body">
+
+    <!-- TOP HEADLINE KPIs -->
+    <div class="headline">
+      <div class="hl-card">
+        <div class="hl-icon" style="background:rgba(99,102,241,0.12);">&#129302;</div>
+        <div>
+          <div class="hl-num g1">$900B</div>
+          <div class="hl-label">글로벌 AI 시장 (2026)</div>
+          <div class="hl-delta up">2022년 $197B 대비 4.6배</div>
+        </div>
+      </div>
+      <div class="hl-card">
+        <div class="hl-icon" style="background:rgba(6,182,212,0.12);">&#9889;</div>
+        <div>
+          <div class="hl-num g2">$725B</div>
+          <div class="hl-label">빅테크 AI 인프라 CapEx (2026)</div>
+          <div class="hl-delta up">2022년 $120B 대비 6배</div>
+        </div>
+      </div>
+      <div class="hl-card">
+        <div class="hl-icon" style="background:rgba(52,211,153,0.12);">&#128200;</div>
+        <div>
+          <div class="hl-num g3">$1.8T+</div>
+          <div class="hl-label">Anthropic + OpenAI 합산 밸류에이션</div>
+          <div class="hl-delta up">두 회사 동시 IPO S-1 접수 (Jun '26)</div>
+        </div>
+      </div>
+      <div class="hl-card">
+        <div class="hl-icon" style="background:rgba(251,191,36,0.12);">&#127919;</div>
+        <div>
+          <div class="hl-num g4">46.3%</div>
+          <div class="hl-label">AI 에이전트 시장 CAGR</div>
+          <div class="hl-delta up">$7.8B(2025) → $52.6B(2030)</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- LEFT CHART: 기술 vs 비용 상관 -->
+    <div class="panel">
+      <div class="pt">기술 스택 진화 ↔ 시장·투자 규모 추이</div>
+      <div class="ps">AI 시장 규모(Bar) + Hyperscaler CapEx(Line) + 모델 벤치마크 평균(Line) | 2022–2027F</div>
+      <div class="cw">
+        <canvas id="mainChart"></canvas>
+      </div>
+    </div>
+
+    <!-- RIGHT CHART: ARR + Dev Tools -->
+    <div class="panel">
+      <div class="pt">기업 성장 속도 & 개발자 도구 보급</div>
+      <div class="ps">Anthropic vs OpenAI ARR 추이 ($B) | AI 코딩 도구 점유율 (Jan 2026, JetBrains)</div>
+      <div style="display:flex; gap:14px; flex:1; min-height:0;">
+        <div style="flex:1.2;">
+          <div class="cw">
+            <canvas id="arrChart"></canvas>
+          </div>
+        </div>
+        <div style="flex:0.8; display:flex; flex-direction:column; justify-content:center; gap:6px;">
+          <!-- Dev tool bars -->
+          <div style="font-size:9px; color:#818cf8; font-weight:700; margin-bottom:2px;">AI 코딩 도구 점유율</div>
+          <div style="display:flex; align-items:center; gap:6px; margin-bottom:3px;">
+            <div style="width:60px; font-size:9px; color:#94a3b8; font-weight:600;">Copilot</div>
+            <div style="flex:1; height:16px; background:rgba(99,102,241,0.08); border-radius:3px; overflow:hidden;">
+              <div style="width:29%; height:100%; background:#34d399; border-radius:3px; display:flex; align-items:center; justify-content:flex-end; padding-right:4px; font-size:8px; font-weight:700; color:#fff;">29%</div>
+            </div>
+          </div>
+          <div style="display:flex; align-items:center; gap:6px; margin-bottom:3px;">
+            <div style="width:60px; font-size:9px; color:#94a3b8; font-weight:600;">Cursor</div>
+            <div style="flex:1; height:16px; background:rgba(99,102,241,0.08); border-radius:3px; overflow:hidden;">
+              <div style="width:18%; height:100%; background:#a78bfa; border-radius:3px; display:flex; align-items:center; justify-content:flex-end; padding-right:4px; font-size:8px; font-weight:700; color:#fff;">18%</div>
+            </div>
+          </div>
+          <div style="display:flex; align-items:center; gap:6px; margin-bottom:3px;">
+            <div style="width:60px; font-size:9px; color:#94a3b8; font-weight:600;">Claude Code</div>
+            <div style="flex:1; height:16px; background:rgba(99,102,241,0.08); border-radius:3px; overflow:hidden;">
+              <div style="width:18%; height:100%; background:#818cf8; border-radius:3px; display:flex; align-items:center; justify-content:flex-end; padding-right:4px; font-size:8px; font-weight:700; color:#fff;">18%</div>
+            </div>
+          </div>
+          <div style="display:flex; align-items:center; gap:6px; margin-bottom:3px;">
+            <div style="width:60px; font-size:9px; color:#94a3b8; font-weight:600;">Windsurf</div>
+            <div style="flex:1; height:16px; background:rgba(99,102,241,0.08); border-radius:3px; overflow:hidden;">
+              <div style="width:12%; height:100%; background:#fbbf24; border-radius:3px; display:flex; align-items:center; justify-content:flex-end; padding-right:4px; font-size:8px; font-weight:700; color:#fff;">12%</div>
+            </div>
+          </div>
+          <div style="font-size:8px; color:#475569; margin-top:2px;">개발자 90%가 AI 도구 사용 (JetBrains '26)</div>
+          <div style="font-size:8px; color:#475569;">Claude Code: 9개월 만에 3%→18% (6배 성장)</div>
+
+          <!-- Industry adoption mini -->
+          <div style="margin-top:8px; font-size:9px; color:#06b6d4; font-weight:700;">산업별 AI 에이전트 도입</div>
+          <div style="display:flex; gap:4px; flex-wrap:wrap; margin-top:2px;">
+            <span style="font-size:8px; background:rgba(99,102,241,0.12); color:#a5b4fc; padding:2px 6px; border-radius:3px; font-weight:600;">금융 47%</span>
+            <span style="font-size:8px; background:rgba(6,182,212,0.12); color:#67e8f9; padding:2px 6px; border-radius:3px; font-weight:600;">테크 42%</span>
+            <span style="font-size:8px; background:rgba(52,211,153,0.12); color:#6ee7b7; padding:2px 6px; border-radius:3px; font-weight:600;">유통 35%</span>
+            <span style="font-size:8px; background:rgba(251,191,36,0.12); color:#fcd34d; padding:2px 6px; border-radius:3px; font-weight:600;">제조 28%</span>
+            <span style="font-size:8px; background:rgba(244,114,182,0.12); color:#f9a8d4; padding:2px 6px; border-radius:3px; font-weight:600;">의료 18%</span>
+            <span style="font-size:8px; background:rgba(167,139,250,0.12); color:#c4b5fd; padding:2px 6px; border-radius:3px; font-weight:600;">공공 14%</span>
+          </div>
+          <div style="font-size:7.5px; color:#475569; margin-top:2px;">ROI 171% 이나 대규모 배포는 2%에 불과</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- BOTTOM: Dual Timeline -->
+    <div class="btm">
+      <!-- TECH timeline -->
+      <div style="display:flex; align-items:stretch;">
+        <div class="tl-section-label" style="color:#818cf8;">기술 진화</div>
+        <div style="flex:1;">
+          <div class="tl-row tech-row" style="position:relative;">
+            <div class="tl-track tech"></div>
+            <div class="tl-node">
+              <div class="tl-date">2024.02</div>
+              <div class="tl-label">Sora · Gemini 1.5</div>
+              <div class="tl-val">1M context window</div>
+            </div>
+            <div class="tl-node">
+              <div class="tl-date">2024.09</div>
+              <div class="tl-label">OpenAI o1</div>
+              <div class="tl-val">추론(CoT) 패러다임</div>
+            </div>
+            <div class="tl-node">
+              <div class="tl-date">2025.01</div>
+              <div class="tl-label">DeepSeek R1</div>
+              <div class="tl-val">오픈소스, 비용 95%↓</div>
+            </div>
+            <div class="tl-node">
+              <div class="tl-date">2025.02</div>
+              <div class="tl-label">MS Majorana 1</div>
+              <div class="tl-val">토폴로지컬 양자칩</div>
+            </div>
+            <div class="tl-node">
+              <div class="tl-date">2025.H2</div>
+              <div class="tl-label">코딩 AI 폭발</div>
+              <div class="tl-val">PR 43M/월, +23%</div>
+            </div>
+            <div class="tl-node">
+              <div class="tl-date">2026.Q1</div>
+              <div class="tl-label">GPT-5 · Claude 4 · Gemini 3</div>
+              <div class="tl-val">SWE-bench 88.6%, AIME 100%</div>
+            </div>
+            <div class="tl-node">
+              <div class="tl-date">2026.06</div>
+              <div class="tl-label">Opus 4.8 · GPT-5.5</div>
+              <div class="tl-val">GPQA 95.5%, 벤치마크 포화</div>
+            </div>
+          </div>
+          <div class="callout callout-tech" style="margin-top:4px;">
+            <div class="callout-label" style="color:#818cf8;">SHIFT</div>
+            <div class="callout-text">사전학습 스케일링 한계 도달 → <em>후학습(RLHF/DPO)</em>과 <em>추론시 연산</em>으로 혁신 축 전환. 모델 크기 경쟁 종료, <b>효율성 경쟁</b> 시작</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="tl-divider"></div>
+
+      <!-- MONEY timeline -->
+      <div style="display:flex; align-items:stretch;">
+        <div class="tl-section-label" style="color:#34d399;">비용·시장</div>
+        <div style="flex:1;">
+          <div class="tl-row money-row" style="position:relative;">
+            <div class="tl-track money"></div>
+            <div class="tl-node">
+              <div class="tl-date">2022</div>
+              <div class="tl-label">AI 시장 $197B</div>
+              <div class="tl-val">CapEx $120B</div>
+            </div>
+            <div class="tl-node">
+              <div class="tl-date">2024</div>
+              <div class="tl-label">AI 시장 $480B</div>
+              <div class="tl-val">CapEx $256B (+63%)</div>
+            </div>
+            <div class="tl-node">
+              <div class="tl-date">2025.01</div>
+              <div class="tl-label">DeepSeek 충격</div>
+              <div class="tl-val">NVIDIA 하루 -$600B</div>
+            </div>
+            <div class="tl-node">
+              <div class="tl-date">2025</div>
+              <div class="tl-label">AI 시장 $653B</div>
+              <div class="tl-val">CapEx $410B (+73%)</div>
+            </div>
+            <div class="tl-node">
+              <div class="tl-date">2026.03</div>
+              <div class="tl-label">OpenAI $122B 조달</div>
+              <div class="tl-val">밸류 $852B</div>
+            </div>
+            <div class="tl-node">
+              <div class="tl-date">2026.05</div>
+              <div class="tl-label">Anthropic $65B 조달</div>
+              <div class="tl-val">밸류 $965B (IPO)</div>
+            </div>
+            <div class="tl-node">
+              <div class="tl-date">2026</div>
+              <div class="tl-label">AI 시장 $900B</div>
+              <div class="tl-val">CapEx $725B (+77%)</div>
+            </div>
+          </div>
+          <div class="callout callout-money" style="margin-top:4px;">
+            <div class="callout-label" style="color:#34d399;">SCALE</div>
+            <div class="callout-text">4년 만에 AI 시장 <em>4.6배</em>, 인프라 투자 <em>6배</em> 폭증. Anthropic ARR <em>$1B→$47B</em> (15개월). 2027년 CapEx <b>$1T 돌파</b> 전망 (Goldman Sachs)</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- FOOTER -->
+  <div class="ftr">
+    <div>Sources: Anthropic · OpenAI (Official), Bloomberg, CNBC, Gartner, McKinsey, Grand View Research, Precedence Research, Statista, Futurum Group, JetBrains, GitHub Octoverse, LM Council, Goldman Sachs</div>
+    <div style="font-weight:700;">CONFIDENTIAL — P.1</div>
+  </div>
+
+</div>
+
+<script>
+Chart.register(ChartDataLabels);
+
+// Main combo chart: Market + CapEx + Benchmark
+new Chart(document.getElementById('mainChart'), {
+  data: {
+    labels: ["'22", "'23", "'24", "'25", "'26", "'27F"],
+    datasets: [
+      {
+        type: 'bar',
+        label: 'AI 시장 규모 ($B)',
+        data: [197, 310, 480, 653, 900, 1180],
+        backgroundColor: ctx => ctx.dataIndex <= 4 ? 'rgba(99,102,241,0.45)' : 'rgba(99,102,241,0.18)',
+        borderColor: ctx => ctx.dataIndex <= 4 ? '#6366f1' : 'rgba(99,102,241,0.35)',
+        borderWidth: 1,
+        borderRadius: 5,
+        yAxisID: 'y',
+        order: 3
+      },
+      {
+        type: 'line',
+        label: 'CapEx ($B)',
+        data: [120, 160, 256, 410, 725, 1000],
+        borderColor: '#06b6d4',
+        backgroundColor: 'rgba(6,182,212,0.08)',
+        fill: true,
+        tension: 0.35,
+        pointBackgroundColor: '#06b6d4',
+        pointRadius: 4,
+        pointHoverRadius: 6,
+        borderWidth: 2.5,
+        yAxisID: 'y',
+        order: 1
+      },
+      {
+        type: 'line',
+        label: '모델 벤치마크 평균 (%)',
+        data: [42, 58, 72, 82, 92, 96],
+        borderColor: '#34d399',
+        backgroundColor: 'transparent',
+        borderDash: [6, 3],
+        tension: 0.3,
+        pointBackgroundColor: '#34d399',
+        pointRadius: 4,
+        pointHoverRadius: 6,
+        borderWidth: 2,
+        yAxisID: 'y2',
+        order: 2
+      }
+    ]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    interaction: { mode: 'index', intersect: false },
+    plugins: {
+      legend: {
+        position: 'bottom',
+        labels: { color: '#94a3b8', font: { size: 9, family: 'Inter' }, padding: 12, usePointStyle: true, pointStyleWidth: 6 }
+      },
+      datalabels: {
+        display: ctx => {
+          if (ctx.datasetIndex === 2) return ctx.dataIndex >= 2;
+          return [0, 4, 5].includes(ctx.dataIndex);
+        },
+        anchor: 'end',
+        align: ctx => ctx.datasetIndex === 2 ? 'top' : 'top',
+        offset: 3,
+        color: ctx => {
+          const colors = ['#a5b4fc', '#67e8f9', '#6ee7b7'];
+          return colors[ctx.datasetIndex];
+        },
+        font: { size: 9, weight: 700, family: 'Inter' },
+        formatter: (v, ctx) => {
+          if (ctx.datasetIndex === 2) return v + '%';
+          return '$' + v + 'B';
+        }
+      }
+    },
+    scales: {
+      x: {
+        grid: { display: false },
+        ticks: { color: '#64748b', font: { size: 10, family: 'Inter', weight: 600 } }
+      },
+      y: {
+        position: 'left',
+        grid: { color: 'rgba(148,163,184,0.06)' },
+        ticks: { color: '#64748b', font: { size: 8, family: 'Inter' }, callback: v => '$'+v+'B' },
+        beginAtZero: true,
+        title: { display: true, text: 'USD Billion', color: '#475569', font: { size: 8 } }
+      },
+      y2: {
+        position: 'right',
+        grid: { display: false },
+        ticks: { color: '#6ee7b7', font: { size: 8, family: 'Inter' }, callback: v => v+'%' },
+        min: 0, max: 100,
+        title: { display: true, text: '벤치마크 평균', color: '#6ee7b7', font: { size: 8 } }
+      }
+    }
+  }
+});
+
+// ARR Chart
+new Chart(document.getElementById('arrChart'), {
+  type: 'line',
+  data: {
+    labels: ["Q1'25", "Q2'25", "Q3'25", "Q4'25", "Q1'26", "Q2'26"],
+    datasets: [
+      {
+        label: 'Anthropic ARR ($B)',
+        data: [1, 3.5, 8, 16, 30, 47],
+        borderColor: '#818cf8',
+        backgroundColor: 'rgba(129,140,248,0.08)',
+        fill: true, tension: 0.3, pointRadius: 3, borderWidth: 2.5
+      },
+      {
+        label: 'OpenAI ARR ($B)',
+        data: [5, 8.5, 14, 20, 26, 33],
+        borderColor: '#34d399',
+        backgroundColor: 'rgba(52,211,153,0.06)',
+        fill: true, tension: 0.3, pointRadius: 3, borderWidth: 2.5
+      }
+    ]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        position: 'bottom',
+        labels: { color: '#94a3b8', font: { size: 8, family: 'Inter' }, padding: 8, usePointStyle: true, pointStyleWidth: 5 }
+      },
+      datalabels: {
+        display: ctx => ctx.dataIndex === 5,
+        anchor: 'end', align: 'top', offset: 3,
+        color: ctx => ctx.datasetIndex === 0 ? '#a5b4fc' : '#6ee7b7',
+        font: { size: 10, weight: 800, family: 'Inter' },
+        formatter: v => '$' + v + 'B'
+      }
+    },
+    scales: {
+      x: { grid: { display: false }, ticks: { color: '#64748b', font: { size: 8, family: 'Inter' } } },
+      y: {
+        grid: { color: 'rgba(148,163,184,0.06)' },
+        ticks: { color: '#64748b', font: { size: 8, family: 'Inter' }, callback: v => '$'+v+'B' },
+        beginAtZero: true
+      }
+    }
+  }
+});
+</script>
+</body>
+</html>
