@@ -1,0 +1,34 @@
+flowchart TD
+    U["사용자 질문"] --> A["1. ANALYZE<br/>쿼리 재작성 + 서브쿼리 분해"]
+    A --> F{"전략 선택"}
+    F -->|"응답 경로"| R["RESPOND (전경)<br/>최적화 쿼리로 즉시 검색"]
+    R --> RET["사용자에게 즉시 응답"]
+    F -->|"백그라운드 큐"| Q["EVOLVE 큐 등록"]
+
+    subgraph BG["2. 로깅 및 로그분석 (백그라운드)"]
+        direction TB
+        RETQ["RETRIEVE<br/>서브쿼리별 리트리브"] --> EV["EVALUATE<br/>quality 점수 산출 (0 LLM)"]
+        EV --> LG["쿼리 로그 축적 + 메타데이터 갱신<br/>(access_count, last_accessed)"]
+    end
+    Q --> RETQ
+
+    subgraph GI["3. 그래프 개선 (백그라운드)"]
+        direction TB
+        T1["매 쿼리마다<br/>(light)"]
+        T2["N번째 쿼리마다, 기본 50<br/>(batch)"]
+        T1 -.-> T2
+    end
+    LG --> T1
+
+    T1 --> KG[("지식 그래프<br/>다음 쿼리부터 반영")]
+    T2 --> KG
+
+    style A fill:#5B7FDB,color:#fff,stroke:#5B7FDB
+    style R fill:#3FA66B,color:#fff,stroke:#3FA66B
+    style RET fill:#2D3748,color:#fff,stroke:#2D3748
+    style RETQ fill:#2D3748,color:#fff,stroke:#2D3748
+    style EV fill:#2D3748,color:#fff,stroke:#2D3748
+    style LG fill:#5B7FDB,color:#fff,stroke:#5B7FDB
+    style T1 fill:#E08A3C,color:#fff,stroke:#E08A3C
+    style T2 fill:#E08A3C,color:#fff,stroke:#E08A3C
+    style KG fill:#2D3748,color:#fff,stroke:#2D3748

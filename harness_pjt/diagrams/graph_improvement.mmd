@@ -1,0 +1,29 @@
+flowchart LR
+    subgraph GI["3. 그래프 개선"]
+        direction TB
+        I1["co-retrieval 강화<br/>(링크 예측)"]
+        I2["gap filling<br/>(추출 누락 보강)"]
+        I3["shortcut path<br/>(다중 홉 단축)"]
+        I4["근거상실 제거 /<br/>모순 통합"]
+        I5["문서 노드 + CONTAINS"]
+        I6["문서 ↔ 문서<br/>(공유 엔티티)"]
+        I7["청크 인접 엔티티<br/>(NEAR)"]
+    end
+    KG[("지식 그래프<br/>엔티티 + 릴레이션")]
+
+    I1 --> KG
+    I2 --> KG
+    I3 --> KG
+    I4 --> KG
+    I5 --> KG
+    I6 --> KG
+    I7 --> KG
+
+    style KG fill:#2D3748,color:#fff,stroke:#2D3748
+    style I1 fill:#E08A3C,color:#fff,stroke:#E08A3C
+    style I2 fill:#E08A3C,color:#fff,stroke:#E08A3C
+    style I3 fill:#E08A3C,color:#fff,stroke:#E08A3C
+    style I4 fill:#E08A3C,color:#fff,stroke:#E08A3C
+    style I5 fill:#E08A3C,color:#fff,stroke:#E08A3C
+    style I6 fill:#E08A3C,color:#fff,stroke:#E08A3C
+    style I7 fill:#E08A3C,color:#fff,stroke:#E08A3C

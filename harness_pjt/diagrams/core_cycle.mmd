@@ -1,0 +1,18 @@
+flowchart TD
+    INGEST["문서 삽입<br/>(INGEST)"]
+    GRAPH[("지식 그래프<br/>(LightRAG)")]
+    QUERY["사용자 질문<br/>1. 쿼리분석·전략선택·응답"]
+    LOG["2. 로깅 및 로그분석<br/>(백그라운드)"]
+    IMPROVE["3. 그래프 개선<br/>(백그라운드)"]
+
+    INGEST --> GRAPH
+    GRAPH --> QUERY
+    QUERY --> LOG
+    LOG --> IMPROVE
+    IMPROVE --> GRAPH
+
+    style GRAPH fill:#2D3748,color:#fff,stroke:#2D3748
+    style QUERY fill:#3FA66B,color:#fff,stroke:#3FA66B
+    style LOG fill:#5B7FDB,color:#fff,stroke:#5B7FDB
+    style IMPROVE fill:#E08A3C,color:#fff,stroke:#E08A3C
+    style INGEST fill:#4A5568,color:#fff,stroke:#4A5568
