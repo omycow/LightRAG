@@ -26,7 +26,9 @@ LightRAG 위에 **쿼리 로그·리트리브 결과·코퍼스 메타데이터�
 - **전략 선택**: ANALYZE의 출력을 곧바로 응답에 쓸지, 백그라운드 큐로 넘겨 로깅·그래프 개선까지 이어갈지 여기서 갈립니다. 실제로는 두 경로가 동시에 진행됩니다 — 응답을 막지 않습니다.
 - **RESPOND (유저응답)**: 최적화된 쿼리로 즉시 검색해 사용자에게 답을 리턴합니다. 로깅이나 그래프 개선을 기다리지 않습니다.
 
-구현은 [`wikigraph/operations/analyze.py`](wikigraph/operations/analyze.py)(ANALYZE)와 [`wikigraph/operations/query.py`](wikigraph/operations/query.py)(RESPOND)를 참고하세요.
+**문서 스코핑**: ANALYZE는 질문이 특정 문서(들)를 명시적으로 지칭하는지도 함께 판단합니다(`mentioned_docs`). 3단계 그래프 개선(구조 마이닝)이 이미 그 문서에 대응하는 `doc::` 노드를 만들어 놨다면, RESPOND는 그 문서가 `CONTAINS`로 연결한 엔티티들로 검색 범위를 좁혀서 찾습니다 — 그래프 전체를 뒤지지 않고 지목된 문서 주변만 우선 탐색하는 것입니다. 문서 언급이 없는 평범한 질문이거나, 아직 구조 마이닝이 그 문서를 못 봤다면(배치 주기 전이라 신선도가 안 맞을 수 있음) 그냥 평소처럼 전체 그래프를 검색합니다 — fail-safe.
+
+구현은 [`wikigraph/operations/analyze.py`](wikigraph/operations/analyze.py)(ANALYZE)와 [`wikigraph/operations/query.py`](wikigraph/operations/query.py)(RESPOND, 문서 스코핑)를 참고하세요.
 
 ---
 
@@ -87,7 +89,7 @@ LightRAG 위에 **쿼리 로그·리트리브 결과·코퍼스 메타데이터�
 
 여기서 만들어진 변화는 **이번 답변이 아니라 다음 쿼리부터** 반영됩니다.
 
-구현은 [`wikigraph/operations/evolve.py`](wikigraph/operations/evolve.py)와 [`wikigraph/operations/structural.py`](wikigraph/operations/structural.py)를 참고하세요.
+지식그래프 쪽 개선과 구조 마이닝은 코드도 하나의 모듈([`wikigraph/operations/evolve.py`](wikigraph/operations/evolve.py))에 함께 있습니다 — 예전엔 `evolve.py`/`structural.py`로 나뉘어 있었지만, 이제 문서 구조와 마찬가지로 "그래프 개선" 하나의 카테고리로 합쳤습니다.
 
 전체 파이프라인은 [`wikigraph/agent.py`](wikigraph/agent.py)의 `WikiGraphAgent.query()`가 담당합니다. LangGraph `StateGraph`는 이 중 진짜로 여러 단계가 이어지는 백그라운드 파이프라인(`RETRIEVE → EVALUATE → EVOLVE(light) → EVOLVE(batch) → STRUCTURAL`)에만 쓰이고, ANALYZE와 RESPOND는 단일 호출이라 직접 함수로 호출합니다.
 
@@ -134,11 +136,10 @@ harness_pjt/
 │   ├── metadata.py            # 쿼리 로그 + 엔티티 메타데이터 영속화 (2. 로깅 및 로그분석)
 │   ├── sources.py              # 파일 수집, 변경 감지
 │   └── operations/
-│       ├── analyze.py         # 1. 쿼리 재작성 + 분해
+│       ├── analyze.py         # 1. 쿼리 재작성 + 분해 + 문서 언급 감지(mentioned_docs)
 │       ├── ingest.py          # 문서 삽입 + 검증
-│       ├── query.py           # 1. RESPOND(전경) + 2. RETRIEVE/EVALUATE(백그라운드)
-│       ├── evolve.py           # 3. 그래프 개선 — 지식그래프 쪽: tier1(매 쿼리) + tier2(배치)
-│       ├── structural.py       # 3. 그래프 개선 — 구조 관계 쪽: 문서-문서, 청크-청크
+│       ├── query.py           # 1. RESPOND(전경, 문서 스코핑) + 2. RETRIEVE/EVALUATE(백그라운드)
+│       ├── evolve.py           # 3. 그래프 개선 — 로그 기반(tier1/tier2) + 구조 마이닝, 한 모듈
 │       └── lint.py             # 린팅: 구조 점검 + 제한적 자동 정리
 ├── diagrams/
 │   └── *.mmd                  # 아래 다이어그램들의 mermaid 소스

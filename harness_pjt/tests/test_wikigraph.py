@@ -36,9 +36,10 @@ from wikigraph.operations.evolve import (
     batch_evolve_node,
     evolve_light_node,
     should_run_batch_evolve,
+    structural_evolve_node,
 )
 from wikigraph.operations.lint import lint_node
-from wikigraph.operations.structural import structural_evolve_node
+from wikigraph.operations.query import _match_document_nodes, _scoped_entities, respond_node
 
 
 async def _dummy_embed(texts):
@@ -121,10 +122,11 @@ async def _seed_chunk(rag, chunk_id: str, full_doc_id: str, order: int, file_pat
 
 
 def test_parse_analysis_single_query():
-    response = "OPTIMIZED: What is LightRAG?\nSUB1: What is LightRAG?"
-    optimized, subs = _parse_analysis(response, "lightrag??", max_subqueries=3)
+    response = "OPTIMIZED: What is LightRAG?\nSUB1: What is LightRAG?\nDOCS: NONE"
+    optimized, subs, docs = _parse_analysis(response, "lightrag??", max_subqueries=3)
     assert optimized == "What is LightRAG?"
     assert subs == ["What is LightRAG?"]
+    assert docs == []
 
 
 def test_parse_analysis_decomposition():
@@ -133,21 +135,34 @@ def test_parse_analysis_decomposition():
         "SUB1: What is the cost of LightRAG vs vanilla RAG?\n"
         "SUB2: What is the accuracy of LightRAG vs vanilla RAG?\n"
     )
-    optimized, subs = _parse_analysis(response, "fallback", max_subqueries=3)
+    optimized, subs, docs = _parse_analysis(response, "fallback", max_subqueries=3)
     assert optimized.startswith("Compare LightRAG")
     assert len(subs) == 2
+    assert docs == []
 
 
 def test_parse_analysis_malformed_falls_back_to_original_query():
-    optimized, subs = _parse_analysis("garbage response", "original question", max_subqueries=3)
+    optimized, subs, docs = _parse_analysis("garbage response", "original question", max_subqueries=3)
     assert optimized == "original question"
     assert subs == ["original question"]
+    assert docs == []
+
+
+def test_parse_analysis_extracts_mentioned_docs():
+    response = (
+        "OPTIMIZED: Compare the Q3 report and the Q4 report\n"
+        "SUB1: Compare the Q3 report and the Q4 report\n"
+        "DOCS: Q3 report, Q4 report"
+    )
+    optimized, subs, docs = _parse_analysis(response, "fallback", max_subqueries=3)
+    assert docs == ["Q3 report", "Q4 report"]
 
 
 async def test_analyze_node_without_llm_is_passthrough():
     result = await analyze_node({"current_query": "hello"}, WikiGraphConfig(), llm_func=None)
     assert result["optimized_query"] == "hello"
     assert result["sub_queries"] == ["hello"]
+    assert result["mentioned_docs"] == []
 
 
 async def test_analyze_node_respects_max_subqueries():
@@ -157,6 +172,98 @@ async def test_analyze_node_respects_max_subqueries():
     config = WikiGraphConfig(query_decompose_max_subqueries=2)
     result = await analyze_node({"current_query": "q"}, config, llm_func=llm)
     assert len(result["sub_queries"]) == 2
+
+
+async def test_analyze_node_parses_mentioned_docs():
+    async def llm(prompt):
+        return "OPTIMIZED: q\nSUB1: q\nDOCS: report.pdf"
+
+    result = await analyze_node({"current_query": "q"}, WikiGraphConfig(), llm_func=llm)
+    assert result["mentioned_docs"] == ["report.pdf"]
+
+
+# ---------------------------------------------------------------------------
+# RESPOND — query-time document scoping (uses structural-mining doc:: nodes)
+# ---------------------------------------------------------------------------
+
+
+async def test_match_document_nodes_fuzzy_matches_doc_node(rag):
+    graph = rag.chunk_entity_relation_graph
+    await graph.upsert_node("doc::doc-1", {
+        **_node("doc::doc-1"), "entity_type": "document", "description": "Source document: report.pdf",
+    })
+    matched = await _match_document_nodes(rag, ["report.pdf"])
+    assert matched == ["doc::doc-1"]
+
+
+async def test_match_document_nodes_no_match_returns_empty(rag):
+    matched = await _match_document_nodes(rag, ["nonexistent.pdf"])
+    assert matched == []
+
+
+async def test_scoped_entities_follows_contains_edges(rag):
+    graph = rag.chunk_entity_relation_graph
+    await graph.upsert_node("doc::doc-1", {**_node("doc::doc-1"), "entity_type": "document"})
+    await graph.upsert_node("Alpha", _node("Alpha"))
+    await graph.upsert_edge("doc::doc-1", "Alpha", _edge())
+
+    entities = await _scoped_entities(rag, ["doc::doc-1"], max_entities=10)
+    assert entities == ["Alpha"]
+
+
+async def test_respond_node_scopes_to_matched_document(rag, monkeypatch):
+    graph = rag.chunk_entity_relation_graph
+    await graph.upsert_node("doc::doc-1", {
+        **_node("doc::doc-1"), "entity_type": "document", "description": "Source document: report.pdf",
+    })
+    await graph.upsert_node("Alpha", _node("Alpha"))
+    await graph.upsert_edge("doc::doc-1", "Alpha", _edge())
+
+    captured = {}
+
+    async def fake_aquery(query, param=None):
+        captured["param"] = param
+        return "answer"
+
+    monkeypatch.setattr(rag, "aquery", fake_aquery)
+    result = await respond_node(
+        {"optimized_query": "what does report.pdf say", "mentioned_docs": ["report.pdf"]},
+        rag,
+        WikiGraphConfig(),
+    )
+    assert captured["param"].ll_keywords == ["Alpha"]
+    assert any("scoped" in m for m in result["messages"])
+
+
+async def test_respond_node_unscoped_without_mentioned_docs(rag, monkeypatch):
+    captured = {}
+
+    async def fake_aquery(query, param=None):
+        captured["param"] = param
+        return "answer"
+
+    monkeypatch.setattr(rag, "aquery", fake_aquery)
+    result = await respond_node({"optimized_query": "hello"}, rag, WikiGraphConfig())
+    assert captured["param"].ll_keywords == []
+    assert not any("scoped" in m for m in result["messages"])
+
+
+async def test_respond_node_falls_back_when_mentioned_doc_not_yet_mined(rag, monkeypatch):
+    """Structural mining hasn't run yet (or doesn't match) -> unscoped, no crash."""
+    captured = {}
+
+    async def fake_aquery(query, param=None):
+        captured["param"] = param
+        return "answer"
+
+    monkeypatch.setattr(rag, "aquery", fake_aquery)
+    result = await respond_node(
+        {"optimized_query": "what does report.pdf say", "mentioned_docs": ["report.pdf"]},
+        rag,
+        WikiGraphConfig(),
+    )
+    assert captured["param"].ll_keywords == []
+    assert "answer" == result["final_answer"]
 
 
 # ---------------------------------------------------------------------------

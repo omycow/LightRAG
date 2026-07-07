@@ -32,11 +32,14 @@ from lightrag import LightRAG
 from wikigraph.config import WikiGraphConfig
 from wikigraph.metadata import MetadataStore
 from wikigraph.operations.analyze import analyze_node
-from wikigraph.operations.evolve import batch_evolve_node, evolve_light_node
+from wikigraph.operations.evolve import (
+    batch_evolve_node,
+    evolve_light_node,
+    structural_evolve_node,
+)
 from wikigraph.operations.ingest import ingest_node
 from wikigraph.operations.lint import lint_node
 from wikigraph.operations.query import evaluate_node, respond_node, retrieve_node
-from wikigraph.operations.structural import structural_evolve_node
 from wikigraph.state import EntityMeta, QueryLogEntry, WikiGraphState
 
 
@@ -118,6 +121,7 @@ class WikiGraphAgent:
                     self._state["current_query"] = job["current_query"]
                     self._state["optimized_query"] = job["optimized_query"]
                     self._state["sub_queries"] = job["sub_queries"]
+                    self._state["mentioned_docs"] = job["mentioned_docs"]
                     self._state["messages"] = []
                     result = await self._evolve_graph.ainvoke(self._state)
                     self._state.update(result)
@@ -139,14 +143,20 @@ class WikiGraphAgent:
         analysis = await analyze_node({"current_query": query}, self.config, self.llm_func)
         optimized_query = analysis.get("optimized_query", query)
         sub_queries = analysis.get("sub_queries", [query])
+        mentioned_docs = analysis.get("mentioned_docs", [])
 
-        answer_result = await respond_node({"optimized_query": optimized_query}, self.rag)
+        answer_result = await respond_node(
+            {"optimized_query": optimized_query, "mentioned_docs": mentioned_docs},
+            self.rag,
+            self.config,
+        )
 
         self._ensure_worker()
         await self._evolve_queue.put({
             "current_query": query,
             "optimized_query": optimized_query,
             "sub_queries": sub_queries,
+            "mentioned_docs": mentioned_docs,
         })
 
         return {

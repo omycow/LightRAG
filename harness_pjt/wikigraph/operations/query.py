@@ -4,6 +4,21 @@ RESPOND is the user-facing path: it takes the query already optimized by
 ANALYZE and asks LightRAG for a synthesized answer. It is awaited directly
 by ``WikiGraphAgent.query()`` and returned to the caller immediately.
 
+RESPOND also does query-time document scoping: if ANALYZE flagged that the
+question names specific document(s) (``mentioned_docs``), and structural
+mining (evolve.py) has already mined a matching ``doc::`` node for at least
+one of them, RESPOND seeds ``QueryParam.ll_keywords`` with the entities that
+document CONTAINS. LightRAG skips its own keyword-extraction step whenever
+``ll_keywords``/``hl_keywords`` are pre-set (see ``operate.py``, the
+`kg_query` keyword-extraction guard), so this biases retrieval toward that
+document's entities instead of searching the whole graph. Only applied to
+RESPOND, not RETRIEVE below — RETRIEVE's job is broad discovery for EVOLVE
+(finding gaps/co-retrieval/shortcuts across the *whole* graph), and scoping
+it down would hide exactly the cross-document signal EVOLVE looks for. If
+structural mining hasn't run yet (or the mention doesn't match any document
+node), this silently falls back to an unscoped query — fail-safe, same as
+ANALYZE's no-``llm_func`` passthrough.
+
 RETRIEVE/EVALUATE are the first two steps of the background evolving path:
 each sub-query from ANALYZE is retrieved and logged individually so that
 EVOLVE can later mine patterns (co-retrieval, gaps, shortcuts) across them.
@@ -19,16 +34,68 @@ from wikigraph.config import WikiGraphConfig
 from wikigraph.state import EntityMeta, QueryLogEntry, WikiGraphState
 
 
-async def respond_node(state: WikiGraphState, rag: LightRAG) -> dict:
+async def _match_document_nodes(rag: LightRAG, mentioned_docs: list[str]) -> list[str]:
+    """Fuzzy-match ANALYZE's raw doc mentions against real ``doc::`` nodes."""
+    if not mentioned_docs:
+        return []
+    graph = rag.chunk_entity_relation_graph
+    needles = [d.strip().lower() for d in mentioned_docs if d.strip()]
+    if not needles:
+        return []
+    matched: list[str] = []
+    for name in await graph.get_all_labels():
+        if not name.startswith("doc::"):
+            continue
+        node = await graph.get_node(name)
+        haystack = f"{name} {node.get('description', '') if node else ''}".lower()
+        if any(needle in haystack for needle in needles):
+            matched.append(name)
+    return matched
+
+
+async def _scoped_entities(rag: LightRAG, doc_node_ids: list[str], max_entities: int) -> list[str]:
+    """Entities CONTAINS-linked to the matched document node(s), for ll_keywords."""
+    if not doc_node_ids:
+        return []
+    graph = rag.chunk_entity_relation_graph
+    entities: list[str] = []
+    for doc_name in doc_node_ids:
+        edges = await graph.get_node_edges(doc_name) or []
+        for src, tgt in edges:
+            other = tgt if src == doc_name else src
+            if other.startswith("doc::") or other in entities:
+                continue
+            entities.append(other)
+            if len(entities) >= max_entities:
+                return entities
+    return entities
+
+
+async def respond_node(
+    state: WikiGraphState, rag: LightRAG, config: WikiGraphConfig | None = None
+) -> dict:
     """Foreground: answer the user using the query ANALYZE already optimized."""
     query = state.get("optimized_query") or state.get("current_query", "")
     if not query:
         return {"final_answer": "", "messages": ["RESPOND: empty query"]}
 
-    answer = await rag.aquery(query, param=QueryParam(mode="mix"))
+    param = QueryParam(mode="mix")
+    messages: list[str] = []
+    mentioned_docs = state.get("mentioned_docs") or []
+    if mentioned_docs and config is not None:
+        doc_nodes = await _match_document_nodes(rag, mentioned_docs)
+        scoped_entities = await _scoped_entities(rag, doc_nodes, config.doc_scope_max_entities)
+        if scoped_entities:
+            param = QueryParam(mode="mix", ll_keywords=scoped_entities)
+            messages.append(
+                f"RESPOND: scoped to {len(doc_nodes)} document(s) "
+                f"({len(scoped_entities)} entity keyword(s)) for {mentioned_docs}"
+            )
+
+    answer = await rag.aquery(query, param=param)
     return {
         "final_answer": answer,
-        "messages": [f"RESPOND: answered '{query[:60]}'"],
+        "messages": messages + [f"RESPOND: answered '{query[:60]}'"],
     }
 
 

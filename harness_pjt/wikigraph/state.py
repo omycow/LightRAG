@@ -51,6 +51,7 @@ class WikiGraphState(TypedDict, total=False):
     current_query: Optional[str]
     optimized_query: Optional[str]
     sub_queries: list[str]
+    mentioned_docs: list[str]
 
     # Response path (foreground, returned to the caller immediately)
     final_answer: Optional[str]

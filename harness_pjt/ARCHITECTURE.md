@@ -66,20 +66,31 @@ LLM에게 한 번의 호출로 두 가지를 동시에 요청합니다:
 1. **재작성(rewrite)**: 모호함 해소, 축약어 확장, 대화체 제거 — 검색에 최적화된 단일 쿼리로 변환 (`optimized_query`)
 2. **분해(decompose)**: 질문이 여러 독립적인 정보 요구를 담고 있으면 최대 `query_decompose_max_subqueries`(기본 3)개의 서브쿼리로 분리 (`sub_queries`). 단일 요구면 재작성된 쿼리 하나만 반환합니다.
 
-파싱은 `OPTIMIZED:` / `SUB1:`, `SUB2:`, ... 형식의 정규화된 응답을 기대하며, 파싱에 실패하거나 `llm_func`가 없으면 원본 쿼리를 그대로 통과시킵니다 (fail-safe).
+3. **문서 언급 감지**: 질문이 특정 문서/파일을 제목·파일명·명확한 지칭("Q3 보고서" 같은)으로 언급하면 콤마로 나열하고, 아니면 `NONE` (`mentioned_docs`)
+
+파싱은 `OPTIMIZED:` / `SUB1:`, `SUB2:`, ... / `DOCS:` 형식의 정규화된 응답을 기대하며, 파싱에 실패하거나 `llm_func`가 없으면 원본 쿼리를 그대로 통과시키고 `mentioned_docs`는 빈 리스트로 둡니다 (fail-safe).
 
 ### 전략 선택
 
-ANALYZE의 출력은 두 곳에 동시에 쓰입니다 — 하나만 골라 실행하는 게 아니라 **양쪽 다 실행**됩니다:
+ANALYZE의 출력은 세 곳에 동시에 쓰입니다 — 하나만 골라 실행하는 게 아니라 **전부 실행**됩니다:
 
 - `optimized_query` → RESPOND로 즉시 전달
 - `sub_queries` → 백그라운드 큐에 등록되어 [2. 로깅 및 로그분석](#2-로깅-및-로그분석)의 `RETRIEVE` 단계로 전달
+- `mentioned_docs` → RESPOND의 문서 스코핑 판단 근거로 전달 (아래)
 
 이렇게 해야 co-retrieval, gap filling 같은 그래프 개선 전략이 "이 정보 요구에 대해 무엇이 검색됐는가"를 서브쿼리 단위로 정확히 볼 수 있습니다.
 
 ### RESPOND (유저응답)
 
 `optimized_query`(또는 ANALYZE 결과가 없으면 원본 쿼리)로 `rag.aquery(..., mode="mix")`를 호출해 답을 합성하고 즉시 리턴합니다. 그래프 개선이 끝나길 기다리지 않습니다 — 이번 답변에는 아직 반영되지 않은 개선이라도, 다음 쿼리부터는 반영됩니다.
+
+**문서 스코핑**: `mentioned_docs`가 있으면, `wikigraph/operations/query.py`의 `_match_document_nodes()`가 그래프에서 3단계 구조 마이닝이 이미 만들어 둔 `doc::` 노드 중 이름/description이 일치하는 걸 찾고, `_scoped_entities()`가 그 노드에 `CONTAINS`로 연결된 엔티티를 최대 `doc_scope_max_entities`(기본 30)개 모읍니다. 매칭된 엔티티가 있으면 `QueryParam(mode="mix", ll_keywords=entities)`로 검색합니다.
+
+이게 왜 되는가: LightRAG의 `kg_query`(`operate.py`)는 `hl_keywords`/`ll_keywords`가 이미 채워져 있으면 자체 LLM 키워드 추출 단계를 건너뛰고 그 값을 그대로 씁니다. `ll_keywords`는 `local`/`hybrid`/`mix` 모드에서 엔티티 벡터 검색에 쓰이므로, 매칭된 문서의 엔티티만 넘기면 검색이 그 문서 주변으로 좁혀집니다.
+
+**의도적으로 RETRIEVE에는 적용하지 않음**: 문서 스코핑은 RESPOND에만 적용되고, [2. 로깅 및 로그분석](#2-로깅-및-로그분석)의 RETRIEVE에는 적용되지 않습니다. RETRIEVE의 역할은 그래프 개선이 패턴(co-retrieval, gap, shortcut)을 찾을 수 있도록 **넓게** 탐색하는 것인데, 스코핑을 걸면 바로 그 발견 대상인 교차 문서 신호를 가려버리기 때문입니다.
+
+**fail-safe**: 문서 언급과 일치하는 `doc::` 노드가 없으면(3단계 구조 마이닝이 아직 그 문서를 못 봤거나 — 배치 주기라 신선도가 안 맞을 수 있음 — 애초에 매칭이 안 되면) 조용히 스코핑 없이 평소처럼 검색합니다.
 
 ---
 
@@ -109,7 +120,7 @@ ANALYZE의 출력은 두 곳에 동시에 쓰입니다 — 하나만 골라 실�
 
 ## 3. 그래프 개선
 
-`wikigraph/operations/evolve.py`, `wikigraph/operations/structural.py` — 2단계가 쌓은 로그·리트리브 결과와 코퍼스 메타데이터를 근거로 그래프에 실제 변경을 가하는 단계입니다. 근거가 쿼리 로그 쪽이든 코퍼스 메타데이터 쪽이든 나누지 않고 하나의 카테고리, 하나의 배치 파이프라인으로 취급합니다.
+`wikigraph/operations/evolve.py` — 2단계가 쌓은 로그·리트리브 결과와 코퍼스 메타데이터를 근거로 그래프에 실제 변경을 가하는 단계입니다. 근거가 쿼리 로그 쪽이든 코퍼스 메타데이터 쪽이든 나누지 않고 하나의 카테고리, 하나의 배치 파이프라인으로 취급합니다 — 로그 기반 뮤테이션과 구조 마이닝은 코드도 이 한 모듈에 함께 있습니다(예전엔 `structural.py`로 분리돼 있었지만, 문서 구조를 병합하면서 코드도 병합했습니다).
 
 ### Tier 1 — `evolve_light_node`, 매 쿼리마다 (백그라운드)
 
@@ -133,7 +144,7 @@ ANALYZE의 출력은 두 곳에 동시에 쓰입니다 — 하나만 골라 실�
 
 이 세 가지를 tier 2로 미룬 이유는 그래프 전체를 스캔해야 하기 때문입니다 — 매 쿼리마다 돌리면 그래프가 커질수록 백그라운드 큐가 밀립니다.
 
-### 구조 마이닝 — tier 2와 같은 주기 (`structural.py`)
+### 구조 마이닝 — tier 2와 같은 주기 (`evolve.py`의 `structural_evolve_node`)
 
 LightRAG의 엔티티/릴레이션 추출은 각 청크 안에서 LLM이 찾아낸 **의미적** 관계만 그래프에 남깁니다. 다음과 같은 **구조적** 관계는 아무것도 잡지 못합니다:
 
