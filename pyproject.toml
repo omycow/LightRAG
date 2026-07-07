@@ -51,6 +51,11 @@ pytest = [
     "ruff",
 ]
 
+# harness_pjt/wikigraph: LangGraph-based evolving-graph agent prototype
+wikigraph = [
+    "langgraph>=0.2",
+]
+
 api = [
     # Core dependencies
     "aiohttp",
