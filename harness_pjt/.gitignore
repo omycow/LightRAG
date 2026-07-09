@@ -1,0 +1,12 @@
+# RAG data stores — large binary/json corpora, never commit
+rag_data/
+rag_data_*/
+evaluation/**/rag_data/
+evaluation/s1_rag_data/
+evaluation/rag_data/
+
+# runtime state / caches
+__pycache__/
+*.log
+wikigraph_meta/
+structrag_meta/

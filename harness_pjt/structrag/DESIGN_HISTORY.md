@@ -1,0 +1,183 @@
+# StructRAG (ver5) — Design History & Ground Rules
+
+> **이 문서는 반드시 읽고 작업할 것.** 과거 실패를 반복하지 않기 위한 기록이다.
+> 모든 설계 변경·evolve 사이클 결과는 이 문서 하단 History에 append한다.
+
+## 그라운드룰 (불변)
+
+1. **정답 미참조**: evolving 시 벤치마크 정답(expected_card/expected_linked/expected_sources)을 보고 반영하는 방식 절대 금지. 어떤 데이터가 와도 제너럴하게 동작해야 함.
+2. **객관적 증거만 사용**: 쿼리 텍스트, 청크 내용, 쿼리-리트리브 매칭 결과, 룰기반 quality 점수만 학습 입력으로 사용.
+3. **돌릴수록 좋아져야 함**: 벤치마크 반복 실행 시 지표가 개선 추세여야 함 (백그라운드 evolver의 존재 이유).
+4. **모든 전략은 근거 필수**: research_notes.md에 문헌 근거 기록. 근거 없는 전략 도입 금지.
+5. **모든 변경은 히스토리 필수**: evolution_log.jsonl(기계) + 이 문서 History(사람) 양쪽에 사유·증거·변경점 기록.
+6. **골든 RAG 데이터 불변**: `harness_pjt/rag_data/`는 읽기 전용. 실험은 카피본에서만.
+
+## ver1~ver4 실패/교훈 요약
+
+| ver | 전략 | 결과 | 교훈 |
+|---|---|---|---|
+| ver1 | LangGraph evolve 5전략 (co-retrieval 강화, gap fill, shortcut, …) | ValB co@20 +1.1% | 엔티티 레벨 소규모 수선은 문서 간 co-retrieval 문제에 효과 미미 |
+| ver2 | 벤치마크 실패 문항 기반 브리지 청크 주입 | co@20 +43.3% | **그라운드룰 1 위반(정답 참조) → 폐기.** 수치가 좋아도 무효 |
+| ver3 | 엔티티 간 크로스 문서 엣지 주입 | +0.0% | 엔티티 엣지로는 문서 레벨 구조가 검색 랭킹에 도달하지 못함 |
+| ver4 | DA(문서앵커) + DCSG + CDRB를 **원본 KG/relation VDB에 직접 주입** | co@20 +2.3%, **All@20 99.1→98.1 하락** | 구조 통계를 KG에 녹이면 relation VDB가 오염되어 base 검색에 노이즈. 구조와 의미는 저장소를 분리해야 함 |
+
+## ver5 핵심 결정과 근거
+
+### D1. 투트랙 진화 (SG / KG 분리)
+- **경계 규칙**: 문서 레벨 구조관계·공동검색 통계 → SG(별도 저장소)로만. 청크 증거가 있는 의미적 엔티티/릴레이션 지식 → KG로.
+- 근거: ver4에서 구조 엣지의 KG 주입이 All@20을 하락시킴 (관측 사실). ver4의 실패는 "KG 진화" 자체가 아니라 경계 위반.
+
+### D2. 구조그래프(SG) 3층 증거 모델
+- L1 `explicit_ref`: 청크 텍스트 내 파일명/ID 언급 정규식 스캔 (결정적, LLM 없음).
+  검증(2026-07-09): 골든 청크 912개 스캔 → doc→doc 엣지 1,699개, Val-B 90쌍 중 89쌍 커버.
+  이는 벤치마크 정답이 아니라 문서 원본 콘텐츠에서 나온 것 — 그라운드룰 1 충족.
+- L2 `co_retrieval`: quality ≥ τ인 쿼리의 공동검색 통계로 강화/감쇠. 크로스레퍼런스가 없는 코퍼스에서도 작동하는 일반 경로.
+- L3 `llm_curated`: 백그라운드 LLM이 증거번들(쿼리+청크)을 보고 타입드 관계 제안. 증거 인용 필수.
+- **저품질 쿼리 결과로는 학습하지 않는다** (L2 quality gate) — 나쁜 검색이 구조를 오염시키는 것 방지.
+
+### D3. Analyzer는 LLM 기반, 단 티어드
+- Tier 0: PlanCache 히트 시 LLM 0회 (고속). Tier 1: LLM 1콜(rewrite+분해+전략+스코프 힌트 단일 JSON). Tier 2: 만성 저품질만 백그라운드 심층 분석.
+- 속도 요구(1순위)와 agentic 요구를 티어링으로 양립.
+
+### D4. 룰기반 퀄리티 점수 (LLM 없음)
+- QPP post-retrieval 예측자(NQC/WIG 계열) + 융합 합의도 + 텀 커버리지 조합. research_notes.md §3.
+
+### D5. 스코프는 soft-boost, 하드필터 금지
+- 구조그래프 힌트가 틀렸을 때 리콜이 죽는 것을 방지. 스코프 확신이 높을 때만 boost 강화.
+
+### D6. LLMwiki baked-in
+- LLM 큐레이션 산출물은 그래프에 저장: KG 노드 설명 위키화(임베딩 품질↑), 엔티티 병합, SG 타입드 엣지·문서 프로필.
+- 쿼리 시점에는 위키 탐색 없이 이미 반영된 그래프에서 디터미니스틱하게 결과가 나옴.
+
+### D7. 회귀 가드
+- KG 변경은 사이클 단위 체크포인트. All@20/ValA@20 하락 시 해당 배치 롤백 + 사유 기록.
+
+---
+
+## History
+
+### 2026-07-09 — ver5 설계 확정
+- ver1~4 결과 분석 후 전면 재설계. 위 D1~D7 결정.
+- 검증 스파이크: 골든 청크 스캔으로 L1 커버리지 확인 (1,699 엣지, Val-B 89/90).
+- 다음: structure_graph.py 구현 → quality.py → analyzer.py → retriever.py → evolver.py → ver5 eval.
+
+### 2026-07-09 09:18:31 — ver5 iteration 1 (rules only)
+- All@20 99.0% · ValA@20 86.1% · ValB co@20/10/5 77.8/52.2/26.7%
+- latency p50/p95: all=167.3/189.1ms · tiers(valB)={'cache': 0, 'llm': 0, 'rules': 90}
+- SG: {'docs': 572, 'edges': 2426, 'l1_explicit': 1673, 'l2_co_retrieval': 1369, 'l3_llm_curated': 0, 'profiles': 0} · plan_cache: {'entries': 80, 'hits': 2, 'hit_rate': 0.005}
+- evolve: {'records': 376, 's_rules': {'decayed_layers': 2282}, 's_llm': {}, 'k_rules': {'stale_edges_removed': 0}, 'k_llm': {}, 'llm_calls': 0, 'good': 179, 'attention': 103, 'elapsed_s': 0.0}
+
+### 2026-07-09 — iteration 1 진단 및 파이프라인 수정 (fresh 재시작)
+- 관측: ValB co@20 54.4→77.8 (+23.4pt, SG 확장 효과 확인) / All@20 99.0 유지 / **ValA@20 86.1 (기준선 99.4 대비 회귀)**
+- 원인 3건 (query_log 실패 25건 분석):
+  1. 융합 top-20 청크가 소수 문서에 집중 → 문서 레벨 리콜 손실 (ver4는 파일 단위 union이었음)
+  2. 키워드-헤비 한국어 쿼리(SECDED, RD_MAC 등 희귀 토큰)가 mix 단독 라우팅되고 BM25 투표가 top-10로 제한되어 희석
+  3. 파일명 토큰 2개 겹침만으로 스코프 시드 인정 → 무관 문서 soft-boost
+- 수정 (일반 원리 기반, 정답 미참조):
+  1. 최종 선택에 문서당 청크 상한 2 (IR 표준 diversification) + backfill
+  2. bm25/vector 독립 랭킹을 top_k 전폭으로 융합 (RRF 동등 투표)
+  3. match_docs_by_tokens min_overlap 2→3 (시드 정밀도)
+- 조치: 상태 초기화 후 --fresh 재실행 (iteration 비교가능성 유지)
+
+### 2026-07-09 09:21:54 — ver5 iteration 1 (rules only)
+- All@20 98.1% · ValA@20 86.1% · ValB co@20/10/5 78.9/47.8/26.7%
+- latency p50/p95: all=165.2/204.3ms · tiers(valB)={'cache': 0, 'llm': 0, 'rules': 90}
+- SG: {'docs': 572, 'edges': 2417, 'l1_explicit': 1673, 'l2_co_retrieval': 1311, 'l3_llm_curated': 0, 'profiles': 0} · plan_cache: {'entries': 82, 'hits': 2, 'hit_rate': 0.005}
+- evolve: {'records': 376, 's_rules': {'decayed_layers': 2220}, 's_llm': {}, 'k_rules': {'stale_edges_removed': 0}, 'k_llm': {}, 'llm_calls': 0, 'good': 179, 'attention': 104, 'elapsed_s': 0.0}
+
+### 2026-07-09 — 2차 진단: RRF 딜루션 → 채널 대표성 보장
+- 관측: 1차 수정 후에도 ValA 86.1 동일. 실패 15건 모드 분해 결과 **bm25 단독 14/15 히트, vector/mix 0/15**.
+- 원인: 다중 리스트 RRF에서 한 채널만 찾은 정답 문서가 약한 랭커 2개가 합의한 오답에 투표로 밀림 (RRF 딜루션).
+- 수정: 각 랭킹 채널의 top-3 문서는 최종 top_k 윈도우에 반드시 포함 (fused tail 교체, floor top_k/2).
+  근거: 상보적 랭커 융합에서 정밀 채널 보호 — hybrid(2-list)는 14/15를 살렸다는 관측이 직접 증거.
+
+### 2026-07-09 09:25:06 — ver5 iteration 1 (rules only)
+- All@20 98.1% · ValA@20 85.6% · ValB co@20/10/5 82.2/50.0/26.7%
+- latency p50/p95: all=163.3/183.6ms · tiers(valB)={'cache': 0, 'llm': 0, 'rules': 90}
+- SG: {'docs': 572, 'edges': 2417, 'l1_explicit': 1673, 'l2_co_retrieval': 1305, 'l3_llm_curated': 0, 'profiles': 0} · plan_cache: {'entries': 83, 'hits': 2, 'hit_rate': 0.005}
+- evolve: {'records': 376, 's_rules': {'decayed_layers': 2191}, 's_llm': {}, 'k_rules': {'stale_edges_removed': 0}, 'k_llm': {}, 'llm_calls': 0, 'good': 181, 'attention': 102, 'elapsed_s': 0.0}
+
+### 2026-07-09 — 3차 진단: concept 기본 모드 mix→hybrid
+- 관측: 채널 top-3 보장 후에도 ValA 85.6 (카드가 bm25 랭크 3 밖). co@20은 82.2로 상승 — co-retrieval 개선은 mix가 아니라 SG EXPAND가 견인함을 확인.
+- 원인: mix 랭킹을 융합에 포함하는 것 자체가 키워드 리콜형 쿼리에서 딜루션 유발 (실패 분해: hybrid 14/15 vs mix 0/15).
+- 수정: INTENT_MODES concept 기본을 hybrid로. mix는 cross_doc 인텐트와 밴딧 탐험으로만 진입. mix의 문서횡단 가치는 SG EXPAND가 대체.
+
+### 2026-07-09 09:27:24 — ver5 iteration 1 (rules only)
+- All@20 100.0% · ValA@20 98.9% · ValB co@20/10/5 83.3/50.0/30.0%
+- latency p50/p95: all=38.4/44.6ms · tiers(valB)={'cache': 0, 'llm': 0, 'rules': 90}
+- SG: {'docs': 572, 'edges': 2468, 'l1_explicit': 1672, 'l2_co_retrieval': 1380, 'l3_llm_curated': 0, 'profiles': 0} · plan_cache: {'entries': 78, 'hits': 1, 'hit_rate': 0.003}
+- evolve: {'records': 376, 's_rules': {'decayed_layers': 2053}, 's_llm': {}, 'k_rules': {'stale_edges_removed': 0}, 'k_llm': {}, 'llm_calls': 0, 'good': 180, 'attention': 102, 'elapsed_s': 0.0}
+
+### 2026-07-09 09:45:14 — ver5 iteration 2 (LLM on)
+- All@20 100.0% · ValA@20 99.4% · ValB co@20/10/5 90.0/50.0/38.9%
+- latency p50/p95: all=40.8/49.6ms · tiers(valB)={'cache': 7, 'llm': 76, 'rules': 7}
+- SG: {'docs': 572, 'edges': 2921, 'l1_explicit': 1672, 'l2_co_retrieval': 1962, 'l3_llm_curated': 5, 'profiles': 3} · plan_cache: {'entries': 133, 'hits': 79, 'hit_rate': 0.21}
+- evolve: {'records': 376, 's_rules': {'decayed_layers': 2732}, 's_llm': {'typed_edges': 5, 'profiles': 3}, 'k_rules': {'stale_edges_removed': 0}, 'k_llm': {'wikified': 2}, 'llm_calls': 10, 'good': 168, 'attention': 110, 'elapsed_s': 140.4}
+
+### 2026-07-09 — 4차 진단: ValB 잔여 미스 9건 (iter2 시점) 분석
+- 패턴: 9건 중 8건이 "카드 히트, linked(jira) 미스".
+- 원인 1: L1 빌더의 ID→소유파일 매핑이 단일 (FA-2245가 FA-2245.html과 FA-2245 리포트 docx 양쪽 파일명에 있으면 한쪽만 엣지). → 오너 최대 3개 전부에 엣지.
+- 원인 2: 카드의 참조가 4~6개일 때 EXPAND 이웃 top-3에 linked가 밀림. → EXPAND_NEIGHBORS 3→4.
+- 적용 시점: iteration 5부터 (L1 rebuild 필요 — eval_v5에 rebuild 스텝 추가).
+
+### 2026-07-09 14:19:02 — ver5 iteration 3 (LLM on)
+- All@20 100.0% · ValA@20 98.9% · ValB co@20/10/5 92.2/46.7/33.3%
+- latency p50/p95: all=40.5/11518.4ms · tiers(valB)={'cache': 23, 'llm': 66, 'rules': 1}
+- SG: {'docs': 572, 'edges': 3134, 'l1_explicit': 1672, 'l2_co_retrieval': 2238, 'l3_llm_curated': 9, 'profiles': 6} · plan_cache: {'entries': 155, 'hits': 133, 'hit_rate': 0.354}
+- evolve: {'records': 376, 's_rules': {'decayed_layers': 2550}, 's_llm': {'typed_edges': 4, 'profiles': 3}, 'k_rules': {'stale_edges_removed': 0}, 'k_llm': {'wikified': 2}, 'llm_calls': 10, 'good': 169, 'attention': 67, 'elapsed_s': 112.2}
+
+### 2026-07-09 14:43:32 — ver5 iteration 4 (LLM on)
+- All@20 100.0% · ValA@20 98.9% · ValB co@20/10/5 93.3/45.6/32.2%
+- latency p50/p95: all=41.0/11235.3ms · tiers(valB)={'cache': 29, 'llm': 59, 'rules': 2}
+- SG: {'docs': 572, 'edges': 3257, 'l1_explicit': 1672, 'l2_co_retrieval': 2386, 'l3_llm_curated': 12, 'profiles': 9} · plan_cache: {'entries': 171, 'hits': 155, 'hit_rate': 0.412}
+- evolve: {'records': 376, 's_rules': {'decayed_layers': 2284}, 's_llm': {'typed_edges': 3, 'profiles': 3}, 'k_rules': {'stale_edges_removed': 0}, 'k_llm': {'wikified': 2}, 'llm_calls': 10, 'good': 173, 'attention': 69, 'elapsed_s': 147.2}
+
+## 그라운드룰 추가 (2026-07-09, 유저 피드백)
+
+7. **무개입 프로토콜**: "돌릴수록 좋아진다"의 증명은 코드 동결 상태에서 시스템 자체 진화(evolver)만으로 이뤄져야 한다. iteration 사이에 사람이 로직을 수정하면 그 곡선은 자기진화 증거로 무효. 개발 단계(버그픽스·설계수정)와 검증 단계(동결+무개입 N회 실행)를 명확히 분리하고, 검증 런은 항상 --fresh부터 무개입으로 수행한다.
+
+### 2026-07-09 — 개발 단계 종료, 코드 동결 (v5.1)
+- 위 그라운드룰 7에 따라 지금까지의 iter1~4 곡선(83.3→90.0→92.2→93.3)은 "개발 참고용"으로 격하.
+  (iter2~4는 단일 프로세스/동결 코드로 돌아 자기진화 효과가 맞지만, iter1 재베이스라인 3회에 개발 수정이 섞임)
+- 동결 시점 코드: L1 멀티오너(v2) + EXPAND_NEIGHBORS=4 포함. 이후 수정 금지.
+- 검증 프로토콜: --fresh로 골든에서 시작, 5회 연속 무개입 실행. 이 곡선만이 자기진화의 증거.
+
+### 2026-07-09 15:11:57 — ver5 iteration 1 (LLM on)
+- All@20 100.0% · ValA@20 98.9% · ValB co@20/10/5 95.6/46.7/38.9%
+- latency p50/p95: all=40.2/52.4ms · tiers(valB)={'cache': 0, 'llm': 83, 'rules': 7}
+- SG: {'docs': 572, 'edges': 2737, 'l1_explicit': 1719, 'l2_co_retrieval': 1685, 'l3_llm_curated': 5, 'profiles': 3} · plan_cache: {'entries': 104, 'hits': 2, 'hit_rate': 0.005}
+- evolve: {'records': 376, 's_rules': {'decayed_layers': 2396}, 's_llm': {'typed_edges': 5, 'profiles': 3}, 'k_rules': {'stale_edges_removed': 0}, 'k_llm': {'wikified': 2}, 'llm_calls': 10, 'good': 162, 'attention': 109, 'elapsed_s': 133.4}
+
+### 2026-07-09 15:26:29 — ver5 iteration 2 (LLM on)
+- All@20 100.0% · ValA@20 99.4% · ValB co@20/10/5 93.3/45.6/33.3%
+- latency p50/p95: all=39.6/46.3ms · tiers(valB)={'cache': 25, 'llm': 58, 'rules': 7}
+- SG: {'docs': 572, 'edges': 2920, 'l1_explicit': 1719, 'l2_co_retrieval': 1916, 'l3_llm_curated': 10, 'profiles': 6} · plan_cache: {'entries': 135, 'hits': 104, 'hit_rate': 0.277}
+- evolve: {'records': 376, 's_rules': {'decayed_layers': 2613}, 's_llm': {'typed_edges': 5, 'profiles': 3}, 'k_rules': {'stale_edges_removed': 0}, 'k_llm': {'wikified': 2}, 'llm_calls': 10, 'good': 160, 'attention': 110, 'elapsed_s': 136.1}
+
+### 2026-07-09 15:50:59 — ver5 iteration 3 (LLM on)
+- All@20 99.0% · ValA@20 98.9% · ValB co@20/10/5 91.1/45.6/23.3%
+- latency p50/p95: all=42.6/15567.0ms · tiers(valB)={'cache': 32, 'llm': 24, 'rules': 34}
+- SG: {'docs': 572, 'edges': 3183, 'l1_explicit': 1719, 'l2_co_retrieval': 2237, 'l3_llm_curated': 10, 'profiles': 6} · plan_cache: {'entries': 164, 'hits': 135, 'hit_rate': 0.359}
+- evolve: {'records': 376, 's_rules': {'decayed_layers': 2389}, 's_llm': {'typed_edges': 0, 'profiles': 0}, 'k_rules': {'stale_edges_removed': 0}, 'k_llm': {'wikified': 0}, 'llm_calls': 8, 'good': 173, 'attention': 56, 'elapsed_s': 20.4}
+- **REGRESSION GUARD fired → KG rolled back** (사유는 evolution_log 참조)
+
+### 2026-07-09 15:54:34 — ver5 iteration 4 (LLM on)
+- All@20 100.0% · ValA@20 99.4% · ValB co@20/10/5 86.7/51.1/30.0%
+- latency p50/p95: all=41.4/1870.8ms · tiers(valB)={'cache': 32, 'llm': 0, 'rules': 58}
+- SG: {'docs': 572, 'edges': 3202, 'l1_explicit': 1719, 'l2_co_retrieval': 2257, 'l3_llm_curated': 10, 'profiles': 6} · plan_cache: {'entries': 165, 'hits': 164, 'hit_rate': 0.436}
+- evolve: {'records': 376, 's_rules': {'decayed_layers': 2258}, 's_llm': {'typed_edges': 0, 'profiles': 0}, 'k_rules': {'stale_edges_removed': 0}, 'k_llm': {'wikified': 0}, 'llm_calls': 8, 'good': 178, 'attention': 89, 'elapsed_s': 19.3}
+
+### 2026-07-09 15:58:27 — ver5 iteration 5 (LLM on)
+- All@20 100.0% · ValA@20 99.4% · ValB co@20/10/5 88.9/54.4/31.1%
+- latency p50/p95: all=42.8/1957.0ms · tiers(valB)={'cache': 32, 'llm': 0, 'rules': 58}
+- SG: {'docs': 572, 'edges': 3230, 'l1_explicit': 1719, 'l2_co_retrieval': 2289, 'l3_llm_curated': 10, 'profiles': 6} · plan_cache: {'entries': 165, 'hits': 165, 'hit_rate': 0.439}
+- evolve: {'records': 376, 's_rules': {'decayed_layers': 2295}, 's_llm': {'typed_edges': 0, 'profiles': 0}, 'k_rules': {'stale_edges_removed': 0}, 'k_llm': {'wikified': 0}, 'llm_calls': 8, 'good': 182, 'attention': 89, 'elapsed_s': 20.5}
+
+### 2026-07-09 — 검증 런 완료 (동결 v5.1, --fresh 무개입 5회)
+- 결과표·상세 분석: evaluation/scenario2-ver5/results/summary_report.md
+- 요약: co@20 전구간 86.7~95.6 (ver4 54.4 대비 압도), All/ValA 유지, iter3 회귀가드 발동→롤백→회복 (가드 실증).
+  자기진화 신호: co@10 +7.7pt, 캐시히트 0→44%, p50 12s→1.9s. 
+- 문제: ① co@20 하락추세 (L2가 EXPAND 슬롯에서 L1과 경합) ② quality 신호의 co-retrieval 무감지
+  ③ LLM 장애(CLI 사용량한도) 미가시화 ④ 승격게이트 보수적.
+- 다음 개발 사이클: C1(L1 EXPAND 우선권) → C2(구조 정합 quality 신호) → C3(LLM 헬스) → C4(재조우 비교 승격).
+  개발 후 재동결 → --fresh 무개입 런으로 재검증 (그라운드룰 7).

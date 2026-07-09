@@ -1,0 +1,347 @@
+{
+ "iterations": [
+  {
+   "iter": 1,
+   "ts": "2026-07-09 09:27:24",
+   "use_llm": false,
+   "all": {
+    "n": 106,
+    "hit@20": 100.0,
+    "lat_p50": 38.4,
+    "lat_p95": 44.6,
+    "q_mean": 0.585,
+    "tiers": {
+     "cache": 0,
+     "llm": 0,
+     "rules": 106
+    },
+    "sg_expand_total": 940
+   },
+   "valA": {
+    "n": 180,
+    "hit@20": 98.9,
+    "lat_p50": 40.7,
+    "lat_p95": 49.6,
+    "q_mean": 0.485,
+    "tiers": {
+     "cache": 1,
+     "llm": 0,
+     "rules": 179
+    },
+    "sg_expand_total": 1713
+   },
+   "valB": {
+    "n": 90,
+    "hit@20": 100.0,
+    "lat_p50": 41.9,
+    "lat_p95": 69.9,
+    "q_mean": 0.435,
+    "tiers": {
+     "cache": 0,
+     "llm": 0,
+     "rules": 90
+    },
+    "sg_expand_total": 863,
+    "co": {
+     "5": 30.0,
+     "10": 50.0,
+     "20": 83.3
+    }
+   },
+   "sg": {
+    "docs": 572,
+    "edges": 2468,
+    "l1_explicit": 1672,
+    "l2_co_retrieval": 1380,
+    "l3_llm_curated": 0,
+    "profiles": 0
+   },
+   "plan_cache": {
+    "entries": 78,
+    "hits": 1,
+    "hit_rate": 0.003
+   },
+   "strategy_memory": {
+    "clusters": 376
+   },
+   "evolve": {
+    "records": 376,
+    "s_rules": {
+     "decayed_layers": 2053
+    },
+    "s_llm": {},
+    "k_rules": {
+     "stale_edges_removed": 0
+    },
+    "k_llm": {},
+    "llm_calls": 0,
+    "good": 180,
+    "attention": 102,
+    "elapsed_s": 0.0
+   },
+   "rolled_back": false,
+   "elapsed_s": 16.8
+  },
+  {
+   "iter": 2,
+   "ts": "2026-07-09 09:45:14",
+   "use_llm": true,
+   "all": {
+    "n": 106,
+    "hit@20": 100.0,
+    "lat_p50": 40.8,
+    "lat_p95": 49.6,
+    "q_mean": 0.584,
+    "tiers": {
+     "cache": 38,
+     "llm": 0,
+     "rules": 68
+    },
+    "sg_expand_total": 947
+   },
+   "valA": {
+    "n": 180,
+    "hit@20": 99.4,
+    "lat_p50": 43.5,
+    "lat_p95": 53.6,
+    "q_mean": 0.489,
+    "tiers": {
+     "cache": 34,
+     "llm": 2,
+     "rules": 144
+    },
+    "sg_expand_total": 1719
+   },
+   "valB": {
+    "n": 90,
+    "hit@20": 100.0,
+    "lat_p50": 10915.8,
+    "lat_p95": 16199.2,
+    "q_mean": 0.499,
+    "tiers": {
+     "cache": 7,
+     "llm": 76,
+     "rules": 7
+    },
+    "sg_expand_total": 775,
+    "co": {
+     "5": 38.9,
+     "10": 50.0,
+     "20": 90.0
+    }
+   },
+   "sg": {
+    "docs": 572,
+    "edges": 2921,
+    "l1_explicit": 1672,
+    "l2_co_retrieval": 1962,
+    "l3_llm_curated": 5,
+    "profiles": 3
+   },
+   "plan_cache": {
+    "entries": 133,
+    "hits": 79,
+    "hit_rate": 0.21
+   },
+   "strategy_memory": {
+    "clusters": 376
+   },
+   "evolve": {
+    "records": 376,
+    "s_rules": {
+     "decayed_layers": 2732
+    },
+    "s_llm": {
+     "typed_edges": 5,
+     "profiles": 3
+    },
+    "k_rules": {
+     "stale_edges_removed": 0
+    },
+    "k_llm": {
+     "wikified": 2
+    },
+    "llm_calls": 10,
+    "good": 168,
+    "attention": 110,
+    "elapsed_s": 140.4
+   },
+   "rolled_back": false,
+   "elapsed_s": 1029.9
+  },
+  {
+   "iter": 3,
+   "ts": "2026-07-09 14:19:02",
+   "use_llm": true,
+   "all": {
+    "n": 106,
+    "hit@20": 100.0,
+    "lat_p50": 40.5,
+    "lat_p95": 11518.4,
+    "q_mean": 0.6,
+    "tiers": {
+     "cache": 69,
+     "llm": 11,
+     "rules": 26
+    },
+    "sg_expand_total": 984
+   },
+   "valA": {
+    "n": 180,
+    "hit@20": 98.9,
+    "lat_p50": 46.5,
+    "lat_p95": 17253.8,
+    "q_mean": 0.545,
+    "tiers": {
+     "cache": 41,
+     "llm": 68,
+     "rules": 71
+    },
+    "sg_expand_total": 1614
+   },
+   "valB": {
+    "n": 90,
+    "hit@20": 100.0,
+    "lat_p50": 10688.5,
+    "lat_p95": 19633.0,
+    "q_mean": 0.525,
+    "tiers": {
+     "cache": 23,
+     "llm": 66,
+     "rules": 1
+    },
+    "sg_expand_total": 706,
+    "co": {
+     "5": 33.3,
+     "10": 46.7,
+     "20": 92.2
+    }
+   },
+   "sg": {
+    "docs": 572,
+    "edges": 3134,
+    "l1_explicit": 1672,
+    "l2_co_retrieval": 2238,
+    "l3_llm_curated": 9,
+    "profiles": 6
+   },
+   "plan_cache": {
+    "entries": 155,
+    "hits": 133,
+    "hit_rate": 0.354
+   },
+   "strategy_memory": {
+    "clusters": 376
+   },
+   "evolve": {
+    "records": 376,
+    "s_rules": {
+     "decayed_layers": 2550
+    },
+    "s_llm": {
+     "typed_edges": 4,
+     "profiles": 3
+    },
+    "k_rules": {
+     "stale_edges_removed": 0
+    },
+    "k_llm": {
+     "wikified": 2
+    },
+    "llm_calls": 10,
+    "good": 169,
+    "attention": 67,
+    "elapsed_s": 112.2
+   },
+   "rolled_back": false,
+   "elapsed_s": 1898.2
+  },
+  {
+   "iter": 4,
+   "ts": "2026-07-09 14:43:32",
+   "use_llm": true,
+   "all": {
+    "n": 106,
+    "hit@20": 100.0,
+    "lat_p50": 41.0,
+    "lat_p95": 11235.3,
+    "q_mean": 0.615,
+    "tiers": {
+     "cache": 74,
+     "llm": 12,
+     "rules": 20
+    },
+    "sg_expand_total": 970
+   },
+   "valA": {
+    "n": 180,
+    "hit@20": 98.9,
+    "lat_p50": 45.4,
+    "lat_p95": 14984.1,
+    "q_mean": 0.547,
+    "tiers": {
+     "cache": 52,
+     "llm": 38,
+     "rules": 90
+    },
+    "sg_expand_total": 1626
+   },
+   "valB": {
+    "n": 90,
+    "hit@20": 100.0,
+    "lat_p50": 9842.4,
+    "lat_p95": 18637.1,
+    "q_mean": 0.52,
+    "tiers": {
+     "cache": 29,
+     "llm": 59,
+     "rules": 2
+    },
+    "sg_expand_total": 775,
+    "co": {
+     "5": 32.2,
+     "10": 45.6,
+     "20": 93.3
+    }
+   },
+   "sg": {
+    "docs": 572,
+    "edges": 3257,
+    "l1_explicit": 1672,
+    "l2_co_retrieval": 2386,
+    "l3_llm_curated": 12,
+    "profiles": 9
+   },
+   "plan_cache": {
+    "entries": 171,
+    "hits": 155,
+    "hit_rate": 0.412
+   },
+   "strategy_memory": {
+    "clusters": 376
+   },
+   "evolve": {
+    "records": 376,
+    "s_rules": {
+     "decayed_layers": 2284
+    },
+    "s_llm": {
+     "typed_edges": 3,
+     "profiles": 3
+    },
+    "k_rules": {
+     "stale_edges_removed": 0
+    },
+    "k_llm": {
+     "wikified": 2
+    },
+    "llm_calls": 10,
+    "good": 173,
+    "attention": 69,
+    "elapsed_s": 147.2
+   },
+   "rolled_back": false,
+   "elapsed_s": 1465.4
+  }
+ ]
+}
