@@ -222,11 +222,23 @@ class StructRetriever:
                     s = doc_score[anchor] * (0.4 + 0.6 * w) * relevance
                 expansion[nb] = (s, anchor, w, picked, is_l1)
 
-        # v5.4: plain score-ranked budget cut (validated 2026-07-10 — co@20 70→78.9
-        # monotonic over 5 no-intervention iterations, zero rollbacks).
+        # v5.6: provenance-reserved budget seats. Pure score competition let ever-
+        # growing L2 stats catch up with single-mention L1 edges (both eff 0.6) and
+        # evict the document-declared link from the ranked window over iterations —
+        # the co@10 decline signature (rises at 20 via tail, falls at 10). L1
+        # candidates own EXPAND_L1_SLOTS seats; learned edges compete for the rest;
+        # unused seats on either side are released to the other.
         ranked_exp = sorted(expansion.items(), key=lambda kv: -kv[1][0])
-        top_expansion = dict(ranked_exp[:EXPAND_BUDGET])
-        tail_expansion: dict = {}
+        l1_c = [kv for kv in ranked_exp if kv[1][4]]
+        ln_c = [kv for kv in ranked_exp if not kv[1][4]]
+        top_list = l1_c[:EXPAND_L1_SLOTS] + ln_c[:EXPAND_BUDGET - EXPAND_L1_SLOTS]
+        if len(top_list) < EXPAND_BUDGET:  # release unused seats
+            taken = {d for d, _ in top_list}
+            top_list += [kv for kv in ranked_exp if kv[0] not in taken][:EXPAND_BUDGET - len(top_list)]
+        top_expansion = dict(top_list)
+        # v5.5 safety net: budget losers still get appended after the ranked
+        # window — serves co@20 while the reserved seats serve co@5/10.
+        tail_expansion = dict([kv for kv in ranked_exp if kv[0] not in top_expansion][:EXPAND_TAIL])
 
         merged = dict(doc_score)
         merged.update({d: v[0] for d, v in top_expansion.items()})
