@@ -223,7 +223,11 @@ class StructureGraph:
         return max((l["w"] * LAYER_FACTOR[n] for n, l in layers.items()), default=0.0)
 
     def get_neighbors(self, doc: str, top_n: int = 5, min_weight: float = 0.3) -> list[tuple[str, float]]:
-        """Neighbors of one doc by effective weight, best first. Records edge usage."""
+        """Neighbors of one doc, best first. Explicit-ref (L1) edges outrank learned
+        layers regardless of weight — a document's own cross-references are ground
+        truth, while co-retrieval stats are only correlation (v5.2 fix C1: heavily
+        reinforced L2 edges were crowding real linked docs out of EXPAND slots).
+        Records edge usage."""
         out = []
         for key, edge in self._data["edges"].items():
             a, b = key.split("||", 1)
@@ -231,13 +235,35 @@ class StructureGraph:
                 continue
             w = self._effective_weight(edge["layers"])
             if w >= min_weight:
-                out.append((b if a == doc else a, w, key))
-        out.sort(key=lambda x: -x[1])
+                l1 = 1 if "explicit_ref" in edge["layers"] else 0
+                out.append((b if a == doc else a, w, key, l1))
+        out.sort(key=lambda x: (-x[3], -x[1]))
         now = time.time()
-        for _, _, key in out[:top_n]:
+        for _, _, key, _ in out[:top_n]:
             self._data["edges"][key]["hits"] += 1
             self._data["edges"][key]["last_hit"] = now
-        return [(d, w) for d, w, _ in out[:top_n]]
+        return [(d, w) for d, w, _, _ in out[:top_n]]
+
+    def get_neighbors_layered(self, doc: str, top_n: int = 5,
+                              min_weight: float = 0.3) -> list[tuple[str, float, bool]]:
+        """Like get_neighbors but exposes provenance: (doc, weight, is_explicit_ref).
+        Callers that must treat document-declared references differently from
+        learned statistical edges (v5.4 expansion tiering) use this."""
+        out = []
+        for key, edge in self._data["edges"].items():
+            a, b = key.split("||", 1)
+            if doc not in (a, b):
+                continue
+            w = self._effective_weight(edge["layers"])
+            if w >= min_weight:
+                l1 = "explicit_ref" in edge["layers"]
+                out.append((b if a == doc else a, w, key, l1))
+        out.sort(key=lambda x: (-x[3], -x[1]))
+        now = time.time()
+        for _, _, key, _ in out[:top_n]:
+            self._data["edges"][key]["hits"] += 1
+            self._data["edges"][key]["last_hit"] = now
+        return [(d, w, l1) for d, w, _, l1 in out[:top_n]]
 
     def get_scope(self, seeds: list[str], budget: int = 12, min_weight: float = 0.3) -> dict[str, float]:
         """Weighted 1-hop expansion from seed docs → {doc: confidence} capped at budget."""

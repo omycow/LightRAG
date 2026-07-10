@@ -181,3 +181,197 @@
   ③ LLM 장애(CLI 사용량한도) 미가시화 ④ 승격게이트 보수적.
 - 다음 개발 사이클: C1(L1 EXPAND 우선권) → C2(구조 정합 quality 신호) → C3(LLM 헬스) → C4(재조우 비교 승격).
   개발 후 재동결 → --fresh 무개입 런으로 재검증 (그라운드룰 7).
+
+### 2026-07-09 — 개발 사이클 2 (v5.2): 검증 런 발견 문제 수정 후 재동결
+- C5 (신규, co@5/10 직접 원인): EXPAND 청크를 결과 뒤에 append하던 방식 폐기.
+  SG 이웃 문서가 앵커 문서의 융합 점수를 엣지 강도로 할인 상속(score propagation)하여
+  단일 doc 랭킹에서 경쟁. 근거: 하이퍼링크 그래프 경로점수 전파 (research_notes §1).
+  → linked 문서가 카드 바로 뒤 랭크로 진입 가능, co@5/10 개선 겨냥.
+- C1: get_neighbors에서 explicit_ref(L1) 엣지가 학습 레이어보다 무조건 우선 (문서 자신의
+  크로스레퍼런스는 사실, co-retrieval 통계는 상관관계일 뿐).
+- C2: quality에 struct_coverage(상위 base 문서의 강한 L1 이웃 동반율, 사전확장 기준) 추가,
+  가중치 0.20. 승격/강화 게이트가 co-retrieval을 감지하게 됨.
+- C4: PlanCache — 미드퀄리티 LLM 플랜은 재사용(같은 패턴 재-LLM 낭비 제거),
+  미드퀄리티 룰 플랜은 LLM 업그레이드 기회 유지.
+- C6: ε-greedy annealing (ε_eff = ε/(1+visits/5)) — 학습된 클러스터의 무작위 모드 플립 제거.
+- C3: eval 하네스 LLM 헬스 카운터 + 연속실패 8회 백오프 + iteration 레코드에 노출.
+- 스모크 10/10 (이전 9/10), 유닛 테스트 전체 통과. **v5.2 동결 — --fresh 무개입 5회 재검증 시작.**
+
+### 2026-07-09 20:52:01 — ver5 iteration 1 (LLM on)
+- All@20 98.1% · ValA@20 97.8% · ValB co@20/10/5 68.9/53.3/41.1%
+- latency p50/p95: all=44.9/63.6ms · tiers(valB)={'cache': 0, 'llm': 83, 'rules': 7}
+- SG: {'docs': 572, 'edges': 2672, 'l1_explicit': 1719, 'l2_co_retrieval': 1858, 'l3_llm_curated': 4, 'profiles': 3} · plan_cache: {'entries': 332, 'hits': 2, 'hit_rate': 0.005}
+- evolve: {'records': 376, 's_rules': {'decayed_layers': 2287}, 's_llm': {'typed_edges': 4, 'profiles': 3}, 'k_rules': {'stale_edges_removed': 0}, 'k_llm': {'wikified': 2}, 'llm_calls': 10, 'good': 153, 'attention': 44, 'elapsed_s': 110.1}
+
+### 2026-07-09 20:55:36 — ver5 iteration 2 (LLM on)
+- All@20 99.0% · ValA@20 98.9% · ValB co@20/10/5 68.9/50.0/37.8%
+- latency p50/p95: all=46.5/86.0ms · tiers(valB)={'cache': 79, 'llm': 4, 'rules': 7}
+- SG: {'docs': 572, 'edges': 2846, 'l1_explicit': 1719, 'l2_co_retrieval': 2125, 'l3_llm_curated': 6, 'profiles': 6} · plan_cache: {'entries': 335, 'hits': 169, 'hit_rate': 0.449}
+- evolve: {'records': 376, 's_rules': {'decayed_layers': 2286}, 's_llm': {'typed_edges': 2, 'profiles': 3}, 'k_rules': {'stale_edges_removed': 0}, 'k_llm': {'wikified': 2}, 'llm_calls': 10, 'good': 151, 'attention': 41, 'elapsed_s': 147.9}
+
+### 2026-07-09 21:16:34 — ver5 iteration 3 (LLM on)
+- All@20 100.0% · ValA@20 98.9% · ValB co@20/10/5 72.2/52.2/41.1%
+- latency p50/p95: all=47.1/9513.6ms · tiers(valB)={'cache': 36, 'llm': 51, 'rules': 3}
+- SG: {'docs': 572, 'edges': 3024, 'l1_explicit': 1719, 'l2_co_retrieval': 2372, 'l3_llm_curated': 8, 'profiles': 9} · plan_cache: {'entries': 361, 'hits': 115, 'hit_rate': 0.306}
+- evolve: {'records': 376, 's_rules': {'decayed_layers': 2101}, 's_llm': {'typed_edges': 2, 'profiles': 3}, 'k_rules': {'stale_edges_removed': 0}, 'k_llm': {'wikified': 2}, 'llm_calls': 10, 'good': 151, 'attention': 17, 'elapsed_s': 178.0}
+
+### 2026-07-09 21:27:06 — ver5 iteration 4 (LLM on)
+- All@20 100.0% · ValA@20 99.4% · ValB co@20/10/5 75.6/54.4/40.0%
+- latency p50/p95: all=48.0/136.4ms · tiers(valB)={'cache': 65, 'llm': 22, 'rules': 3}
+- SG: {'docs': 572, 'edges': 3066, 'l1_explicit': 1719, 'l2_co_retrieval': 2426, 'l3_llm_curated': 12, 'profiles': 12} · plan_cache: {'entries': 369, 'hits': 166, 'hit_rate': 0.441}
+- evolve: {'records': 376, 's_rules': {'decayed_layers': 1987}, 's_llm': {'typed_edges': 4, 'profiles': 3}, 'k_rules': {'stale_edges_removed': 0}, 'k_llm': {'wikified': 2}, 'llm_calls': 10, 'good': 152, 'attention': 9, 'elapsed_s': 134.9}
+
+### 2026-07-09 21:40:49 — ver5 iteration 5 (LLM on)
+- All@20 100.0% · ValA@20 98.3% · ValB co@20/10/5 76.7/53.3/40.0%
+- latency p50/p95: all=47.0/133.3ms · tiers(valB)={'cache': 42, 'llm': 42, 'rules': 6}
+- SG: {'docs': 572, 'edges': 3144, 'l1_explicit': 1719, 'l2_co_retrieval': 2522, 'l3_llm_curated': 16, 'profiles': 15} · plan_cache: {'entries': 372, 'hits': 138, 'hit_rate': 0.367}
+- evolve: {'records': 376, 's_rules': {'decayed_layers': 1927}, 's_llm': {'typed_edges': 4, 'profiles': 3}, 'k_rules': {'stale_edges_removed': 0}, 'k_llm': {'wikified': 2}, 'llm_calls': 10, 'good': 153, 'attention': 20, 'elapsed_s': 166.8}
+- **REGRESSION GUARD fired → KG rolled back** (사유는 evolution_log 참조)
+
+### 2026-07-09 — v5.2 검증 런 결과 및 개발 사이클 3 (v5.3)
+- v5.2 검증 (무개입 5회): **안정화 성공** — co@5 stdev 5.7→1.35, co@10 stdev→1.67, co@20 단조상승 68.9→76.7 (v5.1의 하락 추세 해소). co@5 평균 31→40, co@10 평균 ~49→52.6. LLM 308콜 무장애(C3 검증), 회귀가드 iter5 발동·롤백 정상.
+- **문제**: co@20 레벨 후퇴 (v5.1 평균 91 → v5.2 평균 72.5). 원인 — C5 점수전파에서 확장 후보(최대 20개)가 앵커 점수 0.76배로 top-20 윈도우에 과잉 편입, 올바른 base 문서를 랭크 밖으로 밀어냄. co@5↑/co@20↓ 패턴이 이 기전의 시그니처.
+- v5.3 수정 (확장 절제, 쿼리 근거 기반):
+  1. 관련성 변조: 상속점수 × (0.4+0.6·min(1,hits/3)) — 쿼리 텀 매치 없는 이웃은 base를 못 이김
+  2. 윈도우 예산: 확장 문서 상위 EXPAND_BUDGET(6)개만 랭킹 편입
+- 유닛 전체 + 스모크 10/10 통과. **v5.3 동결 — --fresh 무개입 5회 재검증.**
+
+### 2026-07-09 22:04:43 — ver5 iteration 1 (LLM on)
+- All@20 100.0% · ValA@20 98.9% · ValB co@20/10/5 65.6/48.9/35.6%
+- latency p50/p95: all=44.8/56.2ms · tiers(valB)={'cache': 0, 'llm': 83, 'rules': 7}
+- SG: {'docs': 572, 'edges': 2682, 'l1_explicit': 1719, 'l2_co_retrieval': 1780, 'l3_llm_curated': 5, 'profiles': 3} · plan_cache: {'entries': 330, 'hits': 2, 'hit_rate': 0.005}
+- evolve: {'records': 376, 's_rules': {'decayed_layers': 2333}, 's_llm': {'typed_edges': 5, 'profiles': 3}, 'k_rules': {'stale_edges_removed': 0}, 'k_llm': {'wikified': 2}, 'llm_calls': 10, 'good': 152, 'attention': 46, 'elapsed_s': 144.7}
+
+### 2026-07-09 22:09:20 — ver5 iteration 2 (LLM on)
+- All@20 100.0% · ValA@20 99.4% · ValB co@20/10/5 64.4/44.4/36.7%
+- latency p50/p95: all=45.6/52.2ms · tiers(valB)={'cache': 78, 'llm': 5, 'rules': 7}
+- SG: {'docs': 572, 'edges': 2809, 'l1_explicit': 1719, 'l2_co_retrieval': 1963, 'l3_llm_curated': 9, 'profiles': 6} · plan_cache: {'entries': 336, 'hits': 167, 'hit_rate': 0.444}
+- evolve: {'records': 376, 's_rules': {'decayed_layers': 2280}, 's_llm': {'typed_edges': 4, 'profiles': 3}, 'k_rules': {'stale_edges_removed': 0}, 'k_llm': {'wikified': 2}, 'llm_calls': 10, 'good': 150, 'attention': 41, 'elapsed_s': 138.7}
+
+### 2026-07-09 22:11:22 — ver5 iteration 3 (LLM on)
+- All@20 100.0% · ValA@20 98.3% · ValB co@20/10/5 67.8/46.7/32.2%
+- latency p50/p95: all=45.8/2046.8ms · tiers(valB)={'cache': 43, 'llm': 0, 'rules': 47}
+- SG: {'docs': 572, 'edges': 2861, 'l1_explicit': 1719, 'l2_co_retrieval': 2036, 'l3_llm_curated': 9, 'profiles': 6} · plan_cache: {'entries': 341, 'hits': 125, 'hit_rate': 0.332}
+- evolve: {'records': 376, 's_rules': {'decayed_layers': 2029}, 's_llm': {'typed_edges': 0, 'profiles': 0}, 'k_rules': {'stale_edges_removed': 0}, 'k_llm': {'wikified': 0}, 'llm_calls': 8, 'good': 159, 'attention': 40, 'elapsed_s': 0.2}
+- **REGRESSION GUARD fired → KG rolled back** (사유는 evolution_log 참조)
+
+### 2026-07-09 22:12:03 — ver5 iteration 4 (LLM on)
+- All@20 100.0% · ValA@20 98.9% · ValB co@20/10/5 71.1/48.9/30.0%
+- latency p50/p95: all=44.2/133.5ms · tiers(valB)={'cache': 38, 'llm': 0, 'rules': 52}
+- SG: {'docs': 572, 'edges': 2918, 'l1_explicit': 1719, 'l2_co_retrieval': 2102, 'l3_llm_curated': 9, 'profiles': 6} · plan_cache: {'entries': 341, 'hits': 125, 'hit_rate': 0.332}
+- evolve: {'records': 376, 's_rules': {'decayed_layers': 2064}, 's_llm': {'typed_edges': 0, 'profiles': 0}, 'k_rules': {'stale_edges_removed': 0}, 'k_llm': {'wikified': 0}, 'llm_calls': 8, 'good': 156, 'attention': 45, 'elapsed_s': 0.2}
+
+### 2026-07-09 22:12:48 — ver5 iteration 5 (LLM on)
+- All@20 100.0% · ValA@20 98.3% · ValB co@20/10/5 68.9/48.9/33.3%
+- latency p50/p95: all=45.2/143.2ms · tiers(valB)={'cache': 38, 'llm': 0, 'rules': 52}
+- SG: {'docs': 572, 'edges': 2927, 'l1_explicit': 1719, 'l2_co_retrieval': 2115, 'l3_llm_curated': 9, 'profiles': 6} · plan_cache: {'entries': 341, 'hits': 128, 'hit_rate': 0.34}
+- evolve: {'records': 376, 's_rules': {'decayed_layers': 2025}, 's_llm': {'typed_edges': 0, 'profiles': 0}, 'k_rules': {'stale_edges_removed': 0}, 'k_llm': {'wikified': 0}, 'llm_calls': 8, 'good': 157, 'attention': 43, 'elapsed_s': 0.2}
+- **REGRESSION GUARD fired → KG rolled back** (사유는 evolution_log 참조)
+
+### 2026-07-10 — v5.3 검증 결과 및 개발 사이클 4 (v5.4)
+- v5.3 검증 (무개입 5회): co@20 평균 67.6 / co@10 47.6 / co@5 33.6 — **v5.2보다 전면 후퇴.**
+- **교훈**: 관련성(어휘) 변조를 모든 확장에 일괄 적용한 것이 오류. linked 문서는 원래 쿼리와
+  어휘적으로 멀다 — 그게 구조 확장의 존재 이유인데 어휘 게이트가 진짜 링크를 노이즈와 함께 차단.
+- 부가: iter3부터 CLI 사용량 한도 재발 — C3 백오프·헬스 카운터가 설계대로 작동 (9→25 실패 기록,
+  iteration 그라인딩 없이 완주). 단 비교는 LLM 가용성에 부분 오염.
+- v5.4 수정 (출처 차등 확장):
+  - L1(explicit_ref) 이웃: 문서 자신의 선언 → 어휘 게이트 없이 상속점수 ×(0.5+0.5w)로 편입
+  - L2/L3(학습) 이웃: 통계적 상관 → 관련성 변조 유지
+  - EXPAND_BUDGET(6) 전역 상한 유지 (v5.2 과잉편입 교훈)
+- 유닛 전체 + 스모크 10/10. **v5.4 동결 — --fresh 무개입 5회 재검증 (CLI 복구 확인 후 시작).**
+
+### 2026-07-10 01:01:01 — ver5 iteration 1 (LLM on)
+- All@20 100.0% · ValA@20 98.3% · ValB co@20/10/5 70.0/52.2/37.8%
+- latency p50/p95: all=44.1/59.0ms · tiers(valB)={'cache': 0, 'llm': 83, 'rules': 7}
+- SG: {'docs': 572, 'edges': 2710, 'l1_explicit': 1719, 'l2_co_retrieval': 1901, 'l3_llm_curated': 3, 'profiles': 3} · plan_cache: {'entries': 329, 'hits': 2, 'hit_rate': 0.005}
+- evolve: {'records': 376, 's_rules': {'decayed_layers': 2253}, 's_llm': {'typed_edges': 3, 'profiles': 3}, 'k_rules': {'stale_edges_removed': 0}, 'k_llm': {'wikified': 2}, 'llm_calls': 10, 'good': 151, 'attention': 47, 'elapsed_s': 155.0}
+
+### 2026-07-10 01:05:03 — ver5 iteration 2 (LLM on)
+- All@20 100.0% · ValA@20 98.9% · ValB co@20/10/5 72.2/51.1/36.7%
+- latency p50/p95: all=46.6/60.0ms · tiers(valB)={'cache': 80, 'llm': 3, 'rules': 7}
+- SG: {'docs': 572, 'edges': 2835, 'l1_explicit': 1719, 'l2_co_retrieval': 2095, 'l3_llm_curated': 7, 'profiles': 6} · plan_cache: {'entries': 333, 'hits': 175, 'hit_rate': 0.465}
+- evolve: {'records': 376, 's_rules': {'decayed_layers': 2212}, 's_llm': {'typed_edges': 4, 'profiles': 3}, 'k_rules': {'stale_edges_removed': 0}, 'k_llm': {'wikified': 2}, 'llm_calls': 10, 'good': 151, 'attention': 44, 'elapsed_s': 175.0}
+
+### 2026-07-10 01:26:47 — ver5 iteration 3 (LLM on)
+- All@20 100.0% · ValA@20 99.4% · ValB co@20/10/5 75.6/48.9/41.1%
+- latency p50/p95: all=46.0/9869.2ms · tiers(valB)={'cache': 31, 'llm': 56, 'rules': 3}
+- SG: {'docs': 572, 'edges': 3008, 'l1_explicit': 1719, 'l2_co_retrieval': 2343, 'l3_llm_curated': 10, 'profiles': 9} · plan_cache: {'entries': 362, 'hits': 111, 'hit_rate': 0.295}
+- evolve: {'records': 376, 's_rules': {'decayed_layers': 2141}, 's_llm': {'typed_edges': 3, 'profiles': 3}, 'k_rules': {'stale_edges_removed': 0}, 'k_llm': {'wikified': 2}, 'llm_calls': 10, 'good': 152, 'attention': 18, 'elapsed_s': 174.5}
+
+### 2026-07-10 01:38:08 — ver5 iteration 4 (LLM on)
+- All@20 100.0% · ValA@20 99.4% · ValB co@20/10/5 77.8/53.3/41.1%
+- latency p50/p95: all=46.7/75.9ms · tiers(valB)={'cache': 56, 'llm': 31, 'rules': 3}
+- SG: {'docs': 572, 'edges': 3111, 'l1_explicit': 1719, 'l2_co_retrieval': 2471, 'l3_llm_curated': 13, 'profiles': 12} · plan_cache: {'entries': 370, 'hits': 159, 'hit_rate': 0.423}
+- evolve: {'records': 376, 's_rules': {'decayed_layers': 1890}, 's_llm': {'typed_edges': 3, 'profiles': 3}, 'k_rules': {'stale_edges_removed': 0}, 'k_llm': {'wikified': 2}, 'llm_calls': 10, 'good': 153, 'attention': 10, 'elapsed_s': 130.1}
+
+### 2026-07-10 01:50:21 — ver5 iteration 5 (LLM on)
+- All@20 100.0% · ValA@20 99.4% · ValB co@20/10/5 78.9/56.7/42.2%
+- latency p50/p95: all=48.7/112.1ms · tiers(valB)={'cache': 41, 'llm': 42, 'rules': 7}
+- SG: {'docs': 572, 'edges': 3167, 'l1_explicit': 1719, 'l2_co_retrieval': 2550, 'l3_llm_curated': 15, 'profiles': 15} · plan_cache: {'entries': 372, 'hits': 140, 'hit_rate': 0.372}
+- evolve: {'records': 376, 's_rules': {'decayed_layers': 1863}, 's_llm': {'typed_edges': 2, 'profiles': 3}, 'k_rules': {'stale_edges_removed': 0}, 'k_llm': {'wikified': 2}, 'llm_calls': 10, 'good': 152, 'attention': 23, 'elapsed_s': 149.8}
+
+### 2026-07-10 — v5.4 검증 결과 및 개발 사이클 5 (v5.5)
+- v5.4 검증 (무개입 5회): **최고의 진화 곡선** — co@20 70.0→78.9 5회 연속 단조상승,
+  co@10 52.2→56.7, co@5 37.8→42.2, All 100 고정, ValA 99.4 수렴, 롤백 0, LLM 318콜 무장애.
+  출처 차등 확장(L1 무게이트)이 v5.3 문제를 해결.
+- 남은 갭: co@20 절대 레벨(70~79)이 v5.1(86~95)보다 낮음. 기전 — EXPAND_BUDGET=6 하드컷이
+  허브성 앵커의 다수 L1 이웃에 밀린 진짜 링크를 잘라냄 (v5.1은 확장 전부 append라 co@20은 잡았음).
+- v5.5 수정 (하이브리드 안전망): 상위 6개는 랭킹 경쟁(co@5/10 담당) 유지 +
+  예산 밖 확장 후보 최대 8개(EXPAND_TAIL)는 윈도우 뒤에 1청크씩 append (co@20 안전망).
+- 유닛 전체 + 스모크 10/10. **v5.5 동결 — --fresh 무개입 5회 재검증.**
+
+### 2026-07-10 02:08:45 — ver5 iteration 1 (LLM on)
+- All@20 100.0% · ValA@20 98.9% · ValB co@20/10/5 73.3/58.9/42.2%
+- latency p50/p95: all=39.8/50.0ms · tiers(valB)={'cache': 0, 'llm': 75, 'rules': 15}
+- SG: {'docs': 572, 'edges': 2675, 'l1_explicit': 1719, 'l2_co_retrieval': 1914, 'l3_llm_curated': 0, 'profiles': 0} · plan_cache: {'entries': 328, 'hits': 2, 'hit_rate': 0.005}
+- evolve: {'records': 376, 's_rules': {'decayed_layers': 2301}, 's_llm': {'typed_edges': 0, 'profiles': 0}, 'k_rules': {'stale_edges_removed': 0}, 'k_llm': {'wikified': 0}, 'llm_calls': 8, 'good': 155, 'attention': 48, 'elapsed_s': 13.1}
+
+### 2026-07-10 02:09:29 — ver5 iteration 2 (LLM on)
+- All@20 100.0% · ValA@20 98.9% · ValB co@20/10/5 72.2/55.6/42.2%
+- latency p50/p95: all=40.6/48.2ms · tiers(valB)={'cache': 71, 'llm': 0, 'rules': 19}
+- SG: {'docs': 572, 'edges': 2759, 'l1_explicit': 1719, 'l2_co_retrieval': 2028, 'l3_llm_curated': 0, 'profiles': 0} · plan_cache: {'entries': 330, 'hits': 169, 'hit_rate': 0.449}
+- evolve: {'records': 376, 's_rules': {'decayed_layers': 2321}, 's_llm': {'typed_edges': 0, 'profiles': 0}, 'k_rules': {'stale_edges_removed': 0}, 'k_llm': {'wikified': 0}, 'llm_calls': 8, 'good': 155, 'attention': 47, 'elapsed_s': 0.1}
+
+### 2026-07-10 02:10:11 — ver5 iteration 3 (LLM on)
+- All@20 100.0% · ValA@20 98.9% · ValB co@20/10/5 81.1/55.6/36.7%
+- latency p50/p95: all=40.8/1783.1ms · tiers(valB)={'cache': 34, 'llm': 0, 'rules': 56}
+- SG: {'docs': 572, 'edges': 2819, 'l1_explicit': 1719, 'l2_co_retrieval': 2108, 'l3_llm_curated': 0, 'profiles': 0} · plan_cache: {'entries': 331, 'hits': 124, 'hit_rate': 0.33}
+- evolve: {'records': 376, 's_rules': {'decayed_layers': 2161}, 's_llm': {'typed_edges': 0, 'profiles': 0}, 'k_rules': {'stale_edges_removed': 0}, 'k_llm': {'wikified': 0}, 'llm_calls': 8, 'good': 156, 'attention': 55, 'elapsed_s': 0.2}
+
+### 2026-07-10 02:10:54 — ver5 iteration 4 (LLM on)
+- All@20 100.0% · ValA@20 98.3% · ValB co@20/10/5 76.7/52.2/33.3%
+- latency p50/p95: all=40.5/1784.9ms · tiers(valB)={'cache': 33, 'llm': 0, 'rules': 57}
+- SG: {'docs': 572, 'edges': 2835, 'l1_explicit': 1719, 'l2_co_retrieval': 2131, 'l3_llm_curated': 0, 'profiles': 0} · plan_cache: {'entries': 331, 'hits': 123, 'hit_rate': 0.327}
+- evolve: {'records': 376, 's_rules': {'decayed_layers': 2103}, 's_llm': {'typed_edges': 0, 'profiles': 0}, 'k_rules': {'stale_edges_removed': 0}, 'k_llm': {'wikified': 0}, 'llm_calls': 8, 'good': 157, 'attention': 54, 'elapsed_s': 0.2}
+- **REGRESSION GUARD fired → KG rolled back** (사유는 evolution_log 참조)
+
+### 2026-07-10 02:11:37 — ver5 iteration 5 (LLM on)
+- All@20 100.0% · ValA@20 98.3% · ValB co@20/10/5 77.8/53.3/35.6%
+- latency p50/p95: all=42.1/1785.0ms · tiers(valB)={'cache': 32, 'llm': 0, 'rules': 58}
+- SG: {'docs': 572, 'edges': 2856, 'l1_explicit': 1719, 'l2_co_retrieval': 2155, 'l3_llm_curated': 0, 'profiles': 0} · plan_cache: {'entries': 331, 'hits': 126, 'hit_rate': 0.335}
+- evolve: {'records': 376, 's_rules': {'decayed_layers': 2110}, 's_llm': {'typed_edges': 0, 'profiles': 0}, 'k_rules': {'stale_edges_removed': 0}, 'k_llm': {'wikified': 0}, 'llm_calls': 8, 'good': 156, 'attention': 54, 'elapsed_s': 0.2}
+
+### 2026-07-10 — v5.5 1차 런 판정 보류 → 재검증
+- 1차 런: iter1부터 CLI 한도로 LLM 사망 (124콜 중 47실패, L3=0) — v5.4와 공정 비교 불가.
+  LLM 없이도 co@20 평균 76.2 (피크 81.1) / co@10 평균 55.1 → tail 안전망 자체는 긍정 신호.
+  단 co@5 stdev 4.0, ValA 가드 1회 발동. CLI 복구 확인 후 동일 코드로 재검증 (코드 무변경).
+
+### 2026-07-10 10:00:54 — ver5 iteration 1 (LLM on)
+- All@20 99.0% · ValA@20 97.2% · ValB co@20/10/5 72.2/60.0/45.6%
+- latency p50/p95: all=38.1/43.8ms · tiers(valB)={'cache': 0, 'llm': 82, 'rules': 8}
+- SG: {'docs': 572, 'edges': 2683, 'l1_explicit': 1719, 'l2_co_retrieval': 1896, 'l3_llm_curated': 3, 'profiles': 3} · plan_cache: {'entries': 327, 'hits': 2, 'hit_rate': 0.005}
+- evolve: {'records': 376, 's_rules': {'decayed_layers': 2279}, 's_llm': {'typed_edges': 3, 'profiles': 3}, 'k_rules': {'stale_edges_removed': 0}, 'k_llm': {'wikified': 2}, 'llm_calls': 10, 'good': 154, 'attention': 49, 'elapsed_s': 116.1}
+
+### 2026-07-10 10:05:10 — ver5 iteration 2 (LLM on)
+- All@20 100.0% · ValA@20 97.8% · ValB co@20/10/5 72.2/57.8/46.7%
+- latency p50/p95: all=39.2/44.9ms · tiers(valB)={'cache': 76, 'llm': 7, 'rules': 7}
+- SG: {'docs': 572, 'edges': 2801, 'l1_explicit': 1719, 'l2_co_retrieval': 2058, 'l3_llm_curated': 3, 'profiles': 6} · plan_cache: {'entries': 332, 'hits': 166, 'hit_rate': 0.441}
+- evolve: {'records': 376, 's_rules': {'decayed_layers': 2382}, 's_llm': {'typed_edges': 0, 'profiles': 3}, 'k_rules': {'stale_edges_removed': 0}, 'k_llm': {'wikified': 2}, 'llm_calls': 10, 'good': 152, 'attention': 45, 'elapsed_s': 143.3}
+
+### 2026-07-10 — 개발 사이클 6 (v5.6): 예산 슬롯 출처 예약
+- v5.5 재검증 런은 유저 지시로 중도 폐기(예외 1회) — co@10 하락 기전이 명확해 바로 수정 진행.
+- 기전: 확장 예산 6석의 순수 점수 경쟁에서, iteration마다 강화되는 L2(유효 0.6)가 L1 단일언급
+  (유효 0.6)과 동점까지 추격 → 문서 선언 링크가 랭킹석에서 tail로 강등 → co@20↑/co@10↓ 시그니처.
+- 수정: EXPAND_L1_SLOTS=4 — 예산 6석 중 4석은 L1 후보 전용, 2석만 학습 엣지 경쟁.
+  한쪽이 비면 잔여석은 반대쪽에 개방. tail 안전망(v5.5) 유지.
+- 유닛 전체 + 스모크 10/10. **v5.6 동결 — --fresh 무개입 5회 검증.**

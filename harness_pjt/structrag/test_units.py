@@ -128,7 +128,19 @@ def test_analyzer_tiers_and_rules():
             an.memory.update("cl", "bm25", 0.9)
             an.memory.update("cl", "hybrid", 0.3)
         assert an.memory.select("cl", ["hybrid", "bm25"]) == "bm25"
-    print("  analyzer tiers/rule-validation/cache/bandit ✓")
+
+        # C4: a mid-quality LLM plan is reused (no re-LLM for the same pattern),
+        # a mid-quality rules plan is NOT (keeps its chance to be LLM-upgraded)
+        from harness_pjt.structrag.analyzer import PlanCache, rule_plan
+        pc = PlanCache(td)
+        lp = rule_plan("아주 복잡한 미드퀄리티 엘엘엠 플랜 쿼리")
+        lp.source = "llm"
+        pc.promote(lp.original, lp, quality=0.5, gate=0.7, floor=0.4)
+        assert pc.get(lp.original, min_quality=0.7) is not None
+        rp = rule_plan("아주 복잡한 미드퀄리티 룰즈 플랜 쿼리입니다")
+        pc.promote(rp.original, rp, quality=0.5, gate=0.7, floor=0.4)
+        assert pc.get(rp.original, min_quality=0.7) is None
+    print("  analyzer tiers/rule-validation/cache/bandit/C4 ✓")
 
 
 if __name__ == "__main__":

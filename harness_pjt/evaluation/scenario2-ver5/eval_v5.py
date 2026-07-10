@@ -45,11 +45,22 @@ REGRESSION_TOLERANCE = 0.5  # percentage points
 
 CLI_MODEL = os.environ.get("CLAUDE_CLI_MODEL", "claude-haiku-4-5-20251001")
 
+# v5.2 C3: LLM health tracking. In the first validation run the CLI silently hit
+# its usage limit from iteration 3 on — every analyze call failed (~2s) and fell
+# back to rules, invisible in the reports. Track calls/failures, back off after
+# a failure streak, and surface the counters in each iteration record.
+LLM_HEALTH = {"calls": 0, "failures": 0, "consecutive_failures": 0, "backoff": False}
+BACKOFF_AFTER = 8
+
 
 async def claude_cli_llm(prompt: str, system_prompt: str | None = None, **kwargs) -> str:
     """Analyzer/evolver LLM via claude CLI (haiku): reliable JSON, ~4s/call.
     Used ONLY off the hot path or behind the analyzer's complexity gate."""
     import tempfile
+    if LLM_HEALTH["consecutive_failures"] >= BACKOFF_AFTER:
+        LLM_HEALTH["backoff"] = True
+        raise RuntimeError("LLM backoff: consecutive failure streak")
+    LLM_HEALTH["calls"] += 1
     text = (system_prompt + "\n\n" if system_prompt else "") + prompt
     with tempfile.NamedTemporaryFile("w", suffix=".txt", delete=False, encoding="utf-8") as tf:
         tf.write(text)
@@ -64,7 +75,13 @@ async def claude_cli_llm(prompt: str, system_prompt: str | None = None, **kwargs
         out, err = await asyncio.wait_for(proc.communicate(), timeout=90)
         if proc.returncode != 0:
             raise RuntimeError(f"claude CLI rc={proc.returncode}: {err.decode()[:200]}")
-        return out.decode().strip()
+        result = out.decode().strip()
+        LLM_HEALTH["consecutive_failures"] = 0
+        return result
+    except Exception:
+        LLM_HEALTH["failures"] += 1
+        LLM_HEALTH["consecutive_failures"] += 1
+        raise
     finally:
         os.unlink(tmp)
 
@@ -147,6 +164,9 @@ async def run_iteration(use_llm: bool, state: dict) -> dict:
     from harness_pjt.structrag.evolver import Evolver
 
     rag, _ = await build_rag(str(WORK_DIR))
+    # fresh backoff state each iteration — the provider may have recovered
+    LLM_HEALTH["consecutive_failures"] = 0
+    LLM_HEALTH["backoff"] = False
     llm = claude_cli_llm if use_llm else None
     retriever = StructRetriever(rag, str(WORK_DIR), llm_func=llm)
     evolver = Evolver(rag, retriever, llm_func=llm, llm_budget=10)
@@ -192,6 +212,7 @@ async def run_iteration(use_llm: bool, state: dict) -> dict:
         "iter": len(state["iterations"]) + 1,
         "ts": time.strftime("%Y-%m-%d %H:%M:%S"),
         "use_llm": use_llm,
+        "llm_health": dict(LLM_HEALTH),
         "all": m_all, "valA": m_va, "valB": m_vb,
         "sg": retriever.sg.stats,
         "plan_cache": retriever.analyzer.cache.stats,

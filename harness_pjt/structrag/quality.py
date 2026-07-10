@@ -21,10 +21,14 @@ import os
 import re
 
 WEIGHTS = {
-    "sim_strength": 0.30,
-    "fusion_agree": 0.25,
-    "term_coverage": 0.30,
-    "scope_align": 0.15,
+    "sim_strength": 0.25,
+    "fusion_agree": 0.20,
+    "term_coverage": 0.25,
+    "scope_align": 0.10,
+    # v5.2 C2: co-retrieval proxy — do the top base docs come with their strong
+    # explicit-ref neighbors? Without this the promote/reinforce gates optimized
+    # plans that scored well on pure QPP but dropped structurally linked docs.
+    "struct_coverage": 0.20,
 }
 ATTENTION_THRESHOLD = 0.45   # absolute fallback; adaptive gates below are primary
 REINFORCE_GATE = 0.60        # absolute fallback for L2 reinforcement
@@ -117,6 +121,7 @@ def score_retrieval(
     scope: dict[str, float] | None = None,
     k: int = 10,
     chunk_docs=None,
+    extra_signals: dict[str, float] | None = None,
 ) -> dict:
     """
     Args:
@@ -162,6 +167,9 @@ def score_retrieval(
         top_docs = [d for d in top_docs if d]
         if top_docs:
             signals["scope_align"] = sum(1 for d in top_docs if d in scope) / len(top_docs)
+
+    if extra_signals:
+        signals.update({n: max(0.0, min(1.0, v)) for n, v in extra_signals.items()})
 
     # weighted composite over available signals (renormalize missing weights)
     total_w = sum(WEIGHTS[s] for s in signals if s in WEIGHTS)

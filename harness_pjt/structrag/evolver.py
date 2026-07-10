@@ -150,10 +150,8 @@ class Evolver:
             for doc in self._profile_candidates(recs, limit=min(3, budget)):
                 budget -= 1
                 report["llm_calls"] += 1
-                excerpts = " / ".join(
-                    c["content"][:250] for c in
-                    self.retriever._best_chunks_of_doc(doc, doc, 2)
-                )
+                doc_chunks, _ = self.retriever._best_chunks_of_doc(doc, doc, 2)
+                excerpts = " / ".join(c["content"][:250] for c in doc_chunks)
                 try:
                     profile = await self.llm_func(_PROFILE_PROMPT.format(doc=doc, excerpts=excerpts))
                     if profile and len(profile) > 30:
@@ -208,8 +206,8 @@ class Evolver:
         return out[:limit]
 
     async def _propose_edge(self, a: str, b: str, queries: list[str]):
-        ex_a = self.retriever._best_chunks_of_doc(a, " ".join(queries), 1)
-        ex_b = self.retriever._best_chunks_of_doc(b, " ".join(queries), 1)
+        ex_a, _ = self.retriever._best_chunks_of_doc(a, " ".join(queries), 1)
+        ex_b, _ = self.retriever._best_chunks_of_doc(b, " ".join(queries), 1)
         if not ex_a or not ex_b:
             return None
         try:

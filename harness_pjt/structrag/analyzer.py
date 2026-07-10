@@ -87,9 +87,14 @@ class StrategyMemory:
         json.dump(self._data, open(self._path, "w", encoding="utf-8"), ensure_ascii=False)
 
     def select(self, cluster: str, candidates: list[str]) -> str:
-        """Best learned mode among candidates, ε-greedy; falls back to first candidate."""
+        """Best learned mode among candidates, ε-greedy with annealing: exploration
+        fades as a cluster accumulates visits (v5.2 C6 — constant ε kept flipping
+        modes on well-learned clusters, one source of iteration-to-iteration
+        metric wobble). Falls back to the first candidate."""
         stats = self._data.get(cluster, {})
-        if random.random() < self.epsilon and len(candidates) > 1:
+        visits = sum(s["n"] for s in stats.values())
+        eps_eff = self.epsilon / (1.0 + visits / 5.0)
+        if random.random() < eps_eff and len(candidates) > 1:
             return random.choice(candidates)
         best, best_ema = None, -1.0
         for m in candidates:
@@ -128,7 +133,13 @@ class PlanCache:
     def save(self):
         json.dump(self._data, open(self._path, "w", encoding="utf-8"), ensure_ascii=False)
 
-    def get(self, query: str) -> QueryPlan | None:
+    def get(self, query: str, min_quality: float | None = None) -> QueryPlan | None:
+        """Return a cached plan when it's trustworthy enough to skip re-analysis.
+
+        v5.2 C4: high-quality plans (≥ promote gate) are always reused; a
+        mid-quality plan is reused only if it CAME FROM the LLM — re-calling the
+        LLM on the same query pattern just re-buys the same plan, while a
+        mid-quality rules plan keeps its one chance to be upgraded by the LLM."""
         fp = fingerprint(query)
         entry = self._data.get(fp)
         if entry is None:
@@ -140,6 +151,13 @@ class PlanCache:
                     if cw and len(q_words & cw) / len(q_words | cw) >= 0.75:
                         entry = e
                         break
+        if entry is not None:
+            high_bar = entry["quality"] >= (min_quality if min_quality is not None
+                                            else self.PROMOTE_QUALITY)
+            llm_reuse = (entry["plan"].get("source") == "llm"
+                         and entry["quality"] >= entry.get("floor", 0.45))
+            if not (high_bar or llm_reuse):
+                entry = None
         if entry is None:
             self.misses += 1
             return None
@@ -149,13 +167,20 @@ class PlanCache:
         plan.source = "cache"
         return plan
 
-    def promote(self, query: str, plan: QueryPlan, quality: float, gate: float | None = None):
-        if quality < (gate if gate is not None else self.PROMOTE_QUALITY):
+    def promote(self, query: str, plan: QueryPlan, quality: float, gate: float | None = None,
+                floor: float | None = None):
+        """Store best-so-far plan per fingerprint. Plans below the attention floor
+        are never stored; get() decides reuse (see above)."""
+        if floor is not None and quality < floor:
+            return
+        if floor is None and quality < (gate if gate is not None else self.PROMOTE_QUALITY):
             return
         fp = fingerprint(query)
         cur = self._data.get(fp)
         if cur is None or quality >= cur["quality"]:
-            self._data[fp] = {"plan": plan.to_dict(), "quality": quality, "ts": time.time()}
+            self._data[fp] = {"plan": plan.to_dict(), "quality": quality,
+                              "floor": floor if floor is not None else 0.45,
+                              "ts": time.time()}
 
     def invalidate_low(self, min_quality: float = 0.5):
         for fp in [f for f, e in self._data.items() if e["quality"] < min_quality]:
@@ -245,9 +270,9 @@ class QueryAnalyzer:
                 return True
         return False
 
-    async def analyze(self, query: str) -> QueryPlan:
+    async def analyze(self, query: str, min_cache_quality: float | None = None) -> QueryPlan:
         # Tier 0
-        plan = self.cache.get(query)
+        plan = self.cache.get(query, min_quality=min_cache_quality)
         if plan is not None:
             return plan
 
@@ -271,13 +296,13 @@ class QueryAnalyzer:
         return plan
 
     def feedback(self, query: str, plan: QueryPlan, quality: float,
-                 promote_gate: float | None = None):
+                 promote_gate: float | None = None, promote_floor: float | None = None):
         """Post-retrieval learning: bandit update + plan promotion."""
         cluster = fingerprint(query)
         for sub in plan.subqueries:
             if sub.get("mode"):
                 self.memory.update(cluster, sub["mode"], quality)
-        self.cache.promote(query, plan, quality, gate=promote_gate)
+        self.cache.promote(query, plan, quality, gate=promote_gate, floor=promote_floor)
 
     def save(self):
         self.memory.save()
