@@ -1,0 +1,469 @@
+{
+ "iterations": [
+  {
+   "iter": 1,
+   "ts": "2026-07-10 10:40:20",
+   "use_llm": true,
+   "llm_health": {
+    "calls": 95,
+    "failures": 0,
+    "consecutive_failures": 0,
+    "backoff": false
+   },
+   "all": {
+    "n": 106,
+    "hit@20": 100.0,
+    "lat_p50": 42.2,
+    "lat_p95": 49.4,
+    "q_mean": 0.629,
+    "tiers": {
+     "cache": 0,
+     "llm": 0,
+     "rules": 106
+    },
+    "sg_expand_total": 1033
+   },
+   "valA": {
+    "n": 180,
+    "hit@20": 98.9,
+    "lat_p50": 43.8,
+    "lat_p95": 53.9,
+    "q_mean": 0.576,
+    "tiers": {
+     "cache": 2,
+     "llm": 2,
+     "rules": 176
+    },
+    "sg_expand_total": 1754
+   },
+   "valB": {
+    "n": 90,
+    "hit@20": 100.0,
+    "lat_p50": 10934.8,
+    "lat_p95": 18128.6,
+    "q_mean": 0.59,
+    "tiers": {
+     "cache": 0,
+     "llm": 83,
+     "rules": 7
+    },
+    "sg_expand_total": 663,
+    "co": {
+     "5": 41.1,
+     "10": 57.8,
+     "20": 74.4
+    }
+   },
+   "sg": {
+    "docs": 572,
+    "edges": 2681,
+    "l1_explicit": 1719,
+    "l2_co_retrieval": 1888,
+    "l3_llm_curated": 4,
+    "profiles": 3
+   },
+   "plan_cache": {
+    "entries": 328,
+    "hits": 2,
+    "hit_rate": 0.005
+   },
+   "strategy_memory": {
+    "clusters": 376
+   },
+   "evolve": {
+    "records": 376,
+    "s_rules": {
+     "decayed_layers": 2221
+    },
+    "s_llm": {
+     "typed_edges": 4,
+     "profiles": 3
+    },
+    "k_rules": {
+     "stale_edges_removed": 0
+    },
+    "k_llm": {
+     "wikified": 2
+    },
+    "llm_calls": 10,
+    "good": 151,
+    "attention": 48,
+    "elapsed_s": 168.8
+   },
+   "rolled_back": false,
+   "elapsed_s": 1193.1
+  },
+  {
+   "iter": 2,
+   "ts": "2026-07-10 10:43:59",
+   "use_llm": true,
+   "llm_health": {
+    "calls": 110,
+    "failures": 0,
+    "consecutive_failures": 0,
+    "backoff": false
+   },
+   "all": {
+    "n": 106,
+    "hit@20": 99.0,
+    "lat_p50": 42.9,
+    "lat_p95": 53.7,
+    "q_mean": 0.631,
+    "tiers": {
+     "cache": 48,
+     "llm": 0,
+     "rules": 58
+    },
+    "sg_expand_total": 1032
+   },
+   "valA": {
+    "n": 180,
+    "hit@20": 99.4,
+    "lat_p50": 46.5,
+    "lat_p95": 57.5,
+    "q_mean": 0.577,
+    "tiers": {
+     "cache": 44,
+     "llm": 0,
+     "rules": 136
+    },
+    "sg_expand_total": 1755
+   },
+   "valB": {
+    "n": 90,
+    "hit@20": 100.0,
+    "lat_p50": 148.8,
+    "lat_p95": 202.9,
+    "q_mean": 0.595,
+    "tiers": {
+     "cache": 78,
+     "llm": 5,
+     "rules": 7
+    },
+    "sg_expand_total": 655,
+    "co": {
+     "5": 40.0,
+     "10": 53.3,
+     "20": 75.6
+    }
+   },
+   "sg": {
+    "docs": 572,
+    "edges": 2808,
+    "l1_explicit": 1719,
+    "l2_co_retrieval": 2069,
+    "l3_llm_curated": 6,
+    "profiles": 6
+   },
+   "plan_cache": {
+    "entries": 334,
+    "hits": 170,
+    "hit_rate": 0.452
+   },
+   "strategy_memory": {
+    "clusters": 376
+   },
+   "evolve": {
+    "records": 376,
+    "s_rules": {
+     "decayed_layers": 2209
+    },
+    "s_llm": {
+     "typed_edges": 2,
+     "profiles": 3
+    },
+    "k_rules": {
+     "stale_edges_removed": 0
+    },
+    "k_llm": {
+     "wikified": 2
+    },
+    "llm_calls": 10,
+    "good": 149,
+    "attention": 43,
+    "elapsed_s": 140.4
+   },
+   "rolled_back": true,
+   "elapsed_s": 211.9
+  },
+  {
+   "iter": 3,
+   "ts": "2026-07-10 11:04:15",
+   "use_llm": true,
+   "llm_health": {
+    "calls": 210,
+    "failures": 0,
+    "consecutive_failures": 0,
+    "backoff": false
+   },
+   "all": {
+    "n": 106,
+    "hit@20": 100.0,
+    "lat_p50": 42.8,
+    "lat_p95": 138.5,
+    "q_mean": 0.639,
+    "tiers": {
+     "cache": 47,
+     "llm": 6,
+     "rules": 53
+    },
+    "sg_expand_total": 1024
+   },
+   "valA": {
+    "n": 180,
+    "hit@20": 98.9,
+    "lat_p50": 47.1,
+    "lat_p95": 12651.0,
+    "q_mean": 0.623,
+    "tiers": {
+     "cache": 31,
+     "llm": 28,
+     "rules": 121
+    },
+    "sg_expand_total": 1638
+   },
+   "valB": {
+    "n": 90,
+    "hit@20": 100.0,
+    "lat_p50": 9733.7,
+    "lat_p95": 15478.8,
+    "q_mean": 0.606,
+    "tiers": {
+     "cache": 31,
+     "llm": 56,
+     "rules": 3
+    },
+    "sg_expand_total": 654,
+    "co": {
+     "5": 44.4,
+     "10": 56.7,
+     "20": 74.4
+    }
+   },
+   "sg": {
+    "docs": 572,
+    "edges": 3022,
+    "l1_explicit": 1719,
+    "l2_co_retrieval": 2380,
+    "l3_llm_curated": 10,
+    "profiles": 9
+   },
+   "plan_cache": {
+    "entries": 363,
+    "hits": 109,
+    "hit_rate": 0.29
+   },
+   "strategy_memory": {
+    "clusters": 376
+   },
+   "evolve": {
+    "records": 376,
+    "s_rules": {
+     "decayed_layers": 2039
+    },
+    "s_llm": {
+     "typed_edges": 4,
+     "profiles": 3
+    },
+    "k_rules": {
+     "stale_edges_removed": 0
+    },
+    "k_llm": {
+     "wikified": 2
+    },
+    "llm_calls": 10,
+    "good": 155,
+    "attention": 16,
+    "elapsed_s": 128.0
+   },
+   "rolled_back": false,
+   "elapsed_s": 1208.7
+  },
+  {
+   "iter": 4,
+   "ts": "2026-07-10 11:17:16",
+   "use_llm": true,
+   "llm_health": {
+    "calls": 265,
+    "failures": 0,
+    "consecutive_failures": 0,
+    "backoff": false
+   },
+   "all": {
+    "n": 106,
+    "hit@20": 100.0,
+    "lat_p50": 43.8,
+    "lat_p95": 10631.4,
+    "q_mean": 0.649,
+    "tiers": {
+     "cache": 49,
+     "llm": 8,
+     "rules": 49
+    },
+    "sg_expand_total": 1012
+   },
+   "valA": {
+    "n": 180,
+    "hit@20": 99.4,
+    "lat_p50": 47.7,
+    "lat_p95": 140.8,
+    "q_mean": 0.629,
+    "tiers": {
+     "cache": 52,
+     "llm": 6,
+     "rules": 122
+    },
+    "sg_expand_total": 1671
+   },
+   "valB": {
+    "n": 90,
+    "hit@20": 100.0,
+    "lat_p50": 168.8,
+    "lat_p95": 16637.2,
+    "q_mean": 0.615,
+    "tiers": {
+     "cache": 56,
+     "llm": 31,
+     "rules": 3
+    },
+    "sg_expand_total": 612,
+    "co": {
+     "5": 43.3,
+     "10": 54.4,
+     "20": 70.0
+    }
+   },
+   "sg": {
+    "docs": 572,
+    "edges": 3111,
+    "l1_explicit": 1719,
+    "l2_co_retrieval": 2488,
+    "l3_llm_curated": 14,
+    "profiles": 12
+   },
+   "plan_cache": {
+    "entries": 368,
+    "hits": 157,
+    "hit_rate": 0.418
+   },
+   "strategy_memory": {
+    "clusters": 376
+   },
+   "evolve": {
+    "records": 376,
+    "s_rules": {
+     "decayed_layers": 1934
+    },
+    "s_llm": {
+     "typed_edges": 4,
+     "profiles": 3
+    },
+    "k_rules": {
+     "stale_edges_removed": 0
+    },
+    "k_llm": {
+     "wikified": 2
+    },
+    "llm_calls": 10,
+    "good": 157,
+    "attention": 12,
+    "elapsed_s": 166.5
+   },
+   "rolled_back": false,
+   "elapsed_s": 774.2
+  },
+  {
+   "iter": 5,
+   "ts": "2026-07-13 08:05:06",
+   "use_llm": true,
+   "llm_health": {
+    "calls": 328,
+    "failures": 0,
+    "consecutive_failures": 0,
+    "backoff": false
+   },
+   "all": {
+    "n": 106,
+    "hit@20": 100.0,
+    "lat_p50": 43.7,
+    "lat_p95": 134.6,
+    "q_mean": 0.654,
+    "tiers": {
+     "cache": 52,
+     "llm": 5,
+     "rules": 49
+    },
+    "sg_expand_total": 1022
+   },
+   "valA": {
+    "n": 180,
+    "hit@20": 98.9,
+    "lat_p50": 50.0,
+    "lat_p95": 108.8,
+    "q_mean": 0.616,
+    "tiers": {
+     "cache": 45,
+     "llm": 4,
+     "rules": 131
+    },
+    "sg_expand_total": 1718
+   },
+   "valB": {
+    "n": 90,
+    "hit@20": 100.0,
+    "lat_p50": 271.6,
+    "lat_p95": 15157.4,
+    "q_mean": 0.609,
+    "tiers": {
+     "cache": 41,
+     "llm": 44,
+     "rules": 5
+    },
+    "sg_expand_total": 640,
+    "co": {
+     "5": 43.3,
+     "10": 52.2,
+     "20": 73.3
+    }
+   },
+   "sg": {
+    "docs": 572,
+    "edges": 3178,
+    "l1_explicit": 1719,
+    "l2_co_retrieval": 2562,
+    "l3_llm_curated": 18,
+    "profiles": 15
+   },
+   "plan_cache": {
+    "entries": 370,
+    "hits": 138,
+    "hit_rate": 0.367
+   },
+   "strategy_memory": {
+    "clusters": 376
+   },
+   "evolve": {
+    "records": 376,
+    "s_rules": {
+     "decayed_layers": 1834
+    },
+    "s_llm": {
+     "typed_edges": 4,
+     "profiles": 3
+    },
+    "k_rules": {
+     "stale_edges_removed": 0
+    },
+    "k_llm": {
+     "wikified": 2
+    },
+    "llm_calls": 10,
+    "good": 156,
+    "attention": 21,
+    "elapsed_s": 117.7
+   },
+   "rolled_back": false,
+   "elapsed_s": 247663.7
+  }
+ ]
+}

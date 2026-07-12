@@ -375,3 +375,43 @@
 - 수정: EXPAND_L1_SLOTS=4 — 예산 6석 중 4석은 L1 후보 전용, 2석만 학습 엣지 경쟁.
   한쪽이 비면 잔여석은 반대쪽에 개방. tail 안전망(v5.5) 유지.
 - 유닛 전체 + 스모크 10/10. **v5.6 동결 — --fresh 무개입 5회 검증.**
+
+### 2026-07-10 10:40:20 — ver5 iteration 1 (LLM on)
+- All@20 100.0% · ValA@20 98.9% · ValB co@20/10/5 74.4/57.8/41.1%
+- latency p50/p95: all=42.2/49.4ms · tiers(valB)={'cache': 0, 'llm': 83, 'rules': 7}
+- SG: {'docs': 572, 'edges': 2681, 'l1_explicit': 1719, 'l2_co_retrieval': 1888, 'l3_llm_curated': 4, 'profiles': 3} · plan_cache: {'entries': 328, 'hits': 2, 'hit_rate': 0.005}
+- evolve: {'records': 376, 's_rules': {'decayed_layers': 2221}, 's_llm': {'typed_edges': 4, 'profiles': 3}, 'k_rules': {'stale_edges_removed': 0}, 'k_llm': {'wikified': 2}, 'llm_calls': 10, 'good': 151, 'attention': 48, 'elapsed_s': 168.8}
+
+### 2026-07-10 10:43:59 — ver5 iteration 2 (LLM on)
+- All@20 99.0% · ValA@20 99.4% · ValB co@20/10/5 75.6/53.3/40.0%
+- latency p50/p95: all=42.9/53.7ms · tiers(valB)={'cache': 78, 'llm': 5, 'rules': 7}
+- SG: {'docs': 572, 'edges': 2808, 'l1_explicit': 1719, 'l2_co_retrieval': 2069, 'l3_llm_curated': 6, 'profiles': 6} · plan_cache: {'entries': 334, 'hits': 170, 'hit_rate': 0.452}
+- evolve: {'records': 376, 's_rules': {'decayed_layers': 2209}, 's_llm': {'typed_edges': 2, 'profiles': 3}, 'k_rules': {'stale_edges_removed': 0}, 'k_llm': {'wikified': 2}, 'llm_calls': 10, 'good': 149, 'attention': 43, 'elapsed_s': 140.4}
+- **REGRESSION GUARD fired → KG rolled back** (사유는 evolution_log 참조)
+
+### 2026-07-10 11:04:15 — ver5 iteration 3 (LLM on)
+- All@20 100.0% · ValA@20 98.9% · ValB co@20/10/5 74.4/56.7/44.4%
+- latency p50/p95: all=42.8/138.5ms · tiers(valB)={'cache': 31, 'llm': 56, 'rules': 3}
+- SG: {'docs': 572, 'edges': 3022, 'l1_explicit': 1719, 'l2_co_retrieval': 2380, 'l3_llm_curated': 10, 'profiles': 9} · plan_cache: {'entries': 363, 'hits': 109, 'hit_rate': 0.29}
+- evolve: {'records': 376, 's_rules': {'decayed_layers': 2039}, 's_llm': {'typed_edges': 4, 'profiles': 3}, 'k_rules': {'stale_edges_removed': 0}, 'k_llm': {'wikified': 2}, 'llm_calls': 10, 'good': 155, 'attention': 16, 'elapsed_s': 128.0}
+
+### 2026-07-10 11:17:16 — ver5 iteration 4 (LLM on)
+- All@20 100.0% · ValA@20 99.4% · ValB co@20/10/5 70.0/54.4/43.3%
+- latency p50/p95: all=43.8/10631.4ms · tiers(valB)={'cache': 56, 'llm': 31, 'rules': 3}
+- SG: {'docs': 572, 'edges': 3111, 'l1_explicit': 1719, 'l2_co_retrieval': 2488, 'l3_llm_curated': 14, 'profiles': 12} · plan_cache: {'entries': 368, 'hits': 157, 'hit_rate': 0.418}
+- evolve: {'records': 376, 's_rules': {'decayed_layers': 1934}, 's_llm': {'typed_edges': 4, 'profiles': 3}, 'k_rules': {'stale_edges_removed': 0}, 'k_llm': {'wikified': 2}, 'llm_calls': 10, 'good': 157, 'attention': 12, 'elapsed_s': 166.5}
+
+### 2026-07-13 08:05:06 — ver5 iteration 5 (LLM on)
+- All@20 100.0% · ValA@20 98.9% · ValB co@20/10/5 73.3/52.2/43.3%
+- latency p50/p95: all=43.7/134.6ms · tiers(valB)={'cache': 41, 'llm': 44, 'rules': 5}
+- SG: {'docs': 572, 'edges': 3178, 'l1_explicit': 1719, 'l2_co_retrieval': 2562, 'l3_llm_curated': 18, 'profiles': 15} · plan_cache: {'entries': 370, 'hits': 138, 'hit_rate': 0.367}
+- evolve: {'records': 376, 's_rules': {'decayed_layers': 1834}, 's_llm': {'typed_edges': 4, 'profiles': 3}, 'k_rules': {'stale_edges_removed': 0}, 'k_llm': {'wikified': 2}, 'llm_calls': 10, 'good': 156, 'attention': 21, 'elapsed_s': 117.7}
+
+### 2026-07-10 — v5.6 검증 완료 및 승격 판정
+- v5.6 (무개입 5회, LLM 328콜 무장애): co@5 42.4±1.81 / co@10 54.9±2.33 / co@20 73.5±2.14.
+- vs v5.4: co@5 +2.6, co@10 +2.5, 전 지표 stdev 감소. **co@10 하락 시그니처 소멸** (L1 슬롯 예약 효과 확증).
+  co@20 평균은 -1.4 (74.9→73.5) — tail 안전망에도 소폭 양보.
+- **판정: v5.6 승격** — 목표(소형 top-k 정답률 + iteration 안정성)에 직접 부합.
+  co@20 최우선 시나리오에서는 structrag-v5.4 태그 사용.
+- 다음 개선 후보(미착수): co@20 회복 — EXPAND_TAIL 후보의 doc-rank 삽입 위치 최적화,
+  iter2 유형의 Track K 회귀(가드 1회 발동) 원인 분석.

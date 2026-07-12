@@ -41,8 +41,13 @@ python3 harness_pjt/evaluation/scenario2-ver5/make_graphs.py                    
 
 골든 `harness_pjt/rag_data/`는 읽기 전용 — `--fresh`가 작업 카피를 만든다.
 
-## 검증 결과 (2026-07-09, 동결 v5.1 무개입 5회)
+## 검증 결과 (무개입 --fresh 5회 런, 그라운드룰 7)
 
-- ValB co@20 **86.7~95.6%** (ver4 기준선 54.4%), All@20/ValA@20 유지, 회귀가드 1회 발동·정상 롤백
-- 자기진화: co@10 46.7→54.4, PlanCache 히트 0→44%, p50 12s→1.9s
-- 발견 문제와 다음 사이클 개선 후보(C1~C4): `evaluation/scenario2-ver5/results/summary_report.md`
+| 버전 | co@20 | co@10 | co@5 | 특징 |
+|---|---|---|---|---|
+| v5.1 | 86.7~95.6 (하락 추세) | ~49 | 23~39 널뛰기 | 레벨 높지만 불안정 |
+| v5.4 (`structrag-v5.4`) | 74.9±3.75, 단조상승 →78.9 | 52.4±2.88 | 39.8±2.38 | co@20 최우선 시 사용 |
+| **v5.6 (현재)** | 73.5±2.14 | **54.9±2.33** | **42.4±1.81** | 소형 top-k + 안정성 최적, co@10 하락 시그니처 소멸 |
+
+공통: All@20 ~100 / ValA@20 ~99 유지, 회귀가드 자동 롤백 실증, LLM 무장애 런 기준.
+사이클별 진단·교훈·판정: [DESIGN_HISTORY.md](DESIGN_HISTORY.md), 상세 수치: `evaluation/scenario2-ver5/results/`
