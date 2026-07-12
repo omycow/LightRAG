@@ -265,14 +265,21 @@ class StructureGraph:
             self._data["edges"][key]["last_hit"] = now
         return [(d, w, l1) for d, w, _, l1 in out[:top_n]]
 
-    def get_scope(self, seeds: list[str], budget: int = 12, min_weight: float = 0.3) -> dict[str, float]:
-        """Weighted 1-hop expansion from seed docs → {doc: confidence} capped at budget."""
+    def get_scope(self, seeds: list[str], budget: int = 12, min_weight: float = 0.3,
+                  learned_min_weight: float = 0.45) -> dict[str, float]:
+        """Weighted 1-hop expansion from seed docs → {doc: confidence} capped at budget.
+
+        Learned (L2/L3) edges need a higher bar than explicit refs (v5.7 I2):
+        the scope feeds a fusion-wide soft boost, and echo-reinforced co-retrieval
+        edges polluting it distorts the base ranking a little more every iteration."""
         scope: dict[str, float] = {}
         for s in seeds:
             if s in self._data["nodes"]:
                 scope[s] = max(scope.get(s, 0.0), 1.0)
         for s in seeds:
-            for nb, w in self.get_neighbors(s, top_n=6, min_weight=min_weight):
+            for nb, w, is_l1 in self.get_neighbors_layered(s, top_n=6, min_weight=min_weight):
+                if not is_l1 and w < learned_min_weight:
+                    continue
                 scope[nb] = max(scope.get(nb, 0.0), w)
         return dict(sorted(scope.items(), key=lambda kv: -kv[1])[:budget])
 

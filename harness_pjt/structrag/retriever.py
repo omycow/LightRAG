@@ -231,10 +231,10 @@ class StructRetriever:
         ranked_exp = sorted(expansion.items(), key=lambda kv: -kv[1][0])
         l1_c = [kv for kv in ranked_exp if kv[1][4]]
         ln_c = [kv for kv in ranked_exp if not kv[1][4]]
+        # v5.7 I3: unused L1 seats are NOT released to learned candidates — echo-
+        # strengthened L2 edges were claiming them with increasingly self-
+        # referential docs. An unfilled seat goes back to base documents instead.
         top_list = l1_c[:EXPAND_L1_SLOTS] + ln_c[:EXPAND_BUDGET - EXPAND_L1_SLOTS]
-        if len(top_list) < EXPAND_BUDGET:  # release unused seats
-            taken = {d for d, _ in top_list}
-            top_list += [kv for kv in ranked_exp if kv[0] not in taken][:EXPAND_BUDGET - len(top_list)]
         top_expansion = dict(top_list)
         # v5.5 safety net: budget losers still get appended after the ranked
         # window — serves co@20 while the reserved seats serve co@5/10.
@@ -296,7 +296,13 @@ class StructRetriever:
             self.analyzer.feedback(query, plan, quality,
                                    promote_gate=self.rq.promote_gate,
                                    promote_floor=self.rq.attention_gate)
-            self.sg.reinforce_co_retrieval(retrieved_docs[:10], quality,
+            # v5.7 I1: reinforce L2 from BASE-retrieved docs only. Feeding expansion
+            # docs back in taught L2 the pairs our own structure glued together (an
+            # echo loop that degraded top-10 over iterations). The old wikigraph DRG
+            # had this rule ("update from BASE retrieval only, not supplement") and
+            # it was lost in the structrag rewrite.
+            base_docs = [d for d in retrieved_docs if d in doc_score][:10]
+            self.sg.reinforce_co_retrieval(base_docs, quality,
                                            quality_gate=self.rq.reinforce_gate)
 
         latency_ms = round((time.perf_counter() - t0) * 1000, 1)
