@@ -30,6 +30,8 @@ import shutil
 import time
 from collections import Counter, defaultdict
 
+from harness_pjt.structrag.quality import salient_terms
+
 GRAPH_FIELD_SEP = "<SEP>"
 
 # files that constitute the KG + its embeddings (checkpointed before Track K)
@@ -300,6 +302,20 @@ class Evolver:
                 new_desc = (new_desc or "").strip()
                 if len(new_desc) < 40 or GRAPH_FIELD_SEP in new_desc:
                     continue
+                # v5.13 embedding-drift guard: wikification was the only Track-K
+                # mutation and correlated with every regression-guard rollback —
+                # an LLM rewrite that drops technical terms shifts the entity's
+                # embedding and breaks retrieval for queries that used them.
+                # Deterministic check, no answers involved: the new text must
+                # retain ≥60% of the old description's salient terms.
+                old_terms = {t for t in salient_terms(node["description"]) if len(t) >= 4}
+                if old_terms:
+                    kept = sum(1 for t in old_terms if t in new_desc.lower())
+                    if kept / len(old_terms) < 0.6:
+                        self.retriever.sg.log(
+                            "k_wikify_rejected", track="K", entity=name,
+                            reason=f"term retention {kept}/{len(old_terms)} below 0.6")
+                        continue
                 await graph.upsert_node(name, {**node, "description": new_desc})
                 vdb_batch[compute_mdhash_id(name, prefix="ent-")] = {
                     "content": f"{name}\n{new_desc}",

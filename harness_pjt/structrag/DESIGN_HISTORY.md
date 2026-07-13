@@ -731,3 +731,44 @@
 - v5.12 = v5.8 + **타입 프라이어(top-2)만** (헤드캡 제거). 스크리닝: co@5 45.6(최고)/co@10 64.4/
   co@20 81.1(베이스라인 무손실) — 카드 부양은 타입 프라이어가, 확장 배치는 검증된 v5.8 그대로.
 - 유닛 + 스모크 통과. **v5.12 동결 — --fresh 무개입 5회 검증.**
+
+### 2026-07-13 19:08:18 — ver5 iteration 1 (LLM on)
+- All@20 100.0% · ValA@20 97.8% · ValB co@20/10/5 70.0/56.7/46.7%
+- latency p50/p95: all=38.0/44.9ms · tiers(valB)={'cache': 0, 'llm': 83, 'rules': 7}
+- SG: {'docs': 572, 'edges': 2166, 'l1_explicit': 1719, 'l2_co_retrieval': 1423, 'l3_llm_curated': 4, 'profiles': 3} · plan_cache: {'entries': 335, 'hits': 2, 'hit_rate': 0.005}
+- evolve: {'records': 376, 's_rules': {'decayed_layers': 1204}, 's_llm': {'typed_edges': 4, 'profiles': 3}, 'k_rules': {'stale_edges_removed': 0}, 'k_llm': {'wikified': 2}, 'llm_calls': 10, 'good': 151, 'attention': 41, 'elapsed_s': 37.9}
+
+### 2026-07-13 19:09:36 — ver5 iteration 2 (LLM on)
+- All@20 100.0% · ValA@20 97.8% · ValB co@20/10/5 72.2/56.7/43.3%
+- latency p50/p95: all=38.6/46.0ms · tiers(valB)={'cache': 81, 'llm': 2, 'rules': 7}
+- SG: {'docs': 572, 'edges': 2223, 'l1_explicit': 1719, 'l2_co_retrieval': 1523, 'l3_llm_curated': 5, 'profiles': 6} · plan_cache: {'entries': 337, 'hits': 173, 'hit_rate': 0.46}
+- evolve: {'records': 376, 's_rules': {'decayed_layers': 1191}, 's_llm': {'typed_edges': 1, 'profiles': 3}, 'k_rules': {'stale_edges_removed': 0}, 'k_llm': {'wikified': 2}, 'llm_calls': 10, 'good': 157, 'attention': 40, 'elapsed_s': 51.8}
+
+### 2026-07-13 19:10:28 — ver5 iteration 3 (LLM on)
+- All@20 100.0% · ValA@20 97.8% · ValB co@20/10/5 68.9/53.3/41.1%
+- latency p50/p95: all=38.8/62.5ms · tiers(valB)={'cache': 30, 'llm': 57, 'rules': 3}
+- SG: {'docs': 572, 'edges': 2286, 'l1_explicit': 1719, 'l2_co_retrieval': 1641, 'l3_llm_curated': 9, 'profiles': 9} · plan_cache: {'entries': 365, 'hits': 108, 'hit_rate': 0.287}
+- evolve: {'records': 376, 's_rules': {'decayed_layers': 1076}, 's_llm': {'typed_edges': 4, 'profiles': 3}, 'k_rules': {'stale_edges_removed': 0}, 'k_llm': {'wikified': 2}, 'llm_calls': 10, 'good': 157, 'attention': 12, 'elapsed_s': 24.6}
+
+### 2026-07-13 19:10:59 — ver5 iteration 4 (LLM on)
+- All@20 100.0% · ValA@20 97.8% · ValB co@20/10/5 67.8/53.3/41.1%
+- latency p50/p95: all=41.5/67.1ms · tiers(valB)={'cache': 81, 'llm': 6, 'rules': 3}
+- SG: {'docs': 572, 'edges': 2289, 'l1_explicit': 1719, 'l2_co_retrieval': 1659, 'l3_llm_curated': 13, 'profiles': 12} · plan_cache: {'entries': 368, 'hits': 183, 'hit_rate': 0.487}
+- evolve: {'records': 376, 's_rules': {'decayed_layers': 1044}, 's_llm': {'typed_edges': 4, 'profiles': 3}, 'k_rules': {'stale_edges_removed': 0}, 'k_llm': {'wikified': 2}, 'llm_calls': 10, 'good': 158, 'attention': 9, 'elapsed_s': 1.0}
+
+### 2026-07-13 19:12:06 — ver5 iteration 5 (LLM on)
+- All@20 100.0% · ValA@20 97.8% · ValB co@20/10/5 68.9/54.4/41.1%
+- latency p50/p95: all=39.7/64.2ms · tiers(valB)={'cache': 35, 'llm': 49, 'rules': 6}
+- SG: {'docs': 572, 'edges': 2290, 'l1_explicit': 1719, 'l2_co_retrieval': 1663, 'l3_llm_curated': 16, 'profiles': 15} · plan_cache: {'entries': 369, 'hits': 129, 'hit_rate': 0.343}
+- evolve: {'records': 376, 's_rules': {'decayed_layers': 1040}, 's_llm': {'typed_edges': 3, 'profiles': 3}, 'k_rules': {'stale_edges_removed': 0}, 'k_llm': {'wikified': 2}, 'llm_calls': 10, 'good': 156, 'attention': 22, 'elapsed_s': 39.8}
+
+### 2026-07-10 — v5.12 기각 및 개발 사이클 13 (v5.13): 랭킹이 아니라 롤백 제거
+- v5.12 검증: 69.6±1.67 / 54.9±1.72 / 42.7±2.45, **ValA 97.8 5회 고착** — co@20 −5.1로 기각.
+  타입 프라이어는 doc_score 전역 오염(확장 상속·윈도우 구성 전파)으로 풀런에서 순손실.
+  갭 14.7은 co@20을 깎아 만든 것이라 무효. **타입 프라이어 레버 폐기** (단독·번들 모두 실패).
+- v5.13 방향 전환: 랭킹 로직은 v5.8 복원(무손상), 대신 **가드 롤백의 원인 제거**.
+  근거: Track K의 유일한 KG 변경 = 위키화. 롤백은 위키화 사이클 직후에만 발생 (v5.8 iter2/5 등).
+  LLM 리라이트가 기술 용어를 떨어뜨리면 임베딩이 이동해 해당 용어 쿼리가 깨짐.
+- v5.13 = v5.8 + **위키화 용어보존 가드**: 신규 설명이 구 설명의 살리언트 용어(4자+) 60% 미만 보존 시
+  적용 거부 + 로그. 결정적, 정답 미참조. 기대: 롤백 소멸 → 성장 비단절 → co@10/co@20 동반 상승.
+- 유닛 + 스모크 10/10. **v5.13 동결 — --fresh 무개입 5회 검증.**
