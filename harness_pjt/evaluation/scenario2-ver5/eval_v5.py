@@ -49,14 +49,38 @@ CLI_MODEL = os.environ.get("CLAUDE_CLI_MODEL", "claude-haiku-4-5-20251001")
 # its usage limit from iteration 3 on — every analyze call failed (~2s) and fell
 # back to rules, invisible in the reports. Track calls/failures, back off after
 # a failure streak, and surface the counters in each iteration record.
-LLM_HEALTH = {"calls": 0, "failures": 0, "consecutive_failures": 0, "backoff": False}
+LLM_HEALTH = {"calls": 0, "failures": 0, "consecutive_failures": 0, "backoff": False,
+              "cache_hits": 0}
 BACKOFF_AFTER = 8
+
+# Persistent LLM response cache, keyed by prompt hash and stored OUTSIDE the
+# working copy so it survives --fresh. Same query text → same analysis plan;
+# this is response caching (no benchmark answers involved), added after CLI
+# usage limits contaminated three validation runs in a row. Also makes runs
+# reproducible: repeat runs replay identical LLM outputs.
+LLM_CACHE_FILE = SCRIPT_DIR / "llm_cache.json"
+try:
+    _LLM_CACHE = json.loads(LLM_CACHE_FILE.read_text())
+except (OSError, ValueError):
+    _LLM_CACHE = {}
+
+
+def _llm_cache_put(key: str, value: str):
+    _LLM_CACHE[key] = value
+    if len(_LLM_CACHE) % 20 == 1:
+        LLM_CACHE_FILE.write_text(json.dumps(_LLM_CACHE, ensure_ascii=False))
 
 
 async def claude_cli_llm(prompt: str, system_prompt: str | None = None, **kwargs) -> str:
     """Analyzer/evolver LLM via claude CLI (haiku): reliable JSON, ~4s/call.
     Used ONLY off the hot path or behind the analyzer's complexity gate."""
+    import hashlib
     import tempfile
+    key = hashlib.sha256(((system_prompt or "") + "\x00" + prompt).encode()).hexdigest()[:32]
+    cached = _LLM_CACHE.get(key)
+    if cached is not None:
+        LLM_HEALTH["cache_hits"] += 1
+        return cached
     if LLM_HEALTH["consecutive_failures"] >= BACKOFF_AFTER:
         LLM_HEALTH["backoff"] = True
         raise RuntimeError("LLM backoff: consecutive failure streak")
@@ -77,6 +101,7 @@ async def claude_cli_llm(prompt: str, system_prompt: str | None = None, **kwargs
             raise RuntimeError(f"claude CLI rc={proc.returncode}: {err.decode()[:200]}")
         result = out.decode().strip()
         LLM_HEALTH["consecutive_failures"] = 0
+        _llm_cache_put(key, result)
         return result
     except Exception:
         LLM_HEALTH["failures"] += 1
@@ -270,6 +295,7 @@ def main():
         record = asyncio.run(run_iteration(use_llm=not args.no_llm, state=state))
         state["iterations"].append(record)
         save_state(state)
+        LLM_CACHE_FILE.write_text(json.dumps(_LLM_CACHE, ensure_ascii=False))
         append_history(record)
         write_summary(state)
         print(f"[done] iteration {record['iter']} in {record['elapsed_s']}s "

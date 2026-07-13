@@ -440,3 +440,44 @@
   I3 L1 잔여석 learned 미개방 (빈 좌석은 base로 반환).
 - 기대: v5.6의 높은 시작점 유지 + v5.4의 우상향 회복.
 - 유닛 전체 + 스모크 10/10. **v5.7 동결 — --fresh 무개입 5회 검증.**
+
+### 2026-07-13 08:39:17 — ver5 iteration 1 (LLM on)
+- All@20 100.0% · ValA@20 98.9% · ValB co@20/10/5 71.1/56.7/46.7%
+- latency p50/p95: all=38.5/44.7ms · tiers(valB)={'cache': 0, 'llm': 83, 'rules': 7}
+- SG: {'docs': 572, 'edges': 2771, 'l1_explicit': 1719, 'l2_co_retrieval': 1761, 'l3_llm_curated': 4, 'profiles': 3} · plan_cache: {'entries': 329, 'hits': 2, 'hit_rate': 0.005}
+- evolve: {'records': 376, 's_rules': {'decayed_layers': 2357}, 's_llm': {'typed_edges': 4, 'profiles': 3}, 'k_rules': {'stale_edges_removed': 0}, 'k_llm': {'wikified': 2}, 'llm_calls': 10, 'good': 156, 'attention': 47, 'elapsed_s': 153.3}
+
+### 2026-07-13 08:43:09 — ver5 iteration 2 (LLM on)
+- All@20 100.0% · ValA@20 99.4% · ValB co@20/10/5 75.6/57.8/41.1%
+- latency p50/p95: all=39.8/52.3ms · tiers(valB)={'cache': 79, 'llm': 4, 'rules': 7}
+- SG: {'docs': 572, 'edges': 2924, 'l1_explicit': 1719, 'l2_co_retrieval': 1927, 'l3_llm_curated': 7, 'profiles': 6} · plan_cache: {'entries': 332, 'hits': 170, 'hit_rate': 0.452}
+- evolve: {'records': 376, 's_rules': {'decayed_layers': 2278}, 's_llm': {'typed_edges': 3, 'profiles': 3}, 'k_rules': {'stale_edges_removed': 0}, 'k_llm': {'wikified': 2}, 'llm_calls': 10, 'good': 155, 'attention': 45, 'elapsed_s': 158.0}
+
+### 2026-07-13 08:48:20 — ver5 iteration 3 (LLM on)
+- All@20 99.0% · ValA@20 98.9% · ValB co@20/10/5 78.9/55.6/31.1%
+- latency p50/p95: all=39.8/9879.2ms · tiers(valB)={'cache': 38, 'llm': 0, 'rules': 52}
+- SG: {'docs': 572, 'edges': 2977, 'l1_explicit': 1719, 'l2_co_retrieval': 2003, 'l3_llm_curated': 7, 'profiles': 6} · plan_cache: {'entries': 345, 'hits': 126, 'hit_rate': 0.335}
+- evolve: {'records': 376, 's_rules': {'decayed_layers': 2125}, 's_llm': {'typed_edges': 0, 'profiles': 0}, 'k_rules': {'stale_edges_removed': 0}, 'k_llm': {'wikified': 0}, 'llm_calls': 8, 'good': 163, 'attention': 42, 'elapsed_s': 0.2}
+- **REGRESSION GUARD fired → KG rolled back** (사유는 evolution_log 참조)
+
+### 2026-07-13 08:49:06 — ver5 iteration 4 (LLM on)
+- All@20 100.0% · ValA@20 98.9% · ValB co@20/10/5 75.6/50.0/32.2%
+- latency p50/p95: all=42.0/67.9ms · tiers(valB)={'cache': 37, 'llm': 0, 'rules': 53}
+- SG: {'docs': 572, 'edges': 3019, 'l1_explicit': 1719, 'l2_co_retrieval': 2050, 'l3_llm_curated': 7, 'profiles': 6} · plan_cache: {'entries': 345, 'hits': 139, 'hit_rate': 0.37}
+- evolve: {'records': 376, 's_rules': {'decayed_layers': 2087}, 's_llm': {'typed_edges': 0, 'profiles': 0}, 'k_rules': {'stale_edges_removed': 0}, 'k_llm': {'wikified': 0}, 'llm_calls': 8, 'good': 164, 'attention': 42, 'elapsed_s': 0.2}
+
+### 2026-07-13 08:49:53 — ver5 iteration 5 (LLM on)
+- All@20 100.0% · ValA@20 98.9% · ValB co@20/10/5 76.7/53.3/33.3%
+- latency p50/p95: all=40.8/68.4ms · tiers(valB)={'cache': 38, 'llm': 0, 'rules': 52}
+- SG: {'docs': 572, 'edges': 3031, 'l1_explicit': 1719, 'l2_co_retrieval': 2062, 'l3_llm_curated': 7, 'profiles': 6} · plan_cache: {'entries': 345, 'hits': 130, 'hit_rate': 0.346}
+- evolve: {'records': 376, 's_rules': {'decayed_layers': 2058}, 's_llm': {'typed_edges': 0, 'profiles': 0}, 'k_rules': {'stale_edges_removed': 0}, 'k_llm': {'wikified': 0}, 'llm_calls': 8, 'good': 163, 'attention': 48, 'elapsed_s': 0.1}
+
+### 2026-07-10 — v5.7 검증 결과: 로직 유망, 검증은 LLM 장애로 오염 (판정 보류)
+- LLM 정상 구간(iter1~2): co@20 71.1→75.6, co@10 56.7→57.8 — **동반 상승은 전 버전 최초** (에코 차단 효과 신호).
+  co@5 iter1 46.7 역대 최고 시작점. 평균 co@20 75.6 전 버전 최고.
+- LLM 사망 구간(iter3~5, CLI 한도, 실패 24 누적): co@5 41→31 붕괴, co@10 50까지 하락, iter3 가드 롤백.
+  하락 시점 = 장애 시점 일치 → 로직 판정 불가.
+- **CLI 한도로 인한 검증 오염 3회째 재발 → LLM 인프라가 검증 블로커.**
+- 다음: 인프라 하드닝 (검색 로직 무변경) — analyzer/evolver LLM에 프롬프트 해시 키 디스크 영속 캐시.
+  같은 쿼리 → 같은 플랜 재사용 (그라운드룰 합치: 정답 미참조, LLM 산출물 캐싱일 뿐).
+  반복 런의 CLI 콜 ~90% 절감 + 런 간 비교가능성 향상. 적용 후 v5.7 재검증.
