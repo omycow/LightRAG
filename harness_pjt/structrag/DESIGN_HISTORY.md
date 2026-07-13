@@ -692,3 +692,42 @@
      KO→EN 힌트 맵은 언어 정규화 (파일명 컨벤션 하드코딩 아님 — 토큰은 코퍼스에서 자동 유도).
 - 스크리닝(rules-only): co@5 30→42.2, co@10 61.1→65.6, co@20 81.1→80.0, 갭 20→14.4.
 - 유닛 + 스모크 통과. **v5.11 동결 — --fresh 무개입 5회 검증.**
+
+### 2026-07-13 19:01:20 — ver5 iteration 1 (LLM on)
+- All@20 100.0% · ValA@20 98.3% · ValB co@20/10/5 67.8/52.2/42.2%
+- latency p50/p95: all=37.0/46.6ms · tiers(valB)={'cache': 0, 'llm': 83, 'rules': 7}
+- SG: {'docs': 572, 'edges': 2231, 'l1_explicit': 1719, 'l2_co_retrieval': 1469, 'l3_llm_curated': 1, 'profiles': 3} · plan_cache: {'entries': 338, 'hits': 2, 'hit_rate': 0.005}
+- evolve: {'records': 376, 's_rules': {'decayed_layers': 1298}, 's_llm': {'typed_edges': 1, 'profiles': 3}, 'k_rules': {'stale_edges_removed': 0}, 'k_llm': {'wikified': 2}, 'llm_calls': 10, 'good': 149, 'attention': 38, 'elapsed_s': 61.1}
+
+### 2026-07-13 19:02:39 — ver5 iteration 2 (LLM on)
+- All@20 100.0% · ValA@20 99.4% · ValB co@20/10/5 72.2/54.4/42.2%
+- latency p50/p95: all=38.2/51.4ms · tiers(valB)={'cache': 81, 'llm': 2, 'rules': 7}
+- SG: {'docs': 572, 'edges': 2292, 'l1_explicit': 1719, 'l2_co_retrieval': 1582, 'l3_llm_curated': 2, 'profiles': 6} · plan_cache: {'entries': 338, 'hits': 171, 'hit_rate': 0.455}
+- evolve: {'records': 376, 's_rules': {'decayed_layers': 1297}, 's_llm': {'typed_edges': 1, 'profiles': 3}, 'k_rules': {'stale_edges_removed': 0}, 'k_llm': {'wikified': 2}, 'llm_calls': 10, 'good': 155, 'attention': 38, 'elapsed_s': 52.5}
+
+### 2026-07-13 19:03:27 — ver5 iteration 3 (LLM on)
+- All@20 100.0% · ValA@20 98.3% · ValB co@20/10/5 71.1/53.3/40.0%
+- latency p50/p95: all=39.2/64.1ms · tiers(valB)={'cache': 30, 'llm': 56, 'rules': 4}
+- SG: {'docs': 572, 'edges': 2345, 'l1_explicit': 1719, 'l2_co_retrieval': 1705, 'l3_llm_curated': 6, 'profiles': 9} · plan_cache: {'entries': 364, 'hits': 106, 'hit_rate': 0.282}
+- evolve: {'records': 376, 's_rules': {'decayed_layers': 1210}, 's_llm': {'typed_edges': 4, 'profiles': 3}, 'k_rules': {'stale_edges_removed': 0}, 'k_llm': {'wikified': 2}, 'llm_calls': 10, 'good': 155, 'attention': 13, 'elapsed_s': 19.9}
+- **REGRESSION GUARD fired → KG rolled back** (사유는 evolution_log 참조)
+
+### 2026-07-13 19:03:57 — ver5 iteration 4 (LLM on)
+- All@20 100.0% · ValA@20 99.4% · ValB co@20/10/5 72.2/54.4/41.1%
+- latency p50/p95: all=39.2/66.1ms · tiers(valB)={'cache': 81, 'llm': 6, 'rules': 3}
+- SG: {'docs': 572, 'edges': 2360, 'l1_explicit': 1719, 'l2_co_retrieval': 1726, 'l3_llm_curated': 8, 'profiles': 12} · plan_cache: {'entries': 368, 'hits': 184, 'hit_rate': 0.489}
+- evolve: {'records': 376, 's_rules': {'decayed_layers': 1139}, 's_llm': {'typed_edges': 2, 'profiles': 3}, 'k_rules': {'stale_edges_removed': 0}, 'k_llm': {'wikified': 2}, 'llm_calls': 10, 'good': 153, 'attention': 8, 'elapsed_s': 1.0}
+
+### 2026-07-13 19:04:44 — ver5 iteration 5 (LLM on)
+- All@20 100.0% · ValA@20 98.9% · ValB co@20/10/5 73.3/54.4/38.9%
+- latency p50/p95: all=40.0/73.5ms · tiers(valB)={'cache': 34, 'llm': 51, 'rules': 5}
+- SG: {'docs': 572, 'edges': 2363, 'l1_explicit': 1719, 'l2_co_retrieval': 1728, 'l3_llm_curated': 10, 'profiles': 15} · plan_cache: {'entries': 369, 'hits': 129, 'hit_rate': 0.343}
+- evolve: {'records': 376, 's_rules': {'decayed_layers': 1140}, 's_llm': {'typed_edges': 2, 'profiles': 3}, 'k_rules': {'stale_edges_removed': 0}, 'k_llm': {'wikified': 2}, 'llm_calls': 10, 'good': 151, 'attention': 21, 'elapsed_s': 19.7}
+
+### 2026-07-10 — v5.11 기각 및 개발 사이클 12 (v5.12)
+- v5.11 검증: 71.3±2.12 / 53.7±0.98 / 40.9±1.43 — v5.8 전 지표 열위. **기각.**
+  교훈: 일괄 헤드캡은 카드를 살리지만 linked(확장 4번째 이후)도 함께 밀어냄. 풀런(학습 포함)과
+  스크리닝(단발·무학습)의 괴리 확인 — 스크리닝은 후보 선별용, 판정은 반드시 풀런.
+- v5.12 = v5.8 + **타입 프라이어(top-2)만** (헤드캡 제거). 스크리닝: co@5 45.6(최고)/co@10 64.4/
+  co@20 81.1(베이스라인 무손실) — 카드 부양은 타입 프라이어가, 확장 배치는 검증된 v5.8 그대로.
+- 유닛 + 스모크 통과. **v5.12 동결 — --fresh 무개입 5회 검증.**
