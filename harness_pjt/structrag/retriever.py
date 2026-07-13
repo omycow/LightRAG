@@ -27,6 +27,10 @@ from harness_pjt.structrag.structure_graph import StructureGraph
 
 RRF_K = 60
 SCOPE_BOOST = 0.6      # weight of the scope pseudo-ranking in fusion
+OBSERVE_K = 40         # v5.21: background observation window — evolving sees this
+                       # far regardless of the serve top_k (ver4's wide-EVOLVE-
+                       # window concept, lost in the structrag rewrite)
+MIN_RETRIEVE_K = 20    # internal rankings never narrower than this
 EXPAND_TOP_DOCS = 5    # how many top hit docs get SG-neighbor expansion
 EXPAND_NEIGHBORS = 4   # neighbors per hit doc
 EXPAND_CHUNKS = 2      # chunks pulled per neighbor doc
@@ -117,6 +121,8 @@ class StructRetriever:
             plan = await self.analyzer.analyze(
                 query, min_cache_quality=self.rq.promote_gate)
 
+        rk = max(MIN_RETRIEVE_K, top_k)  # observation-rich internal width (v5.21)
+
         # 2. SCOPE — seeds from query tokens/IDs + plan doc hints → SG 1-hop
         seeds = self.sg.match_docs_by_tokens(plan.rewrite, top_n=4)
         for hint in plan.doc_hints:
@@ -138,7 +144,7 @@ class StructRetriever:
             if (sub["mode"], q_text) in executed:
                 continue
             executed.add((sub["mode"], q_text))
-            results = await _run_mode(self.rag, sub["mode"], q_text, top_k)
+            results = await _run_mode(self.rag, sub["mode"], q_text, rk)
             ids = []
             for c in results:
                 cid = _cid(c)
@@ -151,8 +157,8 @@ class StructRetriever:
         # Independent bm25 + vector rankings on the rewritten query: full-width so
         # lexical evidence gets equal votes in fusion (rare-term/ID queries), and
         # they double as the QPP evidence for quality scoring.
-        vec_results = await query_vector(self.rag, plan.rewrite, top_k=top_k)
-        bm25_results = query_bm25(self.rag, plan.rewrite, top_k=top_k)
+        vec_results = await query_vector(self.rag, plan.rewrite, top_k=rk)
+        bm25_results = query_bm25(self.rag, plan.rewrite, top_k=rk)
         vec_ids = [_cid(c) for c in vec_results]
         bm25_ids = [_cid(c) for c in bm25_results]
         for c in vec_results + bm25_results:
@@ -318,6 +324,11 @@ class StructRetriever:
         retrieved_docs = list(dict.fromkeys(
             os.path.basename(c.get("file_path", "")) for c in final_chunks if c.get("file_path")
         ))
+        # v5.21 observation list: served docs first (order preserved), then the
+        # rest of the doc ranking out to OBSERVE_K — evolving watches wider than
+        # the user-facing window without touching what gets served
+        observed_docs = retrieved_docs + [d for d in doc_rank[:OBSERVE_K]
+                                          if d not in retrieved_docs]
         self.rq.add(quality)
         if learn:
             self.analyzer.feedback(query, plan, quality,
@@ -344,7 +355,7 @@ class StructRetriever:
             # growth engine; v5.6's no-rule version built an echo chamber.
             exp_docs = {os.path.basename(c.get("file_path", ""))
                         for c in final_chunks if c.get("_sg_expand")}
-            self.sg.reinforce_co_retrieval(retrieved_docs[:10], quality,
+            self.sg.reinforce_co_retrieval(observed_docs[:16], quality,
                                            quality_gate=self.rq.reinforce_gate,
                                            expansion_docs=exp_docs)
 
@@ -355,6 +366,7 @@ class StructRetriever:
             "subqueries": [{"q": s["q"][:80], "intent": s["intent"], "mode": s["mode"]}
                            for s in plan.subqueries],
             "scope": list(scope)[:12], "retrieved": retrieved_docs[:20],
+            "observed": observed_docs[:OBSERVE_K],
             "quality": quality, "signals": q["signals"],
             "sg_expand": supplement_count, "latency_ms": latency_ms,
         })

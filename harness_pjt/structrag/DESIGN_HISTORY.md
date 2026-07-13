@@ -1210,3 +1210,35 @@
   안 되는 고착 구간 — 캐시 응답이 강화게이트(p60) 미만이면 분석 큐 재등록, 섀도가 이길 때만 교체.
 - 검증 프로토콜 확장: 10-iteration 장기런 (챔피언 곡선의 정점 확인 겸용).
 - 유닛·스모크 10/10. **v5.20 동결 — P1 10회 검증.**
+
+### 2026-07-14 08:26:12 — ver5 iteration 1 (LLM on)
+- All@20 100.0% · ValA@20 99.4% · ValB co@20/10/5 86.7/61.1/36.7%
+- latency p50/p95: all=36.9/43.7ms · tiers(valB)={'cache': 0, 'llm': 0, 'rules': 90}
+- SG: {'docs': 572, 'edges': 2092, 'l1_explicit': 1719, 'l2_co_retrieval': 1249, 'l3_llm_curated': 4, 'profiles': 3} · plan_cache: {'entries': 348, 'hits': 2, 'hit_rate': 0.005}
+- evolve: {'records': 376, 's_rules': {'decayed_layers': 1009}, 's_llm': {'typed_edges': 4, 'profiles': 3}, 'k_rules': {'stale_edges_removed': 0}, 'k_llm': {'wikified': 1}, 'llm_calls': 49, 'good': 164, 'attention': 60, 'shadow_planner': {'analyzed': 40, 'promoted': 36}, 'elapsed_s': 72.0}
+
+### 2026-07-14 08:26:40 — ver5 iteration 2 (LLM on)
+- All@20 100.0% · ValA@20 99.4% · ValB co@20/10/5 93.3/66.7/44.4%
+- latency p50/p95: all=37.5/44.4ms · tiers(valB)={'cache': 18, 'llm': 0, 'rules': 72}
+- SG: {'docs': 572, 'edges': 2190, 'l1_explicit': 1719, 'l2_co_retrieval': 1465, 'l3_llm_curated': 7, 'profiles': 6} · plan_cache: {'entries': 367, 'hits': 128, 'hit_rate': 0.34}
+- evolve: {'records': 416, 's_rules': {'decayed_layers': 1114}, 's_llm': {'typed_edges': 3, 'profiles': 3}, 'k_rules': {'stale_edges_removed': 0}, 'k_llm': {'wikified': 0}, 'llm_calls': 48, 'good': 180, 'attention': 36, 'shadow_planner': {'analyzed': 40, 'promoted': 31}, 'elapsed_s': 3.8}
+
+### 2026-07-14 08:27:39 — ver5 iteration 3 (LLM on)
+- All@20 100.0% · ValA@20 99.4% · ValB co@20/10/5 90.0/68.9/50.0%
+- latency p50/p95: all=37.9/48.5ms · tiers(valB)={'cache': 19, 'llm': 0, 'rules': 71}
+- SG: {'docs': 572, 'edges': 2249, 'l1_explicit': 1719, 'l2_co_retrieval': 1612, 'l3_llm_curated': 10, 'profiles': 9} · plan_cache: {'entries': 367, 'hits': 130, 'hit_rate': 0.346}
+- evolve: {'records': 416, 's_rules': {'decayed_layers': 1041}, 's_llm': {'typed_edges': 3, 'profiles': 3}, 'k_rules': {'stale_edges_removed': 0}, 'k_llm': {'wikified': 0}, 'llm_calls': 48, 'good': 183, 'attention': 38, 'shadow_planner': {'analyzed': 40, 'promoted': 32}, 'elapsed_s': 34.7}
+
+### 2026-07-14 08:29:09 — ver5 iteration 4 (LLM on)
+- All@20 100.0% · ValA@20 99.4% · ValB co@20/10/5 90.0/67.8/48.9%
+- latency p50/p95: all=37.8/44.3ms · tiers(valB)={'cache': 27, 'llm': 0, 'rules': 63}
+- SG: {'docs': 572, 'edges': 2270, 'l1_explicit': 1719, 'l2_co_retrieval': 1648, 'l3_llm_curated': 11, 'profiles': 12} · plan_cache: {'entries': 367, 'hits': 140, 'hit_rate': 0.372}
+- evolve: {'records': 416, 's_rules': {'decayed_layers': 1044}, 's_llm': {'typed_edges': 1, 'profiles': 3}, 'k_rules': {'stale_edges_removed': 0}, 'k_llm': {'wikified': 0}, 'llm_calls': 48, 'good': 170, 'attention': 33, 'shadow_planner': {'analyzed': 40, 'promoted': 28}, 'elapsed_s': 65.9}
+
+### 2026-07-14 — 개발 사이클 21 (v5.21): 넓은 관찰 창 복원 (유저 지적)
+- 유실 발견: ver4의 "서빙 좁게 / EVOLVE 관찰 넓게" 개념이 재작성에서 사라짐 — L2 강화(상위 10),
+  evolver 후보(상위 8)가 서빙 창보다도 좁았음.
+- v5.21: 내부 검색 폭 max(20, top_k), 문서랭킹 40위까지 observed로 로그,
+  L2 강화 16문서·evolver 후보 12문서로 확대. 서빙 결과는 불변, 이볼빙 시야만 확장.
+  (선택적 에코·quality 게이트가 확대 창의 잡음 방어)
+- 유닛·스모크 10/10. **v5.21 동결 — v5.20 장기런 종료 후 10회 검증 예약.**

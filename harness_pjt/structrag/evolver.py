@@ -239,7 +239,7 @@ class Evolver:
         explained by an L1/L3 edge — the pairs where LLM curation adds information."""
         pair_queries: dict[tuple, list[str]] = defaultdict(list)
         for r in good:
-            docs = r.get("retrieved", [])[:8]
+            docs = (r.get("observed") or r.get("retrieved", []))[:12]
             for i in range(len(docs)):
                 for j in range(i + 1, len(docs)):
                     key = tuple(sorted((docs[i], docs[j])))
