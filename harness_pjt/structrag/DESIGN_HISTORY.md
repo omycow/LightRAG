@@ -530,3 +530,43 @@
   I2(스코프 learned 0.45+)·I3(잔여석 미개방)는 유지.
 - 유닛(선택적 에코 케이스 포함) + 스모크 10/10. **v5.8 동결 — --fresh 무개입 5회 검증.**
 - 기대: v5.7의 안정성(stdev ~1.5) + v5.4의 우상향 (L1 쌍만 강화되므로 상승분이 전부 정당 신호).
+
+### 2026-07-13 13:56:01 — ver5 iteration 1 (LLM on)
+- All@20 100.0% · ValA@20 99.4% · ValB co@20/10/5 72.2/57.8/43.3%
+- latency p50/p95: all=37.8/45.7ms · tiers(valB)={'cache': 0, 'llm': 83, 'rules': 7}
+- SG: {'docs': 572, 'edges': 2179, 'l1_explicit': 1719, 'l2_co_retrieval': 1408, 'l3_llm_curated': 3, 'profiles': 3} · plan_cache: {'entries': 331, 'hits': 2, 'hit_rate': 0.005}
+- evolve: {'records': 376, 's_rules': {'decayed_layers': 1182}, 's_llm': {'typed_edges': 3, 'profiles': 3}, 'k_rules': {'stale_edges_removed': 0}, 'k_llm': {'wikified': 2}, 'llm_calls': 10, 'good': 151, 'attention': 45, 'elapsed_s': 18.0}
+
+### 2026-07-13 13:56:42 — ver5 iteration 2 (LLM on)
+- All@20 99.0% · ValA@20 98.3% · ValB co@20/10/5 76.7/58.9/44.4%
+- latency p50/p95: all=37.9/42.6ms · tiers(valB)={'cache': 80, 'llm': 3, 'rules': 7}
+- SG: {'docs': 572, 'edges': 2240, 'l1_explicit': 1719, 'l2_co_retrieval': 1527, 'l3_llm_curated': 6, 'profiles': 6} · plan_cache: {'entries': 331, 'hits': 172, 'hit_rate': 0.457}
+- evolve: {'records': 376, 's_rules': {'decayed_layers': 1199}, 's_llm': {'typed_edges': 3, 'profiles': 3}, 'k_rules': {'stale_edges_removed': 0}, 'k_llm': {'wikified': 2}, 'llm_calls': 10, 'good': 146, 'attention': 45, 'elapsed_s': 14.2}
+- **REGRESSION GUARD fired → KG rolled back** (사유는 evolution_log 참조)
+
+### 2026-07-13 13:57:33 — ver5 iteration 3 (LLM on)
+- All@20 100.0% · ValA@20 99.4% · ValB co@20/10/5 73.3/54.4/41.1%
+- latency p50/p95: all=39.0/63.4ms · tiers(valB)={'cache': 23, 'llm': 64, 'rules': 3}
+- SG: {'docs': 572, 'edges': 2308, 'l1_explicit': 1719, 'l2_co_retrieval': 1671, 'l3_llm_curated': 10, 'profiles': 9} · plan_cache: {'entries': 362, 'hits': 100, 'hit_rate': 0.266}
+- evolve: {'records': 376, 's_rules': {'decayed_layers': 1118}, 's_llm': {'typed_edges': 4, 'profiles': 3}, 'k_rules': {'stale_edges_removed': 0}, 'k_llm': {'wikified': 2}, 'llm_calls': 10, 'good': 158, 'attention': 14, 'elapsed_s': 21.6}
+
+### 2026-07-13 13:58:20 — ver5 iteration 4 (LLM on)
+- All@20 100.0% · ValA@20 99.4% · ValB co@20/10/5 75.6/55.6/42.2%
+- latency p50/p95: all=38.2/59.3ms · tiers(valB)={'cache': 80, 'llm': 7, 'rules': 3}
+- SG: {'docs': 572, 'edges': 2317, 'l1_explicit': 1719, 'l2_co_retrieval': 1681, 'l3_llm_curated': 13, 'profiles': 12} · plan_cache: {'entries': 366, 'hits': 189, 'hit_rate': 0.503}
+- evolve: {'records': 376, 's_rules': {'decayed_layers': 1099}, 's_llm': {'typed_edges': 3, 'profiles': 3}, 'k_rules': {'stale_edges_removed': 0}, 'k_llm': {'wikified': 2}, 'llm_calls': 10, 'good': 158, 'attention': 11, 'elapsed_s': 8.6}
+
+### 2026-07-13 14:00:17 — ver5 iteration 5 (LLM on)
+- All@20 100.0% · ValA@20 98.3% · ValB co@20/10/5 75.6/55.6/42.2%
+- latency p50/p95: all=38.0/59.5ms · tiers(valB)={'cache': 27, 'llm': 57, 'rules': 6}
+- SG: {'docs': 572, 'edges': 2319, 'l1_explicit': 1719, 'l2_co_retrieval': 1683, 'l3_llm_curated': 15, 'profiles': 15} · plan_cache: {'entries': 366, 'hits': 129, 'hit_rate': 0.343}
+- evolve: {'records': 376, 's_rules': {'decayed_layers': 1046}, 's_llm': {'typed_edges': 2, 'profiles': 3}, 'k_rules': {'stale_edges_removed': 0}, 'k_llm': {'wikified': 2}, 'llm_calls': 10, 'good': 157, 'attention': 26, 'elapsed_s': 87.3}
+- **REGRESSION GUARD fired → KG rolled back** (사유는 evolution_log 참조)
+
+### 2026-07-10 — v5.8 검증 완료: 신규 챔피언 승격
+- 클린 런 (LLM 캐시 결정적, fail 0): co@20 74.7±1.86 (72.2→75.6, 피크 76.7) /
+  co@10 **56.5±1.84 역대 최고** / co@5 **42.6±1.25 역대 최고**. All 100 (가드 2회 발동 제외), ValA ~99.
+- vs v5.4: co@10 +4.1, co@5 +2.8, co@20 동급(−0.2)에 stdev 절반. vs v5.7: 안정성 유지하며 성장 복원.
+- **판정: v5.8 승격** — "높은 시작 + 우상향 + 안정" 3조건 최초 동시 충족. 선택적 에코 설계 확증.
+- 잔여 저해 요인: Track K 가드 롤백 2회 (iter2·iter5, ValA 1~2문항 흔들림) — 롤백마다 co@10 3~4pt 손실 후 회복.
+  다음 사이클 1순위: Track K 회귀 원인 특정 (위키화 vs entity VDB 갱신 vs stale-edge 제거 중 범인 분리).
