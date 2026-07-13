@@ -24,7 +24,16 @@ from collections import defaultdict
 
 # Effective-weight multipliers per layer: explicit refs are ground truth from the
 # documents themselves; learned layers rank below until heavily reinforced.
-LAYER_FACTOR = {"explicit_ref": 1.0, "llm_curated": 0.8, "co_retrieval": 0.6}
+# facet_link (v5.16) sits right under L1: docs that answered DIFFERENT facets of
+# one decomposed query are complementarity evidence — the decomposition structure
+# itself filters noise (unlike plain co-occurrence), but the signal is still an
+# inference (decomposition + retrieval + quality gate), not a document's own claim.
+LAYER_FACTOR = {"explicit_ref": 1.0, "facet_link": 0.9, "llm_curated": 0.8,
+                "co_retrieval": 0.6}
+
+# Ablation switches (generality experiments): disable evidence layers at runtime.
+_NO_L1 = os.environ.get("STRUCTRAG_NO_L1", "") == "1"
+_NO_FACET = os.environ.get("STRUCTRAG_NO_FACET", "") == "1"
 
 # Generic doc-ID token: uppercase segments joined by hyphens, at least one digit
 # (e.g. AUR-940, SPEC-RTL-AIM-0001, VT-AIM-DEC-0001). Built to be corpus-agnostic.
@@ -76,6 +85,21 @@ class StructureGraph:
 
     # ── L1: deterministic build from ingested chunks ─────────────────────────
 
+    def _build_nodes(self, text_chunks: dict[str, dict]):
+        for cid, c in text_chunks.items():
+            bn = os.path.basename(c.get("file_path", "")) if c.get("file_path") else ""
+            if not bn or bn in self._data["nodes"]:
+                continue
+            fp = c.get("file_path", "")
+            parts = fp.replace("\\", "/").split("/")
+            stem, ext = os.path.splitext(bn)
+            self._data["nodes"][bn] = {
+                "dir": parts[0] if len(parts) > 1 else "",
+                "ext": ext.lstrip("."),
+                "tokens": [t.lower() for t in re.split(r"[_\-\s\.]+", stem) if len(t) > 2][:12],
+                "profile": None,
+            }
+
     def build_l1(self, text_chunks: dict[str, dict], rebuild: bool = False) -> dict:
         """
         Scan every ingested chunk for mentions of other corpus documents:
@@ -84,6 +108,15 @@ class StructureGraph:
 
         Deterministic, no LLM, uses only document content (ground rule 1 safe).
         """
+        if _NO_L1:
+            self._data["built_l1"] = True
+            self._data["l1_version"] = L1_BUILDER_VERSION
+            # nodes are still needed (taxonomy/token matching); only edges skipped
+            self._build_nodes(text_chunks)
+            self.log("build_l1", reason="STRUCTRAG_NO_L1=1 — ablation run, explicit-ref layer disabled",
+                     docs=len(self._data["nodes"]), edges_l1=0)
+            self.save()
+            return {"docs": len(self._data["nodes"]), "edges_l1": 0, "l1_disabled": True}
         if (self._data["built_l1"] and not rebuild
                 and self._data.get("l1_version") == L1_BUILDER_VERSION):
             return {"skipped": True, "edges_l1": self._count_layer("explicit_ref")}
@@ -102,20 +135,7 @@ class StructureGraph:
         }
         basenames = set(doc_of.values())
 
-        # nodes
-        for cid, c in text_chunks.items():
-            bn = doc_of.get(cid)
-            if not bn or bn in self._data["nodes"]:
-                continue
-            fp = c.get("file_path", "")
-            parts = fp.replace("\\", "/").split("/")
-            stem, ext = os.path.splitext(bn)
-            self._data["nodes"][bn] = {
-                "dir": parts[0] if len(parts) > 1 else "",
-                "ext": ext.lstrip("."),
-                "tokens": [t.lower() for t in re.split(r"[_\-\s\.]+", stem) if len(t) > 2][:12],
-                "profile": None,
-            }
+        self._build_nodes(text_chunks)
 
         # filename-mention regex from extensions actually present in the corpus
         exts = sorted({n["ext"] for n in self._data["nodes"].values() if n["ext"]})
@@ -189,15 +209,58 @@ class StructureGraph:
                 layer["count"] += 1
                 layer["w"] = min(1.0, layer["w"] + 0.1)
 
+    def reinforce_facet_link(self, facet_tops: list[list[str]], quality: float,
+                             quality_gate: float = 0.6):
+        """v5.16 facet_link: docs that answered DIFFERENT facets (subqueries) of one
+        decomposed query get cross-linked — complementarity evidence a user's own
+        information need supplied. Only cross-facet pairs (never within a facet:
+        those are similarity, not complementarity), only from good retrievals.
+        Repeated confirmations climb toward near-L1 effective weight."""
+        if _NO_FACET or quality < quality_gate or len(facet_tops) < 2:
+            return
+        for i in range(len(facet_tops)):
+            for j in range(i + 1, len(facet_tops)):
+                for a in facet_tops[i]:
+                    for b in facet_tops[j]:
+                        if not a or not b or a == b:
+                            continue
+                        key = _pair_key(a, b)
+                        edge = self._data["edges"].setdefault(
+                            key, {"layers": {}, "hits": 0, "last_hit": 0})
+                        layer = edge["layers"].setdefault("facet_link", {"w": 0.0, "count": 0})
+                        layer["count"] += 1
+                        layer["w"] = min(1.0, layer["w"] + 0.15)
+
+    def get_escort_neighbor(self, doc: str) -> tuple[str, float] | None:
+        """Best escort candidate for the #1-ranked doc: an explicit-ref neighbor
+        first; failing that, a facet_link neighbor confirmed ≥2 times (v5.16 —
+        lets the escort mechanism work on corpora without cross-references)."""
+        best = {"explicit_ref": None, "facet_link": None}
+        for key, edge in self._data["edges"].items():
+            a, b = key.split("||", 1)
+            if doc not in (a, b):
+                continue
+            other = b if a == doc else a
+            for lname in ("explicit_ref", "facet_link"):
+                layer = edge["layers"].get(lname)
+                if not layer:
+                    continue
+                if lname == "facet_link" and layer.get("count", 0) < 2:
+                    continue
+                cur = best[lname]
+                if cur is None or layer["w"] > cur[1]:
+                    best[lname] = (other, layer["w"])
+        return best["explicit_ref"] or best["facet_link"]
+
     def decay(self, factor: float = 0.95, floor: float = 0.15) -> int:
-        """Decay learned layers (L2/L3) of edges never used since last decay; drop dead layers."""
+        """Decay learned layers of edges never used since last decay; drop dead layers."""
         removed = 0
         for key in list(self._data["edges"].keys()):
             edge = self._data["edges"][key]
             if edge.get("hits", 0) > 0:
                 edge["hits"] = 0  # reset usage window
                 continue
-            for lname in ("co_retrieval", "llm_curated"):
+            for lname in ("co_retrieval", "llm_curated", "facet_link"):
                 layer = edge["layers"].get(lname)
                 if not layer:
                     continue

@@ -130,6 +130,7 @@ class StructRetriever:
         rankings: list[list[str]] = []
         pool: dict[str, dict] = {}
         executed: set[tuple[str, str]] = set()
+        facet_tops: list[list[str]] = []  # per-subquery top docs (v5.16 facet_link)
         for sub in plan.subqueries:
             # Graph modes (mix/local/global) run their own LLM keyword extraction —
             # feed them the ORIGINAL query so the LLM-response cache stays hot; the
@@ -147,6 +148,10 @@ class StructRetriever:
                     ids.append(cid)
             if ids:
                 rankings.append(ids)
+                sub_docs = list(dict.fromkeys(
+                    os.path.basename(pool[cid].get("file_path", ""))
+                    for cid in ids[:6] if pool[cid].get("file_path")))[:2]
+                facet_tops.append(sub_docs)
 
         # Independent bm25 + vector rankings on the rewritten query: full-width so
         # lexical evidence gets equal votes in fusion (rare-term/ID queries), and
@@ -251,23 +256,21 @@ class StructRetriever:
         merged.update({d: v[0] for d, v in top_expansion.items()})
         doc_rank = sorted(merged, key=lambda d: -merged[d])
 
-        # v5.14 escort: the #1 doc's single strongest explicit-ref neighbor is
-        # placed directly behind it. Path-expansion logic (Asai §1): if the best
-        # match declares one link above all others, that link is the best second
-        # guess. Structural signal only (edge weight — D8), costs one slot.
+        # v5.14 escort: the #1 doc's single strongest declared link is placed
+        # directly behind it (path expansion, Asai §1). v5.16: on corpora without
+        # explicit refs, a facet_link neighbor confirmed ≥2 times qualifies too.
         if doc_rank:
             top1 = doc_rank[0]
-            l1_nbs = [(nb, w) for nb, w, is_l1 in self.sg.get_neighbors_layered(
-                top1, top_n=1, min_weight=0.3) if is_l1]
-            if l1_nbs:
-                esc = l1_nbs[0][0]
+            esc_nb = self.sg.get_escort_neighbor(top1)
+            if esc_nb:
+                esc = esc_nb[0]
                 if esc in doc_rank:
                     doc_rank.remove(esc)
                 doc_rank.insert(1, esc)
                 if esc not in top_expansion and esc not in doc_chunks:
                     picked, _ = self._best_chunks_of_doc(esc, plan.rewrite, EXPAND_CHUNKS)
                     if picked:
-                        top_expansion[esc] = (merged.get(top1, 0.0), top1, l1_nbs[0][1], picked, True)
+                        top_expansion[esc] = (merged.get(top1, 0.0), top1, esc_nb[1], picked, True)
                     else:
                         doc_rank.remove(esc)
 
@@ -351,6 +354,9 @@ class StructRetriever:
             "scope": list(scope)[:12], "retrieved": retrieved_docs[:20],
             "quality": quality, "signals": q["signals"],
             "sg_expand": supplement_count, "latency_ms": latency_ms,
+            # v5.16: per-facet top docs — the background evolver turns cross-facet
+            # pairs of GOOD queries into facet_link edges (never learned inline)
+            "facet_tops": facet_tops if len(facet_tops) >= 2 else [],
         })
 
         return {

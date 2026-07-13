@@ -100,7 +100,26 @@ def test_sg_layers_and_decay():
         # base-only pairs unaffected by the rule
         sg2.reinforce_co_retrieval(["left.md", "lone.md"], quality=0.9, expansion_docs=set())
         assert "co_retrieval" in edges["left.md||lone.md"]["layers"]
-    print("  structure graph layers/gate/decay/traversal/selective-echo ✓")
+
+        # v5.16 facet_link: cross-facet pairs only, quality-gated, escort after 2 confirmations
+        sg3 = StructureGraph(td + "/sg3")
+        sg3.build_l1({"c1": {"file_path": "a/testcard.md", "content": "no refs here"},
+                      "c2": {"file_path": "a/issue.md", "content": "plain"},
+                      "c3": {"file_path": "a/specdoc.md", "content": "plain"}}, rebuild=True)
+        tops = [["testcard.md"], ["issue.md", "specdoc.md"]]
+        sg3.reinforce_facet_link(tops, quality=0.3)          # below gate → no-op
+        assert sg3.stats.get("l2_co_retrieval", 0) == 0
+        sg3.reinforce_facet_link(tops, quality=0.9)
+        e = sg3._data["edges"]["issue.md||testcard.md"]["layers"]["facet_link"]
+        assert e["count"] == 1
+        # within-facet pair (issue↔spec, same facet) must NOT be linked
+        assert "issue.md||specdoc.md" not in sg3._data["edges"]
+        # escort requires ≥2 confirmations for facet links
+        assert sg3.get_escort_neighbor("testcard.md") is None
+        sg3.reinforce_facet_link(tops, quality=0.9)
+        esc = sg3.get_escort_neighbor("testcard.md")
+        assert esc and esc[0] in ("issue.md", "specdoc.md")
+    print("  structure graph layers/gate/decay/traversal/selective-echo/facet ✓")
 
 
 def test_analyzer_tiers_and_rules():
