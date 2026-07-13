@@ -1108,3 +1108,60 @@
 - v5.18: ① 스텝 0.25 (2회 확인 = 0.5 → 유효 0.45 > 문턱) ② 에스코트에 현재 쿼리 facet 결과
   교차증거 보너스(prefer set) ③ 상보 facet을 스펙용/이슈용으로 분리.
 - 유닛·스모크 10/10. **v5.18 동결 — ablation C'' (NO_L1) 검증.**
+
+### 2026-07-14 07:47:11 — ver5 iteration 1 (LLM on)
+- All@20 100.0% · ValA@20 99.4% · ValB co@20/10/5 62.2/52.2/34.4%
+- latency p50/p95: all=33.9/41.1ms · tiers(valB)={'cache': 0, 'llm': 0, 'rules': 90}
+- SG: {'docs': 572, 'edges': 1607, 'l1_explicit': 0, 'l2_co_retrieval': 881, 'l3_llm_curated': 5, 'profiles': 3} · plan_cache: {'entries': 279, 'hits': 2, 'hit_rate': 0.005}
+- evolve: {'records': 376, 's_rules': {'decayed_layers': 2446, 'facet_queries': 106}, 's_llm': {'typed_edges': 5, 'profiles': 3}, 'k_rules': {'stale_edges_removed': 0}, 'k_llm': {'wikified': 1}, 'llm_calls': 49, 'good': 192, 'attention': 98, 'shadow_planner': {'analyzed': 40, 'promoted': 37}, 'elapsed_s': 3.5}
+
+### 2026-07-14 07:48:54 — ver5 iteration 2 (LLM on)
+- All@20 100.0% · ValA@20 99.4% · ValB co@20/10/5 62.2/46.7/27.8%
+- latency p50/p95: all=38.0/51.4ms · tiers(valB)={'cache': 14, 'llm': 0, 'rules': 76}
+- SG: {'docs': 572, 'edges': 2071, 'l1_explicit': 0, 'l2_co_retrieval': 1623, 'l3_llm_curated': 10, 'profiles': 6} · plan_cache: {'entries': 357, 'hits': 101, 'hit_rate': 0.269}
+- evolve: {'records': 416, 's_rules': {'decayed_layers': 2441, 'facet_queries': 120}, 's_llm': {'typed_edges': 5, 'profiles': 3}, 'k_rules': {'stale_edges_removed': 0}, 'k_llm': {'wikified': 0}, 'llm_calls': 48, 'good': 178, 'attention': 61, 'shadow_planner': {'analyzed': 40, 'promoted': 34}, 'elapsed_s': 68.2}
+
+### 2026-07-14 07:50:45 — ver5 iteration 3 (LLM on)
+- All@20 100.0% · ValA@20 99.4% · ValB co@20/10/5 64.4/46.7/24.4%
+- latency p50/p95: all=40.8/50.8ms · tiers(valB)={'cache': 12, 'llm': 0, 'rules': 78}
+- SG: {'docs': 572, 'edges': 2317, 'l1_explicit': 0, 'l2_co_retrieval': 1768, 'l3_llm_curated': 14, 'profiles': 9} · plan_cache: {'entries': 361, 'hits': 130, 'hit_rate': 0.346}
+- evolve: {'records': 416, 's_rules': {'decayed_layers': 2025, 'facet_queries': 125}, 's_llm': {'typed_edges': 4, 'profiles': 3}, 'k_rules': {'stale_edges_removed': 0}, 'k_llm': {'wikified': 0}, 'llm_calls': 48, 'good': 187, 'attention': 63, 'shadow_planner': {'analyzed': 40, 'promoted': 36}, 'elapsed_s': 78.4}
+
+### 2026-07-14 07:53:08 — ver5 iteration 4 (LLM on)
+- All@20 100.0% · ValA@20 99.4% · ValB co@20/10/5 64.4/48.9/26.7%
+- latency p50/p95: all=40.4/56.4ms · tiers(valB)={'cache': 16, 'llm': 0, 'rules': 74}
+- SG: {'docs': 572, 'edges': 2418, 'l1_explicit': 0, 'l2_co_retrieval': 1851, 'l3_llm_curated': 19, 'profiles': 12} · plan_cache: {'entries': 363, 'hits': 142, 'hit_rate': 0.378}
+- evolve: {'records': 416, 's_rules': {'decayed_layers': 2025, 'facet_queries': 121}, 's_llm': {'typed_edges': 5, 'profiles': 3}, 'k_rules': {'stale_edges_removed': 0}, 'k_llm': {'wikified': 0}, 'llm_calls': 48, 'good': 180, 'attention': 66, 'shadow_planner': {'analyzed': 40, 'promoted': 36}, 'elapsed_s': 109.5}
+
+### 2026-07-14 07:54:55 — ver5 iteration 5 (LLM on)
+- All@20 100.0% · ValA@20 99.4% · ValB co@20/10/5 64.4/47.8/25.6%
+- latency p50/p95: all=38.9/53.2ms · tiers(valB)={'cache': 13, 'llm': 0, 'rules': 77}
+- SG: {'docs': 572, 'edges': 2501, 'l1_explicit': 0, 'l2_co_retrieval': 1889, 'l3_llm_curated': 23, 'profiles': 15} · plan_cache: {'entries': 365, 'hits': 148, 'hit_rate': 0.394}
+- evolve: {'records': 416, 's_rules': {'decayed_layers': 2001, 'facet_queries': 117}, 's_llm': {'typed_edges': 4, 'profiles': 3}, 'k_rules': {'stale_edges_removed': 0}, 'k_llm': {'wikified': 0}, 'llm_calls': 48, 'good': 178, 'attention': 65, 'shadow_planner': {'analyzed': 40, 'promoted': 35}, 'elapsed_s': 72.9}
+
+### 2026-07-14 — C'' 결과: facet 시리즈 (v5.16~18) 판정 종결
+- C'' (v5.18, NO_L1): co@10 평균 48.5 — 시리즈 최저. 스텝 상향이 오답 형제 엣지까지 확장 문턱을
+  넘겨 top-10 오염 (에스코트 교차증거는 방어했으나 확장 경로 무방비).
+- **시리즈 결론**: facet_link/공동출현 계열은 "검색이 닿은 문서"끼리만 엮는 증폭기 —
+  단일의도 co-태스크에서 L1 부재를 대체 불가. 멀티의도 트래픽용 보조 레이어로 지위 확정.
+  L3-reach(LLM 참조 읽기)는 본 코퍼스에선 L1의 고비용 재구현이라 기각 (산문형 참조 코퍼스용 옵션으로만 기록).
+- 일반성 실험 최종표: 풀스택 71.1/88.9 ↔ NO_L1 최선 52.2/63.3 — **명시적 참조가 co-태스크의
+  지배 증거원**임을 정량 확정. 무참조 코퍼스 일반화 주장은 이 갭과 함께 정직하게 제시할 것.
+
+### 2026-07-14 — 개발 사이클 19 (v5.19): 쿼리 조건부 구조 강도 (유저 제안)
+- 직관: 쿼리 문면에서 "연관 문서까지 원하는지" 판별 가능 → 구조 장치를 케이스별 제어.
+- 설계 (v5.15.1 챔피언 대비 엄격히 가산적):
+  OFF   = ID 단독 조회 (연관마커 無) → 에스코트·확장·tail 끔 (슬롯 낭비 제거)
+  LIGHT = 기본 (챔피언과 동일 동작: 에스코트+확장, 상보facet 없음)
+  FULL  = 멀티의도 / 연관마커(관련·함께·~도·비교·일치 등) / 타입 2족 이상 동시 언급
+          → 상보 facet 가동 (facet_link 학습 포함)
+- 정직한 한계: ValA류(카드만)와 ValB류(카드+링크) 질문은 문면 유사로 룰 분리 불가 → 중간지대는
+  LIGHT 기본. ValA@10 슬롯비용 회수는 OFF 클래스에서만 발생.
+
+### 2026-07-14 — v5.19 구현 완료 + 부수 버그 발견
+- 쿼리 조건부 구조 강도(off/light/full) 구현: 룰 판별(_CO_MARKERS·타입 2족·멀티의도·ID단독),
+  플랜에 intensity 필드, OFF는 확장·에스코트 스킵, 상보 facet은 FULL 전용.
+- **부수 발견**: salient_terms의 3자+ 필터가 한국어 2음절 단어(엔진·이슈 등)를 전부 탈락 —
+  v5.17~18 상보 facet이 한국어 쿼리에서 콘텐츠 텀을 잃던 숨은 원인. facet 전용 추출기(한글 2자+)로 수정.
+  (quality 채점용 salient_terms는 캘리브레이션 보존 위해 미변경 — 개선 후보로 기록)
+- 유닛·sanity·스모크 10/10. **v5.19 동결 — 풀스택 P1 검증 (v5.15.1 대비 판정).**

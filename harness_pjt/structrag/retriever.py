@@ -219,7 +219,8 @@ class StructRetriever:
         # A global budget still caps how many expansion docs join the ranking
         # (v5.2 lesson: unbounded admission pushed correct base docs out).
         expansion: dict[str, tuple[float, str, float, list[dict], bool]] = {}
-        for anchor in base_rank[:EXPAND_TOP_DOCS]:
+        anchors = [] if plan.intensity == "off" else base_rank[:EXPAND_TOP_DOCS]
+        for anchor in anchors:
             for nb, w, is_l1 in self.sg.get_neighbors_layered(
                     anchor, top_n=EXPAND_NEIGHBORS, min_weight=0.3):
                 if nb in doc_score or nb in expansion:
@@ -259,7 +260,7 @@ class StructRetriever:
         # v5.14 escort: the #1 doc's single strongest declared link is placed
         # directly behind it (path expansion, Asai §1). v5.16: on corpora without
         # explicit refs, a facet_link neighbor confirmed ≥2 times qualifies too.
-        if doc_rank:
+        if doc_rank and plan.intensity != "off":
             top1 = doc_rank[0]
             cur_facet_docs = {d for tops in facet_tops for d in tops}
             esc_nb = self.sg.get_escort_neighbor(top1, prefer=cur_facet_docs or None)
