@@ -204,7 +204,7 @@ async def run_iteration(use_llm: bool, state: dict) -> dict:
     # Exploration stays ON in production; during A/B validation the bandit
     # exploits only (its EMAs still update from the modes actually used).
     retriever.analyzer.memory.epsilon = 0.0
-    evolver = Evolver(rag, retriever, llm_func=llm, llm_budget=10)
+    evolver = Evolver(rag, retriever, llm_func=llm, llm_budget=50)
 
     sg_stats0 = retriever.sg.build_l1(rag.text_chunks._data)
     print(f"[sg] {retriever.sg.stats}")

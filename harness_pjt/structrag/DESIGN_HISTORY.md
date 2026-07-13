@@ -906,3 +906,39 @@
 - 예상 트레이드오프: iter1은 LLM 플랜 부재로 하락, 섀도 플래너가 캐시를 채우며 후속 iteration 상승
   (돌릴수록 좋아짐이 더 선명해지는 구조). 판정 기준: 수렴 후 co@10이 v5.14(79.1) 근접 + 핫패스 p95 균일.
 - 유닛(골격 동일성·게이트 포함) + 스모크 10/10. **v5.15 동결 — P1 검증 5회.**
+
+### 2026-07-13 22:59:07 — ver5 iteration 1 (LLM on)
+- All@20 100.0% · ValA@20 99.4% · ValB co@20/10/5 85.6/58.9/33.3%
+- latency p50/p95: all=38.8/47.7ms · tiers(valB)={'cache': 0, 'llm': 0, 'rules': 90}
+- SG: {'docs': 572, 'edges': 2051, 'l1_explicit': 1719, 'l2_co_retrieval': 1244, 'l3_llm_curated': 2, 'profiles': 0} · plan_cache: {'entries': 320, 'hits': 2, 'hit_rate': 0.005}
+- evolve: {'records': 376, 's_rules': {'decayed_layers': 999}, 's_llm': {'typed_edges': 2}, 'k_rules': {'stale_edges_removed': 0}, 'k_llm': {}, 'llm_calls': 10, 'good': 165, 'attention': 60, 'shadow_planner': {'analyzed': 8, 'promoted': 7}, 'elapsed_s': 22.3}
+
+### 2026-07-13 23:00:12 — ver5 iteration 2 (LLM on)
+- All@20 100.0% · ValA@20 99.4% · ValB co@20/10/5 85.6/58.9/33.3%
+- latency p50/p95: all=39.4/45.3ms · tiers(valB)={'cache': 10, 'llm': 0, 'rules': 80}
+- SG: {'docs': 572, 'edges': 2120, 'l1_explicit': 1719, 'l2_co_retrieval': 1401, 'l3_llm_curated': 3, 'profiles': 0} · plan_cache: {'entries': 324, 'hits': 112, 'hit_rate': 0.298}
+- evolve: {'records': 384, 's_rules': {'decayed_layers': 1171}, 's_llm': {'typed_edges': 1}, 'k_rules': {'stale_edges_removed': 0}, 'k_llm': {}, 'llm_calls': 10, 'good': 170, 'attention': 60, 'shadow_planner': {'analyzed': 8, 'promoted': 7}, 'elapsed_s': 43.9}
+
+### 2026-07-13 23:01:06 — ver5 iteration 3 (LLM on)
+- All@20 100.0% · ValA@20 99.4% · ValB co@20/10/5 85.6/58.9/35.6%
+- latency p50/p95: all=38.8/46.8ms · tiers(valB)={'cache': 9, 'llm': 0, 'rules': 81}
+- SG: {'docs': 572, 'edges': 2139, 'l1_explicit': 1719, 'l2_co_retrieval': 1423, 'l3_llm_curated': 5, 'profiles': 0} · plan_cache: {'entries': 326, 'hits': 111, 'hit_rate': 0.295}
+- evolve: {'records': 384, 's_rules': {'decayed_layers': 1200}, 's_llm': {'typed_edges': 2}, 'k_rules': {'stale_edges_removed': 0}, 'k_llm': {}, 'llm_calls': 10, 'good': 168, 'attention': 58, 'shadow_planner': {'analyzed': 8, 'promoted': 7}, 'elapsed_s': 32.2}
+
+### 2026-07-13 23:01:45 — ver5 iteration 4 (LLM on)
+- All@20 100.0% · ValA@20 99.4% · ValB co@20/10/5 85.6/60.0/37.8%
+- latency p50/p95: all=39.6/45.6ms · tiers(valB)={'cache': 10, 'llm': 0, 'rules': 80}
+- SG: {'docs': 572, 'edges': 2144, 'l1_explicit': 1719, 'l2_co_retrieval': 1447, 'l3_llm_curated': 5, 'profiles': 0} · plan_cache: {'entries': 328, 'hits': 113, 'hit_rate': 0.301}
+- evolve: {'records': 384, 's_rules': {'decayed_layers': 1108}, 's_llm': {'typed_edges': 0}, 'k_rules': {'stale_edges_removed': 0}, 'k_llm': {}, 'llm_calls': 10, 'good': 171, 'attention': 56, 'shadow_planner': {'analyzed': 8, 'promoted': 7}, 'elapsed_s': 16.1}
+
+### 2026-07-13 23:02:29 — ver5 iteration 5 (LLM on)
+- All@20 100.0% · ValA@20 99.4% · ValB co@20/10/5 86.7/61.1/36.7%
+- latency p50/p95: all=40.2/47.7ms · tiers(valB)={'cache': 11, 'llm': 0, 'rules': 79}
+- SG: {'docs': 572, 'edges': 2151, 'l1_explicit': 1719, 'l2_co_retrieval': 1453, 'l3_llm_curated': 7, 'profiles': 0} · plan_cache: {'entries': 331, 'hits': 117, 'hit_rate': 0.311}
+- evolve: {'records': 384, 's_rules': {'decayed_layers': 1094}, 's_llm': {'typed_edges': 2}, 'k_rules': {'stale_edges_removed': 0}, 'k_llm': {}, 'llm_calls': 10, 'good': 170, 'attention': 54, 'shadow_planner': {'analyzed': 8, 'promoted': 7}, 'elapsed_s': 20.8}
+
+### 2026-07-10 — v5.15 검증 및 v5.15.1 (섀도 예산 상향)
+- v5.15 검증: **균일 레이턴시 달성** — 전 iteration p50 42~48ms / p95 ≤72ms (수 초 LLM 대기 소멸).
+  co@10 58.9→61.1 완만 상승, 섀도 플래너 매 사이클 8분석/7승격 — 예산(8)이 수렴 병목.
+  실 LLM 비용은 캐시 덕에 사이클당 신규 1~7콜뿐.
+- v5.15.1: 섀도 예산 8→40, evolver 총예산 10→50 (백그라운드 전용이라 핫패스 무영향). 재검증.

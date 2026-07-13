@@ -158,7 +158,7 @@ class Evolver:
         # PlanCache only when it beats the rules plan's recorded quality.
         if self.llm_func and budget > 0:
             analyzed = promoted = 0
-            for item in self._analysis_queue_items(limit=min(8, budget)):
+            for item in self._analysis_queue_items(limit=min(40, budget)):
                 budget -= 1
                 report["llm_calls"] += 1
                 analyzed += 1
