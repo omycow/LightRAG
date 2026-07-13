@@ -230,12 +230,17 @@ class StructRetriever:
                     s = doc_score[anchor] * (0.4 + 0.6 * w) * relevance
                 expansion[nb] = (s, anchor, w, picked, is_l1)
 
-        # v5.9: back to v5.4's plain score-ranked budget cut — seat reservation
-        # (v5.6) and the tail net (v5.5) treated admission, but the small-k wobble
-        # was an ORDERING problem inside the reference cluster (fixed above).
+        # v5.10: v5.8's admission machinery restored — the v5.9 ablation proved
+        # seats+tail are real small-k contributors and anti-drift protection
+        # (removing them sent co@10/5 into 5-iteration decline). The relevance
+        # releveling above now works WITHIN the reserved-seat structure: seats
+        # decide who competes, releveling decides the order among them.
         ranked_exp = sorted(expansion.items(), key=lambda kv: -kv[1][0])
-        top_expansion = dict(ranked_exp[:EXPAND_BUDGET])
-        tail_expansion: dict = {}
+        l1_c = [kv for kv in ranked_exp if kv[1][4]]
+        ln_c = [kv for kv in ranked_exp if not kv[1][4]]
+        top_list = l1_c[:EXPAND_L1_SLOTS] + ln_c[:EXPAND_BUDGET - EXPAND_L1_SLOTS]
+        top_expansion = dict(top_list)
+        tail_expansion = dict([kv for kv in ranked_exp if kv[0] not in top_expansion][:EXPAND_TAIL])
 
         merged = dict(doc_score)
         merged.update({d: v[0] for d, v in top_expansion.items()})
