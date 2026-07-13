@@ -216,29 +216,26 @@ class StructRetriever:
                 if not picked:
                     continue
                 if is_l1:
-                    s = doc_score[anchor] * (0.5 + 0.5 * w)
+                    # v5.9: an anchor's several declared refs (linked doc, spec,
+                    # golden code, sibling cards) inherit near-identical scores and
+                    # cluster at ranks 3-8 — which one the QUERY actually asks
+                    # about was left to chance, the root cause of small-k wobble.
+                    # A mild relevance releveling (floor 0.7, never a gate — the
+                    # v5.3 lesson) orders the cluster by query fit without letting
+                    # any declared ref sink below base junk.
+                    relevance = 0.7 + 0.3 * min(1.0, best_hits / 3.0)
+                    s = doc_score[anchor] * (0.5 + 0.5 * w) * relevance
                 else:
                     relevance = 0.4 + 0.6 * min(1.0, best_hits / 3.0)
                     s = doc_score[anchor] * (0.4 + 0.6 * w) * relevance
                 expansion[nb] = (s, anchor, w, picked, is_l1)
 
-        # v5.6: provenance-reserved budget seats. Pure score competition let ever-
-        # growing L2 stats catch up with single-mention L1 edges (both eff 0.6) and
-        # evict the document-declared link from the ranked window over iterations —
-        # the co@10 decline signature (rises at 20 via tail, falls at 10). L1
-        # candidates own EXPAND_L1_SLOTS seats; learned edges compete for the rest;
-        # unused seats on either side are released to the other.
+        # v5.9: back to v5.4's plain score-ranked budget cut — seat reservation
+        # (v5.6) and the tail net (v5.5) treated admission, but the small-k wobble
+        # was an ORDERING problem inside the reference cluster (fixed above).
         ranked_exp = sorted(expansion.items(), key=lambda kv: -kv[1][0])
-        l1_c = [kv for kv in ranked_exp if kv[1][4]]
-        ln_c = [kv for kv in ranked_exp if not kv[1][4]]
-        # v5.7 I3: unused L1 seats are NOT released to learned candidates — echo-
-        # strengthened L2 edges were claiming them with increasingly self-
-        # referential docs. An unfilled seat goes back to base documents instead.
-        top_list = l1_c[:EXPAND_L1_SLOTS] + ln_c[:EXPAND_BUDGET - EXPAND_L1_SLOTS]
-        top_expansion = dict(top_list)
-        # v5.5 safety net: budget losers still get appended after the ranked
-        # window — serves co@20 while the reserved seats serve co@5/10.
-        tail_expansion = dict([kv for kv in ranked_exp if kv[0] not in top_expansion][:EXPAND_TAIL])
+        top_expansion = dict(ranked_exp[:EXPAND_BUDGET])
+        tail_expansion: dict = {}
 
         merged = dict(doc_score)
         merged.update({d: v[0] for d, v in top_expansion.items()})
