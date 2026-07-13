@@ -81,7 +81,26 @@ def test_sg_layers_and_decay():
         # seed matching by ID token in query
         seeds = sg.match_docs_by_tokens("GAMMA-100 이슈 관련 스펙")
         assert "GAMMA-100.html" in seeds, seeds
-    print("  structure graph layers/gate/decay/traversal ✓")
+
+        # v5.8 selective echo: expansion-involved pair reinforces ONLY on L1 edges
+        # (alpha↔beta has L1 from build; alpha↔GAMMA has L1 too; use a fresh doc pair)
+        sg2 = StructureGraph(td + "/sg2")
+        sg2.build_l1({
+            "c1": {"file_path": "a/left.md", "content": "mentions right.md here"},
+            "c2": {"file_path": "a/right.md", "content": "plain"},
+            "c3": {"file_path": "a/lone.md", "content": "plain"},
+        }, rebuild=True)
+        # left↔right has L1; left↔lone does not
+        sg2.reinforce_co_retrieval(["left.md", "right.md", "lone.md"], quality=0.9,
+                                   expansion_docs={"right.md", "lone.md"})
+        edges = sg2._data["edges"]
+        assert "co_retrieval" in edges["left.md||right.md"]["layers"]      # L1-backed → allowed
+        assert "lone.md||left.md" not in edges or \
+               "co_retrieval" not in edges.get("left.md||lone.md", {"layers": {}})["layers"]
+        # base-only pairs unaffected by the rule
+        sg2.reinforce_co_retrieval(["left.md", "lone.md"], quality=0.9, expansion_docs=set())
+        assert "co_retrieval" in edges["left.md||lone.md"]["layers"]
+    print("  structure graph layers/gate/decay/traversal/selective-echo ✓")
 
 
 def test_analyzer_tiers_and_rules():

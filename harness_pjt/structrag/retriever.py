@@ -296,14 +296,15 @@ class StructRetriever:
             self.analyzer.feedback(query, plan, quality,
                                    promote_gate=self.rq.promote_gate,
                                    promote_floor=self.rq.attention_gate)
-            # v5.7 I1: reinforce L2 from BASE-retrieved docs only. Feeding expansion
-            # docs back in taught L2 the pairs our own structure glued together (an
-            # echo loop that degraded top-10 over iterations). The old wikigraph DRG
-            # had this rule ("update from BASE retrieval only, not supplement") and
-            # it was lost in the structrag rewrite.
-            base_docs = [d for d in retrieved_docs if d in doc_score][:10]
-            self.sg.reinforce_co_retrieval(base_docs, quality,
-                                           quality_gate=self.rq.reinforce_gate)
+            # v5.8 selective echo: expansion-injected docs participate in L2
+            # reinforcement only for pairs with explicit_ref provenance (see
+            # reinforce_co_retrieval). v5.7's blanket base-only rule killed the
+            # growth engine; v5.6's no-rule version built an echo chamber.
+            exp_docs = {os.path.basename(c.get("file_path", ""))
+                        for c in final_chunks if c.get("_sg_expand")}
+            self.sg.reinforce_co_retrieval(retrieved_docs[:10], quality,
+                                           quality_gate=self.rq.reinforce_gate,
+                                           expansion_docs=exp_docs)
 
         latency_ms = round((time.perf_counter() - t0) * 1000, 1)
         self._log({

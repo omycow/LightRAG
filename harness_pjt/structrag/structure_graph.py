@@ -163,14 +163,27 @@ class StructureGraph:
 
     # ── L2: co-retrieval reinforcement (quality-gated) / decay ──────────────
 
-    def reinforce_co_retrieval(self, docs: list[str], quality: float, quality_gate: float = 0.6):
-        """Strengthen co-retrieval edges among docs jointly retrieved by a good query."""
+    def reinforce_co_retrieval(self, docs: list[str], quality: float, quality_gate: float = 0.6,
+                               expansion_docs: set[str] | None = None):
+        """Strengthen co-retrieval edges among docs jointly retrieved by a good query.
+
+        Selective echo (v5.8): pairs involving a doc WE injected via structural
+        expansion reinforce only when the pair already has explicit_ref (L1)
+        provenance — usage evidence for a document-declared link is legitimate,
+        while creating/strengthening non-declared pairs from our own output is
+        the echo chamber (v5.6 lesson). Blanket blocking (v5.7) cut the true-link
+        growth engine along with the noise; this keeps exactly the grounded half."""
         if quality < quality_gate:
             return
+        expansion_docs = expansion_docs or set()
         docs = sorted(set(docs))
         for i in range(len(docs)):
             for j in range(i + 1, len(docs)):
                 key = _pair_key(docs[i], docs[j])
+                if docs[i] in expansion_docs or docs[j] in expansion_docs:
+                    existing = self._data["edges"].get(key)
+                    if not existing or "explicit_ref" not in existing["layers"]:
+                        continue
                 edge = self._data["edges"].setdefault(key, {"layers": {}, "hits": 0, "last_hit": 0})
                 layer = edge["layers"].setdefault("co_retrieval", {"w": 0.0, "count": 0})
                 layer["count"] += 1
