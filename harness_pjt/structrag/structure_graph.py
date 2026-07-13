@@ -229,12 +229,18 @@ class StructureGraph:
                             key, {"layers": {}, "hits": 0, "last_hit": 0})
                         layer = edge["layers"].setdefault("facet_link", {"w": 0.0, "count": 0})
                         layer["count"] += 1
-                        layer["w"] = min(1.0, layer["w"] + 0.15)
+                        # v5.18: +0.25/confirm — two confirmations must clear the
+                        # expansion threshold (0.5*0.9=0.45 > 0.3); +0.15 left
+                        # confirmed links below the bar for entire 5-iter runs
+                        layer["w"] = min(1.0, layer["w"] + 0.25)
 
-    def get_escort_neighbor(self, doc: str) -> tuple[str, float] | None:
+    def get_escort_neighbor(self, doc: str,
+                            prefer: set[str] | None = None) -> tuple[str, float] | None:
         """Best escort candidate for the #1-ranked doc: an explicit-ref neighbor
-        first; failing that, a facet_link neighbor confirmed ≥2 times (v5.16 —
-        lets the escort mechanism work on corpora without cross-references)."""
+        first; failing that, a facet_link neighbor confirmed ≥2 times (v5.16).
+        v5.18 tie-break: among facet candidates, docs the CURRENT query's own
+        facet retrievals surfaced (prefer set) win — cross-evidence between the
+        learned graph and this query beats accumulated weight alone."""
         best = {"explicit_ref": None, "facet_link": None}
         for key, edge in self._data["edges"].items():
             a, b = key.split("||", 1)
@@ -247,9 +253,11 @@ class StructureGraph:
                     continue
                 if lname == "facet_link" and layer.get("count", 0) < 2:
                     continue
+                bonus = 1.0 if (prefer and other in prefer and lname == "facet_link") else 0.0
                 cur = best[lname]
-                if cur is None or layer["w"] > cur[1]:
-                    best[lname] = (other, layer["w"])
+                score = layer["w"] + bonus
+                if cur is None or score > cur[1]:
+                    best[lname] = (other, score)
         return best["explicit_ref"] or best["facet_link"]
 
     def decay(self, factor: float = 0.95, floor: float = 0.15) -> int:

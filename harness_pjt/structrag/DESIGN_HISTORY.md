@@ -1067,3 +1067,44 @@
   의도를 결정적 서브쿼리로 명시화 (엔지니어링 도메인 온톨로지, 코퍼스 컨벤션 아님, LLM 0).
   상보 facet은 융합에도 참여 + facet_link 학습원. 합성 텍스트라 graph 모드 캐시미스 방지 위해 hybrid 고정.
 - 유닛·스모크 10/10. **v5.17 동결 — ablation C' (NO_L1) 재검증.**
+
+### 2026-07-14 07:36:50 — ver5 iteration 1 (LLM on)
+- All@20 100.0% · ValA@20 99.4% · ValB co@20/10/5 63.3/54.4/35.6%
+- latency p50/p95: all=34.2/45.7ms · tiers(valB)={'cache': 0, 'llm': 0, 'rules': 90}
+- SG: {'docs': 572, 'edges': 1476, 'l1_explicit': 0, 'l2_co_retrieval': 908, 'l3_llm_curated': 5, 'profiles': 3} · plan_cache: {'entries': 272, 'hits': 2, 'hit_rate': 0.005}
+- evolve: {'records': 376, 's_rules': {'decayed_layers': 2427, 'facet_queries': 106}, 's_llm': {'typed_edges': 5, 'profiles': 3}, 'k_rules': {'stale_edges_removed': 0}, 'k_llm': {'wikified': 1}, 'llm_calls': 49, 'good': 192, 'attention': 98, 'shadow_planner': {'analyzed': 40, 'promoted': 35}, 'elapsed_s': 3.2}
+
+### 2026-07-14 07:38:33 — ver5 iteration 2 (LLM on)
+- All@20 100.0% · ValA@20 99.4% · ValB co@20/10/5 62.2/53.3/33.3%
+- latency p50/p95: all=38.3/52.6ms · tiers(valB)={'cache': 11, 'llm': 0, 'rules': 79}
+- SG: {'docs': 572, 'edges': 2050, 'l1_explicit': 0, 'l2_co_retrieval': 1671, 'l3_llm_curated': 10, 'profiles': 6} · plan_cache: {'entries': 310, 'hits': 118, 'hit_rate': 0.314}
+- evolve: {'records': 416, 's_rules': {'decayed_layers': 3538, 'facet_queries': 115}, 's_llm': {'typed_edges': 5, 'profiles': 3}, 'k_rules': {'stale_edges_removed': 0}, 'k_llm': {'wikified': 0}, 'llm_calls': 48, 'good': 178, 'attention': 126, 'shadow_planner': {'analyzed': 40, 'promoted': 35}, 'elapsed_s': 75.7}
+
+### 2026-07-14 07:40:42 — ver5 iteration 3 (LLM on)
+- All@20 100.0% · ValA@20 99.4% · ValB co@20/10/5 60.0/50.0/31.1%
+- latency p50/p95: all=36.7/54.1ms · tiers(valB)={'cache': 12, 'llm': 0, 'rules': 78}
+- SG: {'docs': 572, 'edges': 2338, 'l1_explicit': 0, 'l2_co_retrieval': 1820, 'l3_llm_curated': 14, 'profiles': 9} · plan_cache: {'entries': 346, 'hits': 111, 'hit_rate': 0.295}
+- evolve: {'records': 416, 's_rules': {'decayed_layers': 2450, 'facet_queries': 124}, 's_llm': {'typed_edges': 4, 'profiles': 3}, 'k_rules': {'stale_edges_removed': 0}, 'k_llm': {'wikified': 0}, 'llm_calls': 48, 'good': 186, 'attention': 95, 'shadow_planner': {'analyzed': 40, 'promoted': 38}, 'elapsed_s': 100.5}
+
+### 2026-07-14 07:42:24 — ver5 iteration 4 (LLM on)
+- All@20 100.0% · ValA@20 99.4% · ValB co@20/10/5 63.3/52.2/33.3%
+- latency p50/p95: all=38.5/54.1ms · tiers(valB)={'cache': 14, 'llm': 0, 'rules': 76}
+- SG: {'docs': 572, 'edges': 2543, 'l1_explicit': 0, 'l2_co_retrieval': 1915, 'l3_llm_curated': 19, 'profiles': 12} · plan_cache: {'entries': 359, 'hits': 136, 'hit_rate': 0.362}
+- evolve: {'records': 416, 's_rules': {'decayed_layers': 2101, 'facet_queries': 123}, 's_llm': {'typed_edges': 5, 'profiles': 3}, 'k_rules': {'stale_edges_removed': 0}, 'k_llm': {'wikified': 0}, 'llm_calls': 48, 'good': 183, 'attention': 78, 'shadow_planner': {'analyzed': 40, 'promoted': 35}, 'elapsed_s': 73.9}
+
+### 2026-07-14 07:44:41 — ver5 iteration 5 (LLM on)
+- All@20 100.0% · ValA@20 99.4% · ValB co@20/10/5 62.2/51.1/25.6%
+- latency p50/p95: all=39.4/58.0ms · tiers(valB)={'cache': 17, 'llm': 0, 'rules': 73}
+- SG: {'docs': 572, 'edges': 2639, 'l1_explicit': 0, 'l2_co_retrieval': 1984, 'l3_llm_curated': 24, 'profiles': 15} · plan_cache: {'entries': 361, 'hits': 151, 'hit_rate': 0.402}
+- evolve: {'records': 416, 's_rules': {'decayed_layers': 2052, 'facet_queries': 119}, 's_llm': {'typed_edges': 5, 'profiles': 3}, 'k_rules': {'stale_edges_removed': 0}, 'k_llm': {'wikified': 0}, 'llm_calls': 48, 'good': 183, 'attention': 73, 'shadow_planner': {'analyzed': 40, 'promoted': 36}, 'elapsed_s': 107.8}
+
+### 2026-07-14 — C' 결과 및 개발 사이클 18 (v5.18)
+- C' (v5.17, NO_L1): co@10 평균 52.2 / co@20 62.2 — 이륙 실패. 단 진전 실측:
+  facetQ 31→106~124 (분해율 해결), 정답쌍 커버 6→21/90 (도달 부분 개선).
+- 커버→점수 미전환 원인 3건 (코드 추적):
+  ① 강화 스텝 0.15는 2회 확인(0.30)이 유효가중 0.27로 확장 문턱(0.3) 미달 — 5회 런 내 무력
+  ② 에스코트 동률: 상보 facet top-4가 균등 강화돼(정답1+오답3) max-w 선택이 오답 가능
+  ③ 혼합형 상보 facet("스펙+이슈")의 BM25 조준 흐림
+- v5.18: ① 스텝 0.25 (2회 확인 = 0.5 → 유효 0.45 > 문턱) ② 에스코트에 현재 쿼리 facet 결과
+  교차증거 보너스(prefer set) ③ 상보 facet을 스펙용/이슈용으로 분리.
+- 유닛·스모크 10/10. **v5.18 동결 — ablation C'' (NO_L1) 검증.**

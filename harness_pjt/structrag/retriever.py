@@ -261,7 +261,8 @@ class StructRetriever:
         # explicit refs, a facet_link neighbor confirmed ≥2 times qualifies too.
         if doc_rank:
             top1 = doc_rank[0]
-            esc_nb = self.sg.get_escort_neighbor(top1)
+            cur_facet_docs = {d for tops in facet_tops for d in tops}
+            esc_nb = self.sg.get_escort_neighbor(top1, prefer=cur_facet_docs or None)
             if esc_nb:
                 esc = esc_nb[0]
                 if esc in doc_rank:

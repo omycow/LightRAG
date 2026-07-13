@@ -258,22 +258,26 @@ def rule_intent(query: str) -> str:
 # in its spec/issues (the co-retrieval intent behind the query) — engineering-
 # domain ontology, not a corpus convention. Deterministic, no LLM, generated at
 # plan time so the facet both joins fusion and feeds facet_link learning.
-_COMPLEMENT_FACETS = {"test": "스펙 스펙문서 이슈 issue", "spec": "검증 테스트 test",
-                      "issue": "검증 테스트 test"}
+# v5.18: one facet per complementary artifact TYPE — a mixed "spec issue" facet
+# blurred BM25 targeting; separate facets pinpoint each artifact family.
+_COMPLEMENT_FACETS = {"test": ["스펙 spec 규격", "이슈 issue 문제 보고"],
+                      "spec": ["검증 테스트 test"],
+                      "issue": ["검증 테스트 test"]}
 _TYPE_WORDS = {h for _, hints in _SKEL_TYPES for h in hints}
 
 
-def complementary_facet(query: str) -> dict | None:
+def complementary_facet(query: str) -> list[dict]:
     q = query.lower()
     dtype = next((n for n, hints in _SKEL_TYPES if any(h in q for h in hints)), None)
     if dtype not in _COMPLEMENT_FACETS:
-        return None
+        return []
     from harness_pjt.structrag.quality import salient_terms
     content = [t for t in salient_terms(query) if t not in _TYPE_WORDS][:8]
     if len(content) < 2:
-        return None
-    return {"q": " ".join(content) + " " + _COMPLEMENT_FACETS[dtype],
-            "intent": "cross_doc", "mode": None, "_complement": True}
+        return []
+    return [{"q": " ".join(content) + " " + suffix,
+             "intent": "cross_doc", "mode": None, "_complement": True}
+            for suffix in _COMPLEMENT_FACETS[dtype]]
 
 
 def rule_plan(query: str) -> QueryPlan:
@@ -353,9 +357,7 @@ class QueryAnalyzer:
         # v5.17: single-facet typed queries get a deterministic complementary
         # facet (test↔spec/issue) — the implicit co-retrieval intent made explicit
         if len(plan.subqueries) == 1:
-            comp = complementary_facet(plan.original)
-            if comp:
-                plan.subqueries.append(comp)
+            plan.subqueries.extend(complementary_facet(plan.original))
         # rule validation: never let an ID-bearing subquery lose its lexical route
         for sub in plan.subqueries:
             if _ID_TOKEN.search(sub["q"]) and sub["intent"] != "id_lookup":
