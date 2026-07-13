@@ -90,6 +90,28 @@ class Evolver:
         self._state["log_cursor"] = len(lines)
         return recs
 
+    def _analysis_queue_items(self, limit: int) -> list[dict]:
+        """Drain the background-analysis queue: newest entry per fingerprint,
+        skipping ones the cache already serves well."""
+        from harness_pjt.structrag.analyzer import fingerprint
+        path = os.path.join(self._meta, "analysis_queue.jsonl")
+        if not os.path.exists(path):
+            return []
+        items: dict[str, dict] = {}
+        with open(path, encoding="utf-8") as f:
+            for line in f:
+                try:
+                    rec = json.loads(line)
+                    items[fingerprint(rec["query"])] = rec
+                except (json.JSONDecodeError, KeyError):
+                    pass
+        os.unlink(path)
+        cache = self.retriever.analyzer.cache
+        out = [r for fp, r in items.items()
+               if cache._data.get(fp, {}).get("quality", 0) < self.retriever.rq.promote_gate]
+        out.sort(key=lambda r: r["quality"])  # worst queries first
+        return out[:limit]
+
     # ── KG checkpoint / rollback (used by the eval harness regression guard) ──
 
     def checkpoint_kg(self) -> str:
@@ -129,6 +151,34 @@ class Evolver:
         removed = sg.decay()
         self.retriever.analyzer.cache.invalidate_low(min_quality=rq.attention_gate)
         report["s_rules"] = {"decayed_layers": removed}
+
+        # ── Shadow planner (v5.15): background LLM analysis of queued queries ──
+        # The hot path answers with cache/rules only; here the LLM plan gets
+        # generated, TEST-DRIVEN via a shadow retrieval, and promoted to the
+        # PlanCache only when it beats the rules plan's recorded quality.
+        if self.llm_func and budget > 0:
+            analyzed = promoted = 0
+            for item in self._analysis_queue_items(limit=min(8, budget)):
+                budget -= 1
+                report["llm_calls"] += 1
+                analyzed += 1
+                try:
+                    plan = await self.retriever.analyzer.llm_plan(item["query"])
+                    if plan is None:
+                        continue
+                    shadow = await self.retriever.retrieve(
+                        item["query"], top_k=20, learn=False, plan_override=plan)
+                    from harness_pjt.structrag.analyzer import skeleton
+                    self.retriever.analyzer.memory.update_source(
+                        skeleton(item["query"]), "llm", shadow["quality"])
+                    if shadow["quality"] > item["quality"] + 0.02:
+                        self.retriever.analyzer.cache.promote(
+                            item["query"], plan, shadow["quality"],
+                            floor=self.retriever.rq.attention_gate)
+                        promoted += 1
+                except Exception:
+                    pass
+            report["shadow_planner"] = {"analyzed": analyzed, "promoted": promoted}
 
         # ── Track S · LLM ① typed structural edges ────────────────────────────
         if self.llm_func and budget > 0:

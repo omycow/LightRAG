@@ -46,17 +46,23 @@ class QueryPlan:
     rewrite: str
     subqueries: list[dict] = field(default_factory=list)  # {"q", "intent", "mode"}
     doc_hints: list[str] = field(default_factory=list)
-    source: str = "rules"  # "cache" | "llm" | "rules"
+    source: str = "rules"  # "cache" | "llm" | "rules" — how THIS query got the plan
+    origin: str = ""       # "llm" | "rules" — who authored the plan (survives caching)
+
+    def __post_init__(self):
+        if not self.origin:
+            self.origin = self.source if self.source in ("llm", "rules") else "rules"
 
     def to_dict(self) -> dict:
         return {"original": self.original, "rewrite": self.rewrite,
                 "subqueries": self.subqueries, "doc_hints": self.doc_hints,
-                "source": self.source}
+                "source": self.source, "origin": self.origin}
 
     @staticmethod
     def from_dict(d: dict) -> "QueryPlan":
         return QueryPlan(d["original"], d["rewrite"], d["subqueries"],
-                         d.get("doc_hints", []), d.get("source", "cache"))
+                         d.get("doc_hints", []), d.get("source", "cache"),
+                         d.get("origin", ""))
 
 
 def fingerprint(query: str) -> str:
@@ -69,8 +75,32 @@ def fingerprint(query: str) -> str:
     return " ".join(words[:12])
 
 
+# Artifact-type vocabulary for the skeleton signature (KO→EN normalization,
+# language handling — not a corpus convention).
+_SKEL_TYPES = [("test", ("테스트", "test", "검증", "validation")),
+               ("spec", ("스펙", "spec", "specification", "규격")),
+               ("issue", ("이슈", "issue", "jira", "티켓"))]
+
+
+def skeleton(query: str) -> str:
+    """Content-agnostic query-SHAPE signature (v5.15 ①). Two queries about
+    different products/components share a skeleton when their form matches —
+    strategy learning generalizes across keywords ('Helios GC 테스트 있나요' and
+    'Lyra thermal 검증 코드 있어?' are the same shape). The content fingerprint
+    stays the PlanCache key: plans carry doc hints and must not cross content."""
+    q = query.lower()
+    has_id = 1 if _ID_TOKEN.search(query) else 0
+    dtype = next((n for n, hints in _SKEL_TYPES if any(h in q for h in hints)), "none")
+    parts = [p for p in _CONJ_SPLIT.split(query) if len(p.strip()) >= 8]
+    multi = 1 if len(parts) >= 2 else 0
+    size = "s" if len(query) < 40 else ("m" if len(query) < 80 else "l")
+    return f"id:{has_id}|type:{dtype}|multi:{multi}|len:{size}"
+
+
 class StrategyMemory:
-    """Per-query-cluster mode quality EMA with ε-greedy exploration."""
+    """Mode-quality EMAs keyed by query SKELETON (v5.15 ①) — strategy learning
+    pools evidence across content-different, shape-alike queries. Also tracks
+    per-skeleton plan-source value (rules vs llm) for the LLM-worth gate (②)."""
 
     def __init__(self, working_dir: str, epsilon: float = 0.1, alpha: float = 0.3):
         meta = os.path.join(working_dir, "structrag_meta")
@@ -79,12 +109,35 @@ class StrategyMemory:
         self.epsilon = epsilon
         self.alpha = alpha
         try:
-            self._data = json.load(open(self._path, encoding="utf-8"))
+            raw = json.load(open(self._path, encoding="utf-8"))
         except (OSError, json.JSONDecodeError):
-            self._data = {}
+            raw = {}
+        if "modes" in raw or "src" in raw:
+            self._data = raw.get("modes", {})
+            self._src = raw.get("src", {})
+        else:  # legacy flat schema
+            self._data = raw
+            self._src = {}
 
     def save(self):
-        json.dump(self._data, open(self._path, "w", encoding="utf-8"), ensure_ascii=False)
+        json.dump({"modes": self._data, "src": self._src},
+                  open(self._path, "w", encoding="utf-8"), ensure_ascii=False)
+
+    # ── plan-source value tracking (v5.15 ② LLM-worth gate) ─────────────────
+
+    def update_source(self, skel: str, source: str, quality: float):
+        s = self._src.setdefault(skel, {}).setdefault(source, {"ema": quality, "n": 0})
+        s["ema"] = (1 - self.alpha) * s["ema"] + self.alpha * quality
+        s["n"] += 1
+
+    def llm_adds_value(self, skel: str, margin: float = 0.03, min_n: int = 3) -> bool:
+        """False only when BOTH sources have evidence and llm ≈ rules — then a
+        background LLM analysis for this query shape is money for nothing."""
+        src = self._src.get(skel, {})
+        llm, rules = src.get("llm"), src.get("rules")
+        if llm and rules and llm["n"] >= min_n and rules["n"] >= min_n:
+            return llm["ema"] - rules["ema"] >= margin
+        return True
 
     def select(self, cluster: str, candidates: list[str]) -> str:
         """Best learned mode among candidates, ε-greedy with annealing: exploration
@@ -254,54 +307,63 @@ class QueryAnalyzer:
         self.memory = StrategyMemory(working_dir)
         self.cache = PlanCache(working_dir)
 
-    def _needs_llm(self, query: str, cluster: str) -> bool:
-        """LLM escalation is signal-driven, not unconditional (user requirement:
-        the analyzer judges from quality/complexity when LLM help is worth it).
-          - complex queries: long, multi-intent, or multiple question marks
-          - chronically low-quality clusters: every tried mode has a poor EMA
-        Simple ID/keyword lookups stay on the fast rule path."""
+    def needs_background_analysis(self, query: str) -> bool:
+        """Marks queries worth a BACKGROUND LLM analysis pass (v5.15: the hot path
+        never waits on an LLM — uniform latency; analysis results land in the
+        PlanCache and pay off on the NEXT similar query).
+          - complex queries: long, multi-intent — UNLESS the skeleton has learned
+            that LLM plans don't beat rules for this query shape (② worth gate)
+          - chronically low-quality skeletons: every tried mode has a poor EMA"""
+        skel = skeleton(query)
+        if not self.memory.llm_adds_value(skel):
+            return False
         parts = [p for p in _CONJ_SPLIT.split(query) if len(p.strip()) >= 8]
         if len(query) >= 80 or len(parts) >= 2:
             return True
-        stats = self.memory._data.get(cluster)
+        stats = self.memory._data.get(skel)
         if stats:
             tried = [s for s in stats.values() if s["n"] >= 2]
             if tried and all(s["ema"] < 0.45 for s in tried):
                 return True
         return False
 
-    async def analyze(self, query: str, min_cache_quality: float | None = None) -> QueryPlan:
-        # Tier 0
-        plan = self.cache.get(query, min_quality=min_cache_quality)
-        if plan is not None:
-            return plan
-
-        # Tier 1 (LLM, signal-gated) with rule fallback
-        plan = None
-        cluster = fingerprint(query)
-        if self.llm_func is not None and self._needs_llm(query, cluster):
-            plan = await llm_analyze(query, self.llm_func)
-        if plan is None:
-            plan = rule_plan(query)
-
+    def _finalize(self, plan: QueryPlan) -> QueryPlan:
         # rule validation: never let an ID-bearing subquery lose its lexical route
         for sub in plan.subqueries:
             if _ID_TOKEN.search(sub["q"]) and sub["intent"] != "id_lookup":
                 sub["intent"] = "id_lookup"
-
-        # mode consensus: intent candidates filtered through the strategy bandit
+        # mode consensus: intent candidates × strategy bandit, keyed by SHAPE (①)
+        skel = skeleton(plan.original)
         for sub in plan.subqueries:
             candidates = INTENT_MODES.get(sub["intent"], INTENT_MODES["concept"])
-            sub["mode"] = self.memory.select(cluster, candidates)
+            sub["mode"] = self.memory.select(skel, candidates)
         return plan
+
+    async def analyze(self, query: str, min_cache_quality: float | None = None) -> QueryPlan:
+        """Hot path: cache hit or rules. NEVER an LLM call (uniform latency)."""
+        plan = self.cache.get(query, min_quality=min_cache_quality)
+        if plan is not None:
+            return plan
+        return self._finalize(rule_plan(query))
+
+    async def llm_plan(self, query: str) -> QueryPlan | None:
+        """Background-only: full LLM analysis, finalized like any other plan.
+        Called by the evolver's shadow planner, never from the query path."""
+        if self.llm_func is None:
+            return None
+        plan = await llm_analyze(query, self.llm_func)
+        if plan is None:
+            return None
+        return self._finalize(plan)
 
     def feedback(self, query: str, plan: QueryPlan, quality: float,
                  promote_gate: float | None = None, promote_floor: float | None = None):
-        """Post-retrieval learning: bandit update + plan promotion."""
-        cluster = fingerprint(query)
+        """Post-retrieval learning: shape-keyed bandit + source-value + promotion."""
+        skel = skeleton(query)
         for sub in plan.subqueries:
             if sub.get("mode"):
-                self.memory.update(cluster, sub["mode"], quality)
+                self.memory.update(skel, sub["mode"], quality)
+        self.memory.update_source(skel, plan.origin or "rules", quality)
         self.cache.promote(query, plan, quality, gate=promote_gate, floor=promote_floor)
 
     def save(self):

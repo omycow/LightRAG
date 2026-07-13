@@ -102,13 +102,20 @@ class StructRetriever:
 
     # ── main entry ────────────────────────────────────────────────────────────
 
-    async def retrieve(self, query: str, top_k: int = 20, learn: bool = True) -> dict:
+    async def retrieve(self, query: str, top_k: int = 20, learn: bool = True,
+                       plan_override: "QueryPlan | None" = None) -> dict:
         t0 = time.perf_counter()
         self.queries_seen += 1
 
-        # 1. ANALYZE (Tier 0 cache / Tier 1 LLM / rules)
-        plan: QueryPlan = await self.analyzer.analyze(
-            query, min_cache_quality=self.rq.promote_gate)
+        # 1. ANALYZE — cache or rules only; the hot path NEVER waits on an LLM
+        #    (v5.15: uniform latency; LLM analysis runs in the background shadow
+        #    planner and pays off on the next similar query via the PlanCache).
+        #    plan_override is the shadow planner's entry point.
+        if plan_override is not None:
+            plan: QueryPlan = plan_override
+        else:
+            plan = await self.analyzer.analyze(
+                query, min_cache_quality=self.rq.promote_gate)
 
         # 2. SCOPE — seeds from query tokens/IDs + plan doc hints → SG 1-hop
         seeds = self.sg.match_docs_by_tokens(plan.rewrite, top_n=4)
@@ -316,6 +323,15 @@ class StructRetriever:
             self.analyzer.feedback(query, plan, quality,
                                    promote_gate=self.rq.promote_gate,
                                    promote_floor=self.rq.attention_gate)
+            # v5.15: queue rules-planned queries for background LLM analysis when
+            # they look worth it (complex shape or weak result — and the shape's
+            # LLM-worth gate hasn't learned that rules do just as well). The
+            # evolver's shadow planner analyzes, test-drives the LLM plan, and
+            # promotes it to the cache only if it actually scores better.
+            if (plan.source == "rules"
+                    and (self.analyzer.needs_background_analysis(query)
+                         or quality <= self.rq.attention_gate)):
+                self._enqueue_analysis(query, quality)
             # v5.8 selective echo: expansion-injected docs participate in L2
             # reinforcement only for pairs with explicit_ref provenance (see
             # reinforce_co_retrieval). v5.7's blanket base-only rule killed the
@@ -348,6 +364,12 @@ class StructRetriever:
         os.makedirs(os.path.dirname(self._log_path), exist_ok=True)
         with open(self._log_path, "a", encoding="utf-8") as f:
             f.write(json.dumps(rec, ensure_ascii=False) + "\n")
+
+    def _enqueue_analysis(self, query: str, quality: float):
+        path = os.path.join(os.path.dirname(self._log_path), "analysis_queue.jsonl")
+        with open(path, "a", encoding="utf-8") as f:
+            f.write(json.dumps({"query": query, "quality": quality,
+                                "ts": round(time.time(), 1)}, ensure_ascii=False) + "\n")
 
     def save(self):
         self.analyzer.save()

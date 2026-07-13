@@ -118,12 +118,35 @@ def test_analyzer_tiers_and_rules():
 
     with tempfile.TemporaryDirectory() as td:
         an = QueryAnalyzer(td, llm_func=fake_llm)
-        # short simple query stays on the rule fast path even with an LLM available
-        simple = asyncio.run(an.analyze("AUR-905 이슈 상세"))
-        assert simple.source == "rules"
+        # v5.15: the hot path NEVER calls the LLM — even complex queries get
+        # rules on a cache miss (uniform latency); LLM plans are background-only
+        hot = asyncio.run(an.analyze(complex_q))
+        assert hot.source == "rules"
+        assert an.needs_background_analysis(complex_q)
+        assert not an.needs_background_analysis("AUR-905 이슈 상세")
 
-        plan = asyncio.run(an.analyze(complex_q))
-        assert plan.source == "llm"
+        plan = asyncio.run(an.llm_plan(complex_q))
+        assert plan is not None and plan.source == "llm" and plan.origin == "llm"
+
+        # ① skeleton: keyword-different, shape-alike queries share a strategy key
+        from harness_pjt.structrag.analyzer import skeleton
+        s1 = skeleton("Helios GC valid migration 검증하는 테스트 있나요?")
+        s2 = skeleton("Lyra thermal gear downgrade 테스트 코드 있어?")
+        assert s1 == s2, (s1, s2)
+        assert skeleton("AUR-905 이슈 상세") != s1
+
+        # ② LLM-worth gate: once both sources have evidence and llm ≈ rules,
+        # background analysis for that shape is skipped
+        for _ in range(3):
+            an.memory.update_source(s1, "rules", 0.60)
+            an.memory.update_source(s1, "llm", 0.61)
+        assert not an.memory.llm_adds_value(s1)
+        same_shape_q = "Nova UTP mphy 링크업 게이트니고 검증하는 테스트 있나요?"
+        assert skeleton(same_shape_q) == s1
+        assert not an.needs_background_analysis(same_shape_q)
+        for _ in range(5):
+            an.memory.update_source(s1, "llm", 0.75)
+        assert an.memory.llm_adds_value(s1)
         # rule validation forces the ID-bearing subquery back to id_lookup → lexical mode
         id_sub = next(s for s in plan.subqueries if "AUR-905" in s["q"])
         assert id_sub["intent"] == "id_lookup" and id_sub["mode"] in ("bm25", "hybrid"), id_sub
