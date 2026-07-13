@@ -27,12 +27,33 @@ from harness_pjt.structrag.structure_graph import StructureGraph
 
 RRF_K = 60
 SCOPE_BOOST = 0.6      # weight of the scope pseudo-ranking in fusion
+TYPE_BOOST = 1.15      # doc-type intent prior (v5.11): multiplicative, soft
+
+# Query → requested artifact type (v5.11). When the query literally names the
+# kind of document it wants ("…검증하는 테스트 있나요?" asks for a TEST), docs
+# whose FILENAME TOKENS carry that type get a soft prior. Tokens come from the
+# corpus itself (SG node tokens); the KO→EN hint map is language normalization,
+# same category as the particle stripping in quality.py. First match wins —
+# the requested deliverable is prioritized over incidentally mentioned types.
+_TYPE_HINTS = [
+    (("validation", "test"), ("테스트", "test", "검증", "validation")),
+    (("spec",), ("스펙", "spec", "specification", "규격")),
+]
+
+
+def _query_type_tokens(query: str) -> tuple[str, ...] | None:
+    q = query.lower()
+    for canon_tokens, hints in _TYPE_HINTS:
+        if any(h in q for h in hints):
+            return canon_tokens
+    return None
 EXPAND_TOP_DOCS = 5    # how many top hit docs get SG-neighbor expansion
 EXPAND_NEIGHBORS = 4   # neighbors per hit doc
 EXPAND_CHUNKS = 2      # chunks pulled per neighbor doc
 EXPAND_BUDGET = 6      # max expansion docs admitted into the unified ranking
 EXPAND_L1_SLOTS = 4    # budget seats reserved for explicit-ref (L1) candidates
 EXPAND_TAIL = 8        # budget-overflow expansions appended after the window
+EXPAND_HEAD_CAP = 3    # max expansion docs inside the top-10 doc positions
 
 
 async def _run_mode(rag, mode: str, query: str, top_k: int) -> list[dict]:
@@ -182,6 +203,19 @@ class StructRetriever:
             doc_score.setdefault(d, fused[cid])  # best (first-seen) chunk score
             doc_chunks[d].append(cid)
 
+        # v5.11 type prior: the query names the artifact type it wants ("…테스트
+        # 있나요") → lift the BEST-scoring docs of that type only. Boosting every
+        # type-match flooded the window with sibling cards and pushed the linked
+        # doc out (screening: co@20 −4.4); the top-2 restriction lifts the answer
+        # card without moving the herd.
+        type_tokens = _query_type_tokens(query)
+        if type_tokens:
+            nodes = self.sg._data["nodes"]
+            matched = [d for d in sorted(doc_score, key=lambda x: -doc_score[x])
+                       if set(type_tokens) & set(nodes.get(d, {}).get("tokens", ()))]
+            for rank_i, d in enumerate(matched[:2]):
+                doc_score[d] *= TYPE_BOOST if rank_i == 0 else (1 + (TYPE_BOOST - 1) / 2)
+
         base_rank = sorted(doc_score, key=lambda d: -doc_score[d])
 
         # Channel-representation guarantee (doc level): each ranking channel's
@@ -243,6 +277,24 @@ class StructRetriever:
         merged = dict(doc_score)
         merged.update({d: v[0] for d, v in top_expansion.items()})
         doc_rank = sorted(merged, key=lambda d: -merged[d])
+
+        # v5.11 head cap: expansion docs inherit high scores and can stack up to 6
+        # deep ABOVE mid-ranked base docs — diagnosis showed the query's own best
+        # base match (the card) getting shoved to ranks 11-14 in 15/20 co@10
+        # misses. At most EXPAND_HEAD_CAP expansion docs may occupy top-10 doc
+        # positions; the rest slide to 11+ (same window, so co@20 is untouched).
+        head, deferred = [], []
+        exp_in_head = 0
+        for d in doc_rank:
+            if len(head) < 10 and d in top_expansion:
+                if exp_in_head >= EXPAND_HEAD_CAP:
+                    deferred.append(d)
+                    continue
+                exp_in_head += 1
+            head.append(d)
+            if len(head) == 10 and deferred:
+                head, deferred = head + deferred, []
+        doc_rank = head + deferred
 
         # assemble chunks in doc-rank order: ≤2 fused chunks per base doc,
         # ≤EXPAND_CHUNKS lexically-best chunks per expansion doc
