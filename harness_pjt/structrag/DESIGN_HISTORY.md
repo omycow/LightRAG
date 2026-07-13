@@ -624,3 +624,59 @@
   ×(0.7+0.3·rel)을 좌석 내부 순서 결정에 적용. "좌석이 경쟁자를 정하고, 보정이 그들의 순서를 정한다."
 - 유닛 통과, 스모크 9/10 (ε 비결정성 범위). **v5.10 동결 — --fresh 무개입 5회 검증.**
 - 판정 기준: v5.8(74.7/56.5/42.6) 대비 동등 이상 + small-k 우상향이면 승격, 아니면 v5.8 확정.
+
+### 2026-07-13 14:49:12 — ver5 iteration 1 (LLM on)
+- All@20 100.0% · ValA@20 98.3% · ValB co@20/10/5 67.8/48.9/38.9%
+- latency p50/p95: all=37.0/44.4ms · tiers(valB)={'cache': 0, 'llm': 83, 'rules': 7}
+- SG: {'docs': 572, 'edges': 2300, 'l1_explicit': 1719, 'l2_co_retrieval': 1540, 'l3_llm_curated': 4, 'profiles': 3} · plan_cache: {'entries': 333, 'hits': 2, 'hit_rate': 0.005}
+- evolve: {'records': 376, 's_rules': {'decayed_layers': 1408}, 's_llm': {'typed_edges': 4, 'profiles': 3}, 'k_rules': {'stale_edges_removed': 0}, 'k_llm': {'wikified': 2}, 'llm_calls': 10, 'good': 149, 'attention': 43, 'elapsed_s': 1.0}
+
+### 2026-07-13 14:49:56 — ver5 iteration 2 (LLM on)
+- All@20 100.0% · ValA@20 97.8% · ValB co@20/10/5 73.3/53.3/40.0%
+- latency p50/p95: all=40.0/51.7ms · tiers(valB)={'cache': 80, 'llm': 3, 'rules': 7}
+- SG: {'docs': 572, 'edges': 2368, 'l1_explicit': 1719, 'l2_co_retrieval': 1644, 'l3_llm_curated': 6, 'profiles': 6} · plan_cache: {'entries': 335, 'hits': 171, 'hit_rate': 0.455}
+- evolve: {'records': 376, 's_rules': {'decayed_layers': 1373}, 's_llm': {'typed_edges': 2, 'profiles': 3}, 'k_rules': {'stale_edges_removed': 0}, 'k_llm': {'wikified': 2}, 'llm_calls': 10, 'good': 149, 'attention': 43, 'elapsed_s': 16.8}
+
+### 2026-07-13 14:50:57 — ver5 iteration 3 (LLM on)
+- All@20 100.0% · ValA@20 99.4% · ValB co@20/10/5 73.3/53.3/36.7%
+- latency p50/p95: all=37.5/59.1ms · tiers(valB)={'cache': 29, 'llm': 57, 'rules': 4}
+- SG: {'docs': 572, 'edges': 2436, 'l1_explicit': 1719, 'l2_co_retrieval': 1778, 'l3_llm_curated': 9, 'profiles': 9} · plan_cache: {'entries': 363, 'hits': 108, 'hit_rate': 0.287}
+- evolve: {'records': 376, 's_rules': {'decayed_layers': 1222}, 's_llm': {'typed_edges': 3, 'profiles': 3}, 'k_rules': {'stale_edges_removed': 0}, 'k_llm': {'wikified': 2}, 'llm_calls': 10, 'good': 149, 'attention': 13, 'elapsed_s': 32.0}
+
+### 2026-07-13 14:51:27 — ver5 iteration 4 (LLM on)
+- All@20 100.0% · ValA@20 98.9% · ValB co@20/10/5 73.3/51.1/37.8%
+- latency p50/p95: all=39.2/61.9ms · tiers(valB)={'cache': 76, 'llm': 11, 'rules': 3}
+- SG: {'docs': 572, 'edges': 2446, 'l1_explicit': 1719, 'l2_co_retrieval': 1797, 'l3_llm_curated': 12, 'profiles': 12} · plan_cache: {'entries': 366, 'hits': 177, 'hit_rate': 0.471}
+- evolve: {'records': 376, 's_rules': {'decayed_layers': 1158}, 's_llm': {'typed_edges': 3, 'profiles': 3}, 'k_rules': {'stale_edges_removed': 0}, 'k_llm': {'wikified': 2}, 'llm_calls': 10, 'good': 150, 'attention': 11, 'elapsed_s': 1.1}
+
+### 2026-07-13 14:52:22 — ver5 iteration 5 (LLM on)
+- All@20 100.0% · ValA@20 99.4% · ValB co@20/10/5 73.3/51.1/38.9%
+- latency p50/p95: all=41.3/78.2ms · tiers(valB)={'cache': 33, 'llm': 52, 'rules': 5}
+- SG: {'docs': 572, 'edges': 2454, 'l1_explicit': 1719, 'l2_co_retrieval': 1807, 'l3_llm_curated': 15, 'profiles': 15} · plan_cache: {'entries': 366, 'hits': 125, 'hit_rate': 0.332}
+- evolve: {'records': 376, 's_rules': {'decayed_layers': 1116}, 's_llm': {'typed_edges': 3, 'profiles': 3}, 'k_rules': {'stale_edges_removed': 0}, 'k_llm': {'wikified': 2}, 'llm_calls': 10, 'good': 147, 'attention': 24, 'elapsed_s': 25.2}
+
+### 2026-07-10 — v5.10 검증 완료: 기각. **시리즈 마감 — v5.8 최종 확정**
+- v5.10 (v5.8 구조 + L1 관련성 보정): co@20 72.2±2.46 / co@10 51.5±1.84 / co@5 38.5±1.25
+  — v5.8(74.7/56.5/42.6) 전 지표 열위, 특히 co@10 −5.0. 롤백 0회는 확인.
+- 코드를 structrag-v5.8 태그 상태로 복원 (유닛 + 스모크 10/10 재확인).
+
+## 설계 원칙 추가
+
+### D8. L1(명시적 참조) 확장에 어휘 신호 곱하기 금지
+- 3회 독립 실험으로 확증: v5.3(게이트) 전면 후퇴, v5.9(순서 보정, 좌석 없이) small-k 5연속 하락,
+  v5.10(순서 보정, 좌석 안에서) co@10 −5.0.
+- 이유: 구조 참조의 존재 이유가 "쿼리와 어휘적으로 먼 문서를 구조로 찾는 것"이므로,
+  어휘 관련성을 곱하는 순간 (게이트든 releveling이든) 그 본질을 벌점화한다.
+  L1은 구조 신뢰만으로 다루고, 어휘 신호는 학습 엣지(L2/L3)에만 적용한다.
+
+### 최종 스코어보드 (무개입 클린 런, 바닐라 hybrid 대비)
+| 버전 | co@20 | co@10 | co@5 | 판정 |
+|---|---|---|---|---|
+| 바닐라 hybrid | 57.8 | 52.2 | 33.3 | 기준선 |
+| v5.4 | 74.9±3.75 | 52.4±2.88 | 39.8±2.38 | co@20 종점 최고 (78.9) |
+| v5.7 | 69.1±1.63 | 52.9±0.98 | 38.5±1.48 | 안정·정체 |
+| **v5.8** | **74.7±1.86** | **56.5±1.84** | **42.6±1.25** | **최종 챔피언** |
+| v5.9 | 71.1±1.91 | 53.3±1.77 | 35.8±1.48 | 기각 (D8 확증) |
+| v5.10 | 72.2±2.46 | 51.5±1.84 | 38.5±1.25 | 기각 (D8 확증) |
+- 미해결 백로그: Track K 가드 롤백 원인 특정 (여러 런에서 재발, 회당 co@10 3~4pt 손실),
+  co@10 바닐라 대비 이득 확대, evolver ⑥ rewrite 마이닝 구현.
