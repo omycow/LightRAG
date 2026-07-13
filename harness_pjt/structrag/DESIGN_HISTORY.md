@@ -1165,3 +1165,42 @@
   v5.17~18 상보 facet이 한국어 쿼리에서 콘텐츠 텀을 잃던 숨은 원인. facet 전용 추출기(한글 2자+)로 수정.
   (quality 채점용 salient_terms는 캘리브레이션 보존 위해 미변경 — 개선 후보로 기록)
 - 유닛·sanity·스모크 10/10. **v5.19 동결 — 풀스택 P1 검증 (v5.15.1 대비 판정).**
+
+### 2026-07-14 08:01:17 — ver5 iteration 1 (LLM on)
+- All@20 100.0% · ValA@20 99.4% · ValB co@20/10/5 85.6/62.2/33.3%
+- latency p50/p95: all=37.3/43.2ms · tiers(valB)={'cache': 0, 'llm': 0, 'rules': 90}
+- SG: {'docs': 572, 'edges': 2167, 'l1_explicit': 1719, 'l2_co_retrieval': 1271, 'l3_llm_curated': 3, 'profiles': 3} · plan_cache: {'entries': 347, 'hits': 2, 'hit_rate': 0.005}
+- evolve: {'records': 376, 's_rules': {'decayed_layers': 992, 'facet_queries': 8}, 's_llm': {'typed_edges': 3, 'profiles': 3}, 'k_rules': {'stale_edges_removed': 0}, 'k_llm': {'wikified': 1}, 'llm_calls': 49, 'good': 165, 'attention': 60, 'shadow_planner': {'analyzed': 40, 'promoted': 36}, 'elapsed_s': 63.1}
+
+### 2026-07-14 08:02:10 — ver5 iteration 2 (LLM on)
+- All@20 100.0% · ValA@20 99.4% · ValB co@20/10/5 87.8/63.3/35.6%
+- latency p50/p95: all=37.0/44.3ms · tiers(valB)={'cache': 16, 'llm': 0, 'rules': 74}
+- SG: {'docs': 572, 'edges': 2516, 'l1_explicit': 1719, 'l2_co_retrieval': 1491, 'l3_llm_curated': 6, 'profiles': 6} · plan_cache: {'entries': 365, 'hits': 125, 'hit_rate': 0.332}
+- evolve: {'records': 416, 's_rules': {'decayed_layers': 1028, 'facet_queries': 41}, 's_llm': {'typed_edges': 3, 'profiles': 3}, 'k_rules': {'stale_edges_removed': 0}, 'k_llm': {'wikified': 0}, 'llm_calls': 48, 'good': 185, 'attention': 38, 'shadow_planner': {'analyzed': 40, 'promoted': 34}, 'elapsed_s': 28.0}
+
+### 2026-07-14 08:04:18 — ver5 iteration 3 (LLM on)
+- All@20 100.0% · ValA@20 99.4% · ValB co@20/10/5 83.3/62.2/35.6%
+- latency p50/p95: all=38.5/44.0ms · tiers(valB)={'cache': 24, 'llm': 0, 'rules': 66}
+- SG: {'docs': 572, 'edges': 2899, 'l1_explicit': 1719, 'l2_co_retrieval': 1653, 'l3_llm_curated': 10, 'profiles': 9} · plan_cache: {'entries': 366, 'hits': 134, 'hit_rate': 0.356}
+- evolve: {'records': 416, 's_rules': {'decayed_layers': 971, 'facet_queries': 52}, 's_llm': {'typed_edges': 4, 'profiles': 3}, 'k_rules': {'stale_edges_removed': 0}, 'k_llm': {'wikified': 0}, 'llm_calls': 48, 'good': 182, 'attention': 38, 'shadow_planner': {'analyzed': 40, 'promoted': 33}, 'elapsed_s': 102.6}
+
+### 2026-07-14 08:06:13 — ver5 iteration 4 (LLM on)
+- All@20 100.0% · ValA@20 99.4% · ValB co@20/10/5 85.6/67.8/43.3%
+- latency p50/p95: all=39.7/48.8ms · tiers(valB)={'cache': 32, 'llm': 0, 'rules': 58}
+- SG: {'docs': 572, 'edges': 3123, 'l1_explicit': 1719, 'l2_co_retrieval': 1747, 'l3_llm_curated': 15, 'profiles': 12} · plan_cache: {'entries': 366, 'hits': 140, 'hit_rate': 0.372}
+- evolve: {'records': 416, 's_rules': {'decayed_layers': 948, 'facet_queries': 46}, 's_llm': {'typed_edges': 5, 'profiles': 3}, 'k_rules': {'stale_edges_removed': 0}, 'k_llm': {'wikified': 0}, 'llm_calls': 48, 'good': 166, 'attention': 33, 'shadow_planner': {'analyzed': 40, 'promoted': 33}, 'elapsed_s': 89.3}
+
+### 2026-07-14 08:07:55 — ver5 iteration 5 (LLM on)
+- All@20 100.0% · ValA@20 99.4% · ValB co@20/10/5 83.3/58.9/37.8%
+- latency p50/p95: all=40.6/49.0ms · tiers(valB)={'cache': 27, 'llm': 0, 'rules': 63}
+- SG: {'docs': 572, 'edges': 3221, 'l1_explicit': 1719, 'l2_co_retrieval': 1785, 'l3_llm_curated': 20, 'profiles': 15} · plan_cache: {'entries': 366, 'hits': 137, 'hit_rate': 0.364}
+- evolve: {'records': 416, 's_rules': {'decayed_layers': 883, 'facet_queries': 44}, 's_llm': {'typed_edges': 5, 'profiles': 3}, 'k_rules': {'stale_edges_removed': 0}, 'k_llm': {'wikified': 0}, 'llm_calls': 48, 'good': 164, 'attention': 41, 'shadow_planner': {'analyzed': 40, 'promoted': 35}, 'elapsed_s': 76.3}
+
+### 2026-07-14 — v5.19 검증 완료: 승격 기각, 챔피언 v5.15.1 유지 (코드 복원)
+- v5.19 풀스택: co@10 평균 62.9, **58.9 하락 마감** (챔피언 71.1 상승 마감), co@20 85.1 열위.
+- 기각 사유: OFF 클래스(ID 단독)가 본 문제셋에 희소해 회수 효과 미미, FULL 상보 facet은
+  시리즈에서 확인된 한계 그대로, iter5 하락.
+- 단, v5.19의 산출물 중 보존 가치 (태그 structrag-v5.19에 보관, 운영 환경용):
+  ① 쿼리 조건부 강도 메커니즘 — ID 조회·멀티의도가 실제로 섞이는 운영 트래픽용
+  ② 한국어 2음절 토큰 탈락 버그 발견 (salient_terms 3자+ 필터) — quality 개선 후보로 등재
+- 코드 트리를 structrag-v5.15.1로 복원 (유닛·스모크 10/10 재확인).

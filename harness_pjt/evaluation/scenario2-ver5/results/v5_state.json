@@ -2,72 +2,72 @@
  "iterations": [
   {
    "iter": 1,
-   "ts": "2026-07-13 23:04:44",
+   "ts": "2026-07-14 08:01:17",
    "use_llm": true,
    "llm_health": {
-    "calls": 1,
+    "calls": 4,
     "failures": 0,
     "consecutive_failures": 0,
     "backoff": false,
-    "cache_hits": 49
+    "cache_hits": 46
    },
    "all": {
     "n": 106,
     "hit@20": 100.0,
-    "hit@10": 97.1,
-    "lat_p50": 38.2,
-    "lat_p95": 46.2,
-    "q_mean": 0.63,
+    "hit@10": 96.2,
+    "lat_p50": 37.3,
+    "lat_p95": 43.2,
+    "q_mean": 0.628,
     "tiers": {
      "cache": 0,
      "llm": 0,
      "rules": 106
     },
-    "sg_expand_total": 984
+    "sg_expand_total": 954
    },
    "valA": {
     "n": 180,
     "hit@20": 99.4,
     "hit@10": 93.9,
-    "lat_p50": 41.9,
-    "lat_p95": 51.6,
-    "q_mean": 0.575,
+    "lat_p50": 41.7,
+    "lat_p95": 54.9,
+    "q_mean": 0.576,
     "tiers": {
      "cache": 2,
      "llm": 0,
      "rules": 178
     },
-    "sg_expand_total": 1649
+    "sg_expand_total": 1621
    },
    "valB": {
     "n": 90,
     "hit@20": 100.0,
-    "hit@10": 97.8,
-    "lat_p50": 42.2,
-    "lat_p95": 69.1,
-    "q_mean": 0.524,
+    "hit@10": 98.9,
+    "lat_p50": 70.0,
+    "lat_p95": 92.0,
+    "q_mean": 0.523,
     "tiers": {
      "cache": 0,
      "llm": 0,
      "rules": 90
     },
-    "sg_expand_total": 808,
+    "sg_expand_total": 776,
     "co": {
-     "5": 40.0,
-     "10": 61.1,
+     "5": 33.3,
+     "10": 62.2,
      "20": 85.6
     }
    },
    "sg": {
     "docs": 572,
-    "edges": 2066,
+    "edges": 2167,
     "l1_explicit": 1719,
-    "l2_co_retrieval": 1229,
+    "l2_co_retrieval": 1271,
     "l3_llm_curated": 3,
     "profiles": 3
    },
    "plan_cache": {
-    "entries": 345,
+    "entries": 347,
     "hits": 2,
     "hit_rate": 0.005
    },
@@ -77,7 +77,8 @@
    "evolve": {
     "records": 376,
     "s_rules": {
-     "decayed_layers": 983
+     "decayed_layers": 992,
+     "facet_queries": 8
     },
     "s_llm": {
      "typed_edges": 3,
@@ -91,19 +92,19 @@
     },
     "llm_calls": 49,
     "good": 165,
-    "attention": 63,
+    "attention": 60,
     "shadow_planner": {
      "analyzed": 40,
-     "promoted": 37
+     "promoted": 36
     },
-    "elapsed_s": 41.4
+    "elapsed_s": 63.1
    },
    "rolled_back": false,
-   "elapsed_s": 56.4
+   "elapsed_s": 81.6
   },
   {
    "iter": 2,
-   "ts": "2026-07-13 23:06:52",
+   "ts": "2026-07-14 08:02:10",
    "use_llm": true,
    "llm_health": {
     "calls": 6,
@@ -116,61 +117,61 @@
     "n": 106,
     "hit@20": 100.0,
     "hit@10": 97.1,
-    "lat_p50": 39.1,
-    "lat_p95": 46.0,
-    "q_mean": 0.642,
+    "lat_p50": 37.0,
+    "lat_p95": 44.3,
+    "q_mean": 0.644,
     "tiers": {
-     "cache": 59,
+     "cache": 58,
      "llm": 0,
-     "rules": 47
+     "rules": 48
     },
-    "sg_expand_total": 965
+    "sg_expand_total": 927
    },
    "valA": {
     "n": 180,
     "hit@20": 99.4,
     "hit@10": 93.9,
-    "lat_p50": 43.0,
-    "lat_p95": 68.8,
-    "q_mean": 0.603,
+    "lat_p50": 41.3,
+    "lat_p95": 69.1,
+    "q_mean": 0.608,
     "tiers": {
-     "cache": 55,
+     "cache": 51,
      "llm": 0,
-     "rules": 125
+     "rules": 129
     },
-    "sg_expand_total": 1593
+    "sg_expand_total": 1551
    },
    "valB": {
     "n": 90,
     "hit@20": 100.0,
-    "hit@10": 97.8,
-    "lat_p50": 46.1,
-    "lat_p95": 77.8,
-    "q_mean": 0.559,
+    "hit@10": 98.9,
+    "lat_p50": 63.4,
+    "lat_p95": 90.0,
+    "q_mean": 0.55,
     "tiers": {
-     "cache": 19,
+     "cache": 16,
      "llm": 0,
-     "rules": 71
+     "rules": 74
     },
-    "sg_expand_total": 750,
+    "sg_expand_total": 744,
     "co": {
-     "5": 46.7,
-     "10": 64.4,
-     "20": 90.0
+     "5": 35.6,
+     "10": 63.3,
+     "20": 87.8
     }
    },
    "sg": {
     "docs": 572,
-    "edges": 2160,
+    "edges": 2516,
     "l1_explicit": 1719,
-    "l2_co_retrieval": 1453,
-    "l3_llm_curated": 7,
+    "l2_co_retrieval": 1491,
+    "l3_llm_curated": 6,
     "profiles": 6
    },
    "plan_cache": {
-    "entries": 366,
-    "hits": 133,
-    "hit_rate": 0.354
+    "entries": 365,
+    "hits": 125,
+    "hit_rate": 0.332
    },
    "strategy_memory": {
     "clusters": 14
@@ -178,310 +179,8 @@
    "evolve": {
     "records": 416,
     "s_rules": {
-     "decayed_layers": 1156
-    },
-    "s_llm": {
-     "typed_edges": 4,
-     "profiles": 3
-    },
-    "k_rules": {
-     "stale_edges_removed": 0
-    },
-    "k_llm": {
-     "wikified": 0
-    },
-    "llm_calls": 48,
-    "good": 180,
-    "attention": 39,
-    "shadow_planner": {
-     "analyzed": 40,
-     "promoted": 35
-    },
-    "elapsed_s": 108.5
-   },
-   "rolled_back": false,
-   "elapsed_s": 121.8
-  },
-  {
-   "iter": 3,
-   "ts": "2026-07-13 23:09:18",
-   "use_llm": true,
-   "llm_health": {
-    "calls": 11,
-    "failures": 0,
-    "consecutive_failures": 0,
-    "backoff": false,
-    "cache_hits": 139
-   },
-   "all": {
-    "n": 106,
-    "hit@20": 100.0,
-    "hit@10": 97.1,
-    "lat_p50": 38.7,
-    "lat_p95": 45.4,
-    "q_mean": 0.647,
-    "tiers": {
-     "cache": 56,
-     "llm": 0,
-     "rules": 50
-    },
-    "sg_expand_total": 969
-   },
-   "valA": {
-    "n": 180,
-    "hit@20": 99.4,
-    "hit@10": 94.4,
-    "lat_p50": 43.5,
-    "lat_p95": 69.6,
-    "q_mean": 0.612,
-    "tiers": {
-     "cache": 52,
-     "llm": 0,
-     "rules": 128
-    },
-    "sg_expand_total": 1604
-   },
-   "valB": {
-    "n": 90,
-    "hit@20": 100.0,
-    "hit@10": 97.8,
-    "lat_p50": 58.0,
-    "lat_p95": 153.1,
-    "q_mean": 0.554,
-    "tiers": {
-     "cache": 20,
-     "llm": 0,
-     "rules": 70
-    },
-    "sg_expand_total": 785,
-    "co": {
-     "5": 48.9,
-     "10": 67.8,
-     "20": 88.9
-    }
-   },
-   "sg": {
-    "docs": 572,
-    "edges": 2213,
-    "l1_explicit": 1719,
-    "l2_co_retrieval": 1584,
-    "l3_llm_curated": 11,
-    "profiles": 9
-   },
-   "plan_cache": {
-    "entries": 366,
-    "hits": 128,
-    "hit_rate": 0.34
-   },
-   "strategy_memory": {
-    "clusters": 14
-   },
-   "evolve": {
-    "records": 416,
-    "s_rules": {
-     "decayed_layers": 1056
-    },
-    "s_llm": {
-     "typed_edges": 4,
-     "profiles": 3
-    },
-    "k_rules": {
-     "stale_edges_removed": 0
-    },
-    "k_llm": {
-     "wikified": 0
-    },
-    "llm_calls": 48,
-    "good": 184,
-    "attention": 40,
-    "shadow_planner": {
-     "analyzed": 40,
-     "promoted": 33
-    },
-    "elapsed_s": 123.5
-   },
-   "rolled_back": false,
-   "elapsed_s": 138.5
-  },
-  {
-   "iter": 4,
-   "ts": "2026-07-13 23:11:13",
-   "use_llm": true,
-   "llm_health": {
-    "calls": 16,
-    "failures": 0,
-    "consecutive_failures": 0,
-    "backoff": false,
-    "cache_hits": 184
-   },
-   "all": {
-    "n": 106,
-    "hit@20": 100.0,
-    "hit@10": 97.1,
-    "lat_p50": 40.5,
-    "lat_p95": 45.8,
-    "q_mean": 0.651,
-    "tiers": {
-     "cache": 58,
-     "llm": 0,
-     "rules": 48
-    },
-    "sg_expand_total": 1006
-   },
-   "valA": {
-    "n": 180,
-    "hit@20": 99.4,
-    "hit@10": 93.9,
-    "lat_p50": 44.0,
-    "lat_p95": 71.8,
-    "q_mean": 0.615,
-    "tiers": {
-     "cache": 53,
-     "llm": 0,
-     "rules": 127
-    },
-    "sg_expand_total": 1596
-   },
-   "valB": {
-    "n": 90,
-    "hit@20": 100.0,
-    "hit@10": 97.8,
-    "lat_p50": 58.0,
-    "lat_p95": 144.2,
-    "q_mean": 0.583,
-    "tiers": {
-     "cache": 27,
-     "llm": 0,
-     "rules": 63
-    },
-    "sg_expand_total": 736,
-    "co": {
-     "5": 48.9,
-     "10": 67.8,
-     "20": 92.2
-    }
-   },
-   "sg": {
-    "docs": 572,
-    "edges": 2231,
-    "l1_explicit": 1719,
-    "l2_co_retrieval": 1614,
-    "l3_llm_curated": 13,
-    "profiles": 12
-   },
-   "plan_cache": {
-    "entries": 366,
-    "hits": 138,
-    "hit_rate": 0.367
-   },
-   "strategy_memory": {
-    "clusters": 14
-   },
-   "evolve": {
-    "records": 416,
-    "s_rules": {
-     "decayed_layers": 1113
-    },
-    "s_llm": {
-     "typed_edges": 2,
-     "profiles": 3
-    },
-    "k_rules": {
-     "stale_edges_removed": 0
-    },
-    "k_llm": {
-     "wikified": 0
-    },
-    "llm_calls": 48,
-    "good": 167,
-    "attention": 33,
-    "shadow_planner": {
-     "analyzed": 40,
-     "promoted": 32
-    },
-    "elapsed_s": 92.8
-   },
-   "rolled_back": false,
-   "elapsed_s": 107.7
-  },
-  {
-   "iter": 5,
-   "ts": "2026-07-13 23:12:31",
-   "use_llm": true,
-   "llm_health": {
-    "calls": 19,
-    "failures": 0,
-    "consecutive_failures": 0,
-    "backoff": false,
-    "cache_hits": 231
-   },
-   "all": {
-    "n": 106,
-    "hit@20": 100.0,
-    "hit@10": 97.1,
-    "lat_p50": 40.6,
-    "lat_p95": 54.6,
-    "q_mean": 0.655,
-    "tiers": {
-     "cache": 58,
-     "llm": 0,
-     "rules": 48
-    },
-    "sg_expand_total": 1008
-   },
-   "valA": {
-    "n": 180,
-    "hit@20": 99.4,
-    "hit@10": 94.4,
-    "lat_p50": 44.2,
-    "lat_p95": 68.9,
-    "q_mean": 0.614,
-    "tiers": {
-     "cache": 52,
-     "llm": 0,
-     "rules": 128
-    },
-    "sg_expand_total": 1612
-   },
-   "valB": {
-    "n": 90,
-    "hit@20": 100.0,
-    "hit@10": 97.8,
-    "lat_p50": 60.4,
-    "lat_p95": 148.1,
-    "q_mean": 0.574,
-    "tiers": {
-     "cache": 32,
-     "llm": 0,
-     "rules": 58
-    },
-    "sg_expand_total": 735,
-    "co": {
-     "5": 53.3,
-     "10": 71.1,
-     "20": 88.9
-    }
-   },
-   "sg": {
-    "docs": 572,
-    "edges": 2254,
-    "l1_explicit": 1719,
-    "l2_co_retrieval": 1645,
-    "l3_llm_curated": 16,
-    "profiles": 15
-   },
-   "plan_cache": {
-    "entries": 367,
-    "hits": 142,
-    "hit_rate": 0.378
-   },
-   "strategy_memory": {
-    "clusters": 14
-   },
-   "evolve": {
-    "records": 416,
-    "s_rules": {
-     "decayed_layers": 1041
+     "decayed_layers": 1028,
+     "facet_queries": 41
     },
     "s_llm": {
      "typed_edges": 3,
@@ -494,16 +193,322 @@
      "wikified": 0
     },
     "llm_calls": 48,
-    "good": 167,
+    "good": 185,
+    "attention": 38,
+    "shadow_planner": {
+     "analyzed": 40,
+     "promoted": 34
+    },
+    "elapsed_s": 28.0
+   },
+   "rolled_back": false,
+   "elapsed_s": 46.2
+  },
+  {
+   "iter": 3,
+   "ts": "2026-07-14 08:04:18",
+   "use_llm": true,
+   "llm_health": {
+    "calls": 11,
+    "failures": 0,
+    "consecutive_failures": 0,
+    "backoff": false,
+    "cache_hits": 139
+   },
+   "all": {
+    "n": 106,
+    "hit@20": 100.0,
+    "hit@10": 97.1,
+    "lat_p50": 38.5,
+    "lat_p95": 44.0,
+    "q_mean": 0.65,
+    "tiers": {
+     "cache": 58,
+     "llm": 0,
+     "rules": 48
+    },
+    "sg_expand_total": 947
+   },
+   "valA": {
+    "n": 180,
+    "hit@20": 99.4,
+    "hit@10": 94.4,
+    "lat_p50": 41.6,
+    "lat_p95": 70.4,
+    "q_mean": 0.612,
+    "tiers": {
+     "cache": 52,
+     "llm": 0,
+     "rules": 128
+    },
+    "sg_expand_total": 1578
+   },
+   "valB": {
+    "n": 90,
+    "hit@20": 100.0,
+    "hit@10": 97.8,
+    "lat_p50": 67.3,
+    "lat_p95": 96.2,
+    "q_mean": 0.558,
+    "tiers": {
+     "cache": 24,
+     "llm": 0,
+     "rules": 66
+    },
+    "sg_expand_total": 769,
+    "co": {
+     "5": 35.6,
+     "10": 62.2,
+     "20": 83.3
+    }
+   },
+   "sg": {
+    "docs": 572,
+    "edges": 2899,
+    "l1_explicit": 1719,
+    "l2_co_retrieval": 1653,
+    "l3_llm_curated": 10,
+    "profiles": 9
+   },
+   "plan_cache": {
+    "entries": 366,
+    "hits": 134,
+    "hit_rate": 0.356
+   },
+   "strategy_memory": {
+    "clusters": 14
+   },
+   "evolve": {
+    "records": 416,
+    "s_rules": {
+     "decayed_layers": 971,
+     "facet_queries": 52
+    },
+    "s_llm": {
+     "typed_edges": 4,
+     "profiles": 3
+    },
+    "k_rules": {
+     "stale_edges_removed": 0
+    },
+    "k_llm": {
+     "wikified": 0
+    },
+    "llm_calls": 48,
+    "good": 182,
+    "attention": 38,
+    "shadow_planner": {
+     "analyzed": 40,
+     "promoted": 33
+    },
+    "elapsed_s": 102.6
+   },
+   "rolled_back": false,
+   "elapsed_s": 121.3
+  },
+  {
+   "iter": 4,
+   "ts": "2026-07-14 08:06:13",
+   "use_llm": true,
+   "llm_health": {
+    "calls": 16,
+    "failures": 0,
+    "consecutive_failures": 0,
+    "backoff": false,
+    "cache_hits": 184
+   },
+   "all": {
+    "n": 106,
+    "hit@20": 100.0,
+    "hit@10": 96.2,
+    "lat_p50": 39.7,
+    "lat_p95": 48.8,
+    "q_mean": 0.651,
+    "tiers": {
+     "cache": 59,
+     "llm": 0,
+     "rules": 47
+    },
+    "sg_expand_total": 951
+   },
+   "valA": {
+    "n": 180,
+    "hit@20": 99.4,
+    "hit@10": 93.9,
+    "lat_p50": 42.8,
+    "lat_p95": 71.5,
+    "q_mean": 0.613,
+    "tiers": {
+     "cache": 49,
+     "llm": 0,
+     "rules": 131
+    },
+    "sg_expand_total": 1559
+   },
+   "valB": {
+    "n": 90,
+    "hit@20": 100.0,
+    "hit@10": 100.0,
+    "lat_p50": 68.0,
+    "lat_p95": 96.4,
+    "q_mean": 0.585,
+    "tiers": {
+     "cache": 32,
+     "llm": 0,
+     "rules": 58
+    },
+    "sg_expand_total": 711,
+    "co": {
+     "5": 43.3,
+     "10": 67.8,
+     "20": 85.6
+    }
+   },
+   "sg": {
+    "docs": 572,
+    "edges": 3123,
+    "l1_explicit": 1719,
+    "l2_co_retrieval": 1747,
+    "l3_llm_curated": 15,
+    "profiles": 12
+   },
+   "plan_cache": {
+    "entries": 366,
+    "hits": 140,
+    "hit_rate": 0.372
+   },
+   "strategy_memory": {
+    "clusters": 14
+   },
+   "evolve": {
+    "records": 416,
+    "s_rules": {
+     "decayed_layers": 948,
+     "facet_queries": 46
+    },
+    "s_llm": {
+     "typed_edges": 5,
+     "profiles": 3
+    },
+    "k_rules": {
+     "stale_edges_removed": 0
+    },
+    "k_llm": {
+     "wikified": 0
+    },
+    "llm_calls": 48,
+    "good": 166,
+    "attention": 33,
+    "shadow_planner": {
+     "analyzed": 40,
+     "promoted": 33
+    },
+    "elapsed_s": 89.3
+   },
+   "rolled_back": false,
+   "elapsed_s": 108.2
+  },
+  {
+   "iter": 5,
+   "ts": "2026-07-14 08:07:55",
+   "use_llm": true,
+   "llm_health": {
+    "calls": 22,
+    "failures": 0,
+    "consecutive_failures": 0,
+    "backoff": false,
+    "cache_hits": 228
+   },
+   "all": {
+    "n": 106,
+    "hit@20": 100.0,
+    "hit@10": 96.2,
+    "lat_p50": 40.6,
+    "lat_p95": 49.0,
+    "q_mean": 0.651,
+    "tiers": {
+     "cache": 57,
+     "llm": 0,
+     "rules": 49
+    },
+    "sg_expand_total": 981
+   },
+   "valA": {
+    "n": 180,
+    "hit@20": 99.4,
+    "hit@10": 94.4,
+    "lat_p50": 43.4,
+    "lat_p95": 73.6,
+    "q_mean": 0.611,
+    "tiers": {
+     "cache": 53,
+     "llm": 0,
+     "rules": 127
+    },
+    "sg_expand_total": 1587
+   },
+   "valB": {
+    "n": 90,
+    "hit@20": 100.0,
+    "hit@10": 97.8,
+    "lat_p50": 67.3,
+    "lat_p95": 95.3,
+    "q_mean": 0.571,
+    "tiers": {
+     "cache": 27,
+     "llm": 0,
+     "rules": 63
+    },
+    "sg_expand_total": 712,
+    "co": {
+     "5": 37.8,
+     "10": 58.9,
+     "20": 83.3
+    }
+   },
+   "sg": {
+    "docs": 572,
+    "edges": 3221,
+    "l1_explicit": 1719,
+    "l2_co_retrieval": 1785,
+    "l3_llm_curated": 20,
+    "profiles": 15
+   },
+   "plan_cache": {
+    "entries": 366,
+    "hits": 137,
+    "hit_rate": 0.364
+   },
+   "strategy_memory": {
+    "clusters": 14
+   },
+   "evolve": {
+    "records": 416,
+    "s_rules": {
+     "decayed_layers": 883,
+     "facet_queries": 44
+    },
+    "s_llm": {
+     "typed_edges": 5,
+     "profiles": 3
+    },
+    "k_rules": {
+     "stale_edges_removed": 0
+    },
+    "k_llm": {
+     "wikified": 0
+    },
+    "llm_calls": 48,
+    "good": 164,
     "attention": 41,
     "shadow_planner": {
      "analyzed": 40,
-     "promoted": 32
+     "promoted": 35
     },
-    "elapsed_s": 53.7
+    "elapsed_s": 76.3
    },
    "rolled_back": false,
-   "elapsed_s": 71.0
+   "elapsed_s": 95.3
   }
  ]
 }

@@ -150,15 +150,7 @@ class Evolver:
         # ── Track S · rules ───────────────────────────────────────────────────
         removed = sg.decay()
         self.retriever.analyzer.cache.invalidate_low(min_quality=rq.attention_gate)
-        # v5.16 facet_link: cross-facet pairs from good decomposed queries — the
-        # user's own information need supplied the complementarity evidence
-        facet_pairs = 0
-        for r in good:
-            tops = r.get("facet_tops") or []
-            if len(tops) >= 2:
-                sg.reinforce_facet_link(tops, r["quality"], quality_gate=rq.reinforce_gate)
-                facet_pairs += 1
-        report["s_rules"] = {"decayed_layers": removed, "facet_queries": facet_pairs}
+        report["s_rules"] = {"decayed_layers": removed}
 
         # ── Shadow planner (v5.15): background LLM analysis of queued queries ──
         # The hot path answers with cache/rules only; here the LLM plan gets
