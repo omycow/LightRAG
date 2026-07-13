@@ -244,6 +244,26 @@ class StructRetriever:
         merged.update({d: v[0] for d, v in top_expansion.items()})
         doc_rank = sorted(merged, key=lambda d: -merged[d])
 
+        # v5.14 escort: the #1 doc's single strongest explicit-ref neighbor is
+        # placed directly behind it. Path-expansion logic (Asai §1): if the best
+        # match declares one link above all others, that link is the best second
+        # guess. Structural signal only (edge weight — D8), costs one slot.
+        if doc_rank:
+            top1 = doc_rank[0]
+            l1_nbs = [(nb, w) for nb, w, is_l1 in self.sg.get_neighbors_layered(
+                top1, top_n=1, min_weight=0.3) if is_l1]
+            if l1_nbs:
+                esc = l1_nbs[0][0]
+                if esc in doc_rank:
+                    doc_rank.remove(esc)
+                doc_rank.insert(1, esc)
+                if esc not in top_expansion and esc not in doc_chunks:
+                    picked, _ = self._best_chunks_of_doc(esc, plan.rewrite, EXPAND_CHUNKS)
+                    if picked:
+                        top_expansion[esc] = (merged.get(top1, 0.0), top1, l1_nbs[0][1], picked, True)
+                    else:
+                        doc_rank.remove(esc)
+
         # assemble chunks in doc-rank order: ≤2 fused chunks per base doc,
         # ≤EXPAND_CHUNKS lexically-best chunks per expansion doc
         final_chunks: list[dict] = []

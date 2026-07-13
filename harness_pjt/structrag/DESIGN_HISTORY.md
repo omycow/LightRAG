@@ -818,3 +818,39 @@
 - **현행 챔피언: v5.13** — 재현 조건에서 동급 이상 (69.8/52.2/41.1) + 위키화 용어보존 가드 + 무롤백 + 최저 분산.
 - 갭 캠페인 공식 베이스라인: co@20 ~70 / co@10 ~52.5 / 갭 ~17pt. 이후 모든 레버는 P1 결정 런으로 판정.
 - 교훈(P1의 근거 재확인): 단일 확률 런의 순위 판정은 ±3~4pt까지 속을 수 있다. 재현 없는 기록은 기록이 아니다.
+
+### 2026-07-13 19:27:20 — ver5 iteration 1 (LLM on)
+- All@20 100.0% · ValA@20 99.4% · ValB co@20/10/5 65.6/51.1/41.1%
+- latency p50/p95: all=37.0/44.3ms · tiers(valB)={'cache': 0, 'llm': 83, 'rules': 7}
+- SG: {'docs': 572, 'edges': 2179, 'l1_explicit': 1719, 'l2_co_retrieval': 1418, 'l3_llm_curated': 3, 'profiles': 3} · plan_cache: {'entries': 331, 'hits': 2, 'hit_rate': 0.005}
+- evolve: {'records': 376, 's_rules': {'decayed_layers': 1183}, 's_llm': {'typed_edges': 3, 'profiles': 3}, 'k_rules': {'stale_edges_removed': 0}, 'k_llm': {'wikified': 1}, 'llm_calls': 9, 'good': 152, 'attention': 45, 'elapsed_s': 37.3}
+
+### 2026-07-13 19:27:46 — ver5 iteration 2 (LLM on)
+- All@20 100.0% · ValA@20 99.4% · ValB co@20/10/5 70.0/53.3/42.2%
+- latency p50/p95: all=37.5/42.0ms · tiers(valB)={'cache': 79, 'llm': 4, 'rules': 7}
+- SG: {'docs': 572, 'edges': 2231, 'l1_explicit': 1719, 'l2_co_retrieval': 1511, 'l3_llm_curated': 5, 'profiles': 6} · plan_cache: {'entries': 331, 'hits': 171, 'hit_rate': 0.455}
+- evolve: {'records': 376, 's_rules': {'decayed_layers': 1200}, 's_llm': {'typed_edges': 2, 'profiles': 3}, 'k_rules': {'stale_edges_removed': 0}, 'k_llm': {'wikified': 0}, 'llm_calls': 8, 'good': 152, 'attention': 45, 'elapsed_s': 0.2}
+
+### 2026-07-13 19:28:14 — ver5 iteration 3 (LLM on)
+- All@20 100.0% · ValA@20 99.4% · ValB co@20/10/5 70.0/52.2/38.9%
+- latency p50/p95: all=39.8/63.1ms · tiers(valB)={'cache': 23, 'llm': 64, 'rules': 3}
+- SG: {'docs': 572, 'edges': 2304, 'l1_explicit': 1719, 'l2_co_retrieval': 1667, 'l3_llm_curated': 9, 'profiles': 9} · plan_cache: {'entries': 366, 'hits': 101, 'hit_rate': 0.269}
+- evolve: {'records': 376, 's_rules': {'decayed_layers': 1112}, 's_llm': {'typed_edges': 4, 'profiles': 3}, 'k_rules': {'stale_edges_removed': 0}, 'k_llm': {'wikified': 0}, 'llm_calls': 8, 'good': 157, 'attention': 10, 'elapsed_s': 0.2}
+
+### 2026-07-13 19:28:43 — ver5 iteration 4 (LLM on)
+- All@20 100.0% · ValA@20 99.4% · ValB co@20/10/5 70.0/52.2/38.9%
+- latency p50/p95: all=43.1/67.4ms · tiers(valB)={'cache': 81, 'llm': 6, 'rules': 3}
+- SG: {'docs': 572, 'edges': 2309, 'l1_explicit': 1719, 'l2_co_retrieval': 1671, 'l3_llm_curated': 12, 'profiles': 12} · plan_cache: {'entries': 366, 'hits': 193, 'hit_rate': 0.513}
+- evolve: {'records': 376, 's_rules': {'decayed_layers': 1073}, 's_llm': {'typed_edges': 3, 'profiles': 3}, 'k_rules': {'stale_edges_removed': 0}, 'k_llm': {'wikified': 0}, 'llm_calls': 8, 'good': 154, 'attention': 10, 'elapsed_s': 0.2}
+
+### 2026-07-13 19:29:11 — ver5 iteration 5 (LLM on)
+- All@20 100.0% · ValA@20 99.4% · ValB co@20/10/5 70.0/51.1/38.9%
+- latency p50/p95: all=39.6/59.4ms · tiers(valB)={'cache': 28, 'llm': 56, 'rules': 6}
+- SG: {'docs': 572, 'edges': 2312, 'l1_explicit': 1719, 'l2_co_retrieval': 1679, 'l3_llm_curated': 14, 'profiles': 15} · plan_cache: {'entries': 366, 'hits': 127, 'hit_rate': 0.338}
+- evolve: {'records': 376, 's_rules': {'decayed_layers': 1045}, 's_llm': {'typed_edges': 2, 'profiles': 3}, 'k_rules': {'stale_edges_removed': 0}, 'k_llm': {'wikified': 0}, 'llm_calls': 8, 'good': 155, 'attention': 28, 'elapsed_s': 0.2}
+
+### 2026-07-10 — 개발 사이클 14 (v5.14): 앵커1 L1 에스코트 (@10 동수준화 캠페인, P1 체제)
+- 베이스라인 (v5.13 P1): All@10 96.2~98.1 / ValA@10 95.0~95.6 / co@10 평균 52.0. 목표 = @20 수준 (co@10 ~70).
+- v5.14: 최종 랭킹 1위 문서의 최강 L1 이웃 1개를 랭크 2에 에스코트 삽입 (경로 확장 원리, D8 준수).
+- 인프레임 스크린 (ε0, 룰): co@10 52.2→57.8, co@20 76.7→83.3, ValA@10 95.0→93.9(-1.1, 슬롯 비용).
+- **v5.14 동결 — P1 검증 5회. 보고는 @10 종합만.**
