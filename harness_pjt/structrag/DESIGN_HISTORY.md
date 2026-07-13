@@ -854,3 +854,42 @@
 - v5.14: 최종 랭킹 1위 문서의 최강 L1 이웃 1개를 랭크 2에 에스코트 삽입 (경로 확장 원리, D8 준수).
 - 인프레임 스크린 (ε0, 룰): co@10 52.2→57.8, co@20 76.7→83.3, ValA@10 95.0→93.9(-1.1, 슬롯 비용).
 - **v5.14 동결 — P1 검증 5회. 보고는 @10 종합만.**
+
+### 2026-07-13 19:33:35 — ver5 iteration 1 (LLM on)
+- All@20 100.0% · ValA@20 99.4% · ValB co@20/10/5 85.6/80.0/74.4%
+- latency p50/p95: all=37.3/44.1ms · tiers(valB)={'cache': 0, 'llm': 83, 'rules': 7}
+- SG: {'docs': 572, 'edges': 2165, 'l1_explicit': 1719, 'l2_co_retrieval': 1419, 'l3_llm_curated': 4, 'profiles': 3} · plan_cache: {'entries': 329, 'hits': 2, 'hit_rate': 0.005}
+- evolve: {'records': 376, 's_rules': {'decayed_layers': 1148}, 's_llm': {'typed_edges': 4, 'profiles': 3}, 'k_rules': {'stale_edges_removed': 0}, 'k_llm': {'wikified': 1}, 'llm_calls': 9, 'good': 146, 'attention': 47, 'elapsed_s': 27.5}
+
+### 2026-07-13 19:34:24 — ver5 iteration 2 (LLM on)
+- All@20 100.0% · ValA@20 99.4% · ValB co@20/10/5 86.7/78.9/71.1%
+- latency p50/p95: all=37.8/42.8ms · tiers(valB)={'cache': 80, 'llm': 3, 'rules': 7}
+- SG: {'docs': 572, 'edges': 2220, 'l1_explicit': 1719, 'l2_co_retrieval': 1511, 'l3_llm_curated': 7, 'profiles': 6} · plan_cache: {'entries': 329, 'hits': 172, 'hit_rate': 0.457}
+- evolve: {'records': 376, 's_rules': {'decayed_layers': 1146}, 's_llm': {'typed_edges': 3, 'profiles': 3}, 'k_rules': {'stale_edges_removed': 0}, 'k_llm': {'wikified': 0}, 'llm_calls': 8, 'good': 146, 'attention': 47, 'elapsed_s': 23.6}
+
+### 2026-07-13 19:36:44 — ver5 iteration 3 (LLM on)
+- All@20 100.0% · ValA@20 99.4% · ValB co@20/10/5 86.7/78.9/73.3%
+- latency p50/p95: all=39.7/61.2ms · tiers(valB)={'cache': 27, 'llm': 60, 'rules': 3}
+- SG: {'docs': 572, 'edges': 2267, 'l1_explicit': 1719, 'l2_co_retrieval': 1641, 'l3_llm_curated': 9, 'profiles': 9} · plan_cache: {'entries': 366, 'hits': 104, 'hit_rate': 0.277}
+- evolve: {'records': 376, 's_rules': {'decayed_layers': 1061}, 's_llm': {'typed_edges': 2, 'profiles': 3}, 'k_rules': {'stale_edges_removed': 0}, 'k_llm': {'wikified': 0}, 'llm_calls': 8, 'good': 152, 'attention': 10, 'elapsed_s': 72.2}
+
+### 2026-07-13 19:37:11 — ver5 iteration 4 (LLM on)
+- All@20 100.0% · ValA@20 99.4% · ValB co@20/10/5 86.7/78.9/73.3%
+- latency p50/p95: all=39.8/61.4ms · tiers(valB)={'cache': 83, 'llm': 4, 'rules': 3}
+- SG: {'docs': 572, 'edges': 2281, 'l1_explicit': 1719, 'l2_co_retrieval': 1655, 'l3_llm_curated': 11, 'profiles': 12} · plan_cache: {'entries': 366, 'hits': 195, 'hit_rate': 0.519}
+- evolve: {'records': 376, 's_rules': {'decayed_layers': 1054}, 's_llm': {'typed_edges': 2, 'profiles': 3}, 'k_rules': {'stale_edges_removed': 0}, 'k_llm': {'wikified': 0}, 'llm_calls': 8, 'good': 153, 'attention': 10, 'elapsed_s': 0.2}
+
+### 2026-07-13 19:38:20 — ver5 iteration 5 (LLM on)
+- All@20 100.0% · ValA@20 99.4% · ValB co@20/10/5 86.7/78.9/71.1%
+- latency p50/p95: all=39.2/59.1ms · tiers(valB)={'cache': 29, 'llm': 55, 'rules': 6}
+- SG: {'docs': 572, 'edges': 2283, 'l1_explicit': 1719, 'l2_co_retrieval': 1658, 'l3_llm_curated': 12, 'profiles': 15} · plan_cache: {'entries': 366, 'hits': 124, 'hit_rate': 0.33}
+- evolve: {'records': 376, 's_rules': {'decayed_layers': 1019}, 's_llm': {'typed_edges': 1, 'profiles': 3}, 'k_rules': {'stale_edges_removed': 0}, 'k_llm': {'wikified': 0}, 'llm_calls': 8, 'good': 150, 'attention': 30, 'elapsed_s': 41.8}
+
+### 2026-07-10 — v5.14 검증 완료: **@10 동수준화 목표 달성, 챔피언 승격**
+- P1 결정 런: co@10 **79.1±0.49** (베이스라인 52.0 → +27.1), co@20 86.5, co@5 72.6.
+  All@20 100 / ValA@20 99.4 무손상, 무롤백, 역대 최저 분산. ValA@10 −1.3 (에스코트 슬롯 비용).
+- 기전 확인: 스크린(+5.6)을 크게 상회한 것은 **LLM 플랜(카드→1위) × 에스코트(선언 링크→2위) 시너지**.
+  룰 단독 스크린은 카드 1위 비율이 낮아 에스코트 효과가 절반만 보였음.
+- **목표 "co@10 ≈ 기존 co@20(~70)" 초과 달성. v5.14 현행 챔피언.**
+- 잔여 백로그: ValA@10 슬롯 비용 회수 (에스코트 조건화: 앵커가 L1 이웃 0개면 미삽입 등),
+  Track K 위키화 개선 재시도, evolver ⑥.
