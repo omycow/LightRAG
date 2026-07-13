@@ -772,3 +772,42 @@
 - v5.13 = v5.8 + **위키화 용어보존 가드**: 신규 설명이 구 설명의 살리언트 용어(4자+) 60% 미만 보존 시
   적용 거부 + 로그. 결정적, 정답 미참조. 기대: 롤백 소멸 → 성장 비단절 → co@10/co@20 동반 상승.
 - 유닛 + 스모크 10/10. **v5.13 동결 — --fresh 무개입 5회 검증.**
+
+### 2026-07-13 19:15:24 — ver5 iteration 1 (LLM on)
+- All@20 99.0% · ValA@20 99.4% · ValB co@20/10/5 66.7/52.2/42.2%
+- latency p50/p95: all=37.2/48.0ms · tiers(valB)={'cache': 0, 'llm': 83, 'rules': 7}
+- SG: {'docs': 572, 'edges': 2179, 'l1_explicit': 1719, 'l2_co_retrieval': 1419, 'l3_llm_curated': 4, 'profiles': 3} · plan_cache: {'entries': 330, 'hits': 2, 'hit_rate': 0.005}
+- evolve: {'records': 376, 's_rules': {'decayed_layers': 1169}, 's_llm': {'typed_edges': 4, 'profiles': 3}, 'k_rules': {'stale_edges_removed': 0}, 'k_llm': {'wikified': 1}, 'llm_calls': 9, 'good': 151, 'attention': 46, 'elapsed_s': 1.0}
+
+### 2026-07-13 19:16:21 — ver5 iteration 2 (LLM on)
+- All@20 100.0% · ValA@20 99.4% · ValB co@20/10/5 70.0/53.3/41.1%
+- latency p50/p95: all=38.6/44.2ms · tiers(valB)={'cache': 81, 'llm': 2, 'rules': 7}
+- SG: {'docs': 572, 'edges': 2240, 'l1_explicit': 1719, 'l2_co_retrieval': 1518, 'l3_llm_curated': 6, 'profiles': 6} · plan_cache: {'entries': 332, 'hits': 172, 'hit_rate': 0.457}
+- evolve: {'records': 376, 's_rules': {'decayed_layers': 1157}, 's_llm': {'typed_edges': 2, 'profiles': 3}, 'k_rules': {'stale_edges_removed': 0}, 'k_llm': {'wikified': 0}, 'llm_calls': 8, 'good': 151, 'attention': 45, 'elapsed_s': 30.7}
+
+### 2026-07-13 19:16:50 — ver5 iteration 3 (LLM on)
+- All@20 100.0% · ValA@20 99.4% · ValB co@20/10/5 70.0/52.2/40.0%
+- latency p50/p95: all=38.1/62.0ms · tiers(valB)={'cache': 23, 'llm': 62, 'rules': 5}
+- SG: {'docs': 572, 'edges': 2315, 'l1_explicit': 1719, 'l2_co_retrieval': 1669, 'l3_llm_curated': 9, 'profiles': 9} · plan_cache: {'entries': 363, 'hits': 102, 'hit_rate': 0.271}
+- evolve: {'records': 376, 's_rules': {'decayed_layers': 1046}, 's_llm': {'typed_edges': 3, 'profiles': 3}, 'k_rules': {'stale_edges_removed': 0}, 'k_llm': {'wikified': 0}, 'llm_calls': 8, 'good': 154, 'attention': 17, 'elapsed_s': 0.2}
+
+### 2026-07-13 19:17:26 — ver5 iteration 4 (LLM on)
+- All@20 100.0% · ValA@20 99.4% · ValB co@20/10/5 71.1/52.2/41.1%
+- latency p50/p95: all=44.0/74.5ms · tiers(valB)={'cache': 80, 'llm': 7, 'rules': 3}
+- SG: {'docs': 572, 'edges': 2323, 'l1_explicit': 1719, 'l2_co_retrieval': 1683, 'l3_llm_curated': 12, 'profiles': 12} · plan_cache: {'entries': 366, 'hits': 187, 'hit_rate': 0.497}
+- evolve: {'records': 376, 's_rules': {'decayed_layers': 1017}, 's_llm': {'typed_edges': 3, 'profiles': 3}, 'k_rules': {'stale_edges_removed': 0}, 'k_llm': {'wikified': 0}, 'llm_calls': 8, 'good': 155, 'attention': 11, 'elapsed_s': 0.2}
+
+### 2026-07-13 19:18:35 — ver5 iteration 5 (LLM on)
+- All@20 100.0% · ValA@20 99.4% · ValB co@20/10/5 71.1/51.1/41.1%
+- latency p50/p95: all=39.1/62.0ms · tiers(valB)={'cache': 33, 'llm': 54, 'rules': 3}
+- SG: {'docs': 572, 'edges': 2324, 'l1_explicit': 1719, 'l2_co_retrieval': 1686, 'l3_llm_curated': 15, 'profiles': 15} · plan_cache: {'entries': 368, 'hits': 131, 'hit_rate': 0.348}
+- evolve: {'records': 376, 's_rules': {'decayed_layers': 993}, 's_llm': {'typed_edges': 3, 'profiles': 3}, 'k_rules': {'stale_edges_removed': 0}, 'k_llm': {'wikified': 0}, 'llm_calls': 8, 'good': 156, 'attention': 23, 'elapsed_s': 40.8}
+
+### 2026-07-10 — v5.13 검증 및 프로토콜 P1 (검증 결정화)
+- v5.13: 69.8±1.81 / 52.2±0.78 / 41.1±0.78, **무롤백 5회 + ValA 99.4 고정 + 위키화 9건 거부** —
+  가드 완벽 작동, 역대 최저 분산. 그러나 co 레벨은 v5.8 기록(74.7/56.5/42.6) 아래.
+- **방법론 경보**: v5.9~v5.13 다섯 런이 69.6~72.2에 군집, v5.8만 74.7로 고립.
+  "v5.8+미세변경" 버전들(v5.10, v5.13)이 74.7을 재현 못함 → v5.8 기록이 ε 탐험의 행운 런일 가능성.
+  단일 런 ±2~4pt 노이즈에서 근접 변형 간 순위 판정은 불가 — v5.9~13 기각 판정도 재검토 대상.
+- **프로토콜 P1**: 검증 런은 ε=0 (하네스에서 강제, 프로덕션은 탐험 유지). 밴딧 EMA 학습은 계속됨.
+- 다음: P1 하에 v5.8 재현 런 → 재현 시 v5.8 우위 확정 / 미재현 시 v5.13(무롤백·저분산·가드) 우세 판정.

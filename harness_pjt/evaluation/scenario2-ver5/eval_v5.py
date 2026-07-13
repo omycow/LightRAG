@@ -194,6 +194,12 @@ async def run_iteration(use_llm: bool, state: dict) -> dict:
     LLM_HEALTH["backoff"] = False
     llm = claude_cli_llm if use_llm else None
     retriever = StructRetriever(rag, str(WORK_DIR), llm_func=llm)
+    # Deterministic validation (protocol P1, 2026-07-10): ε-greedy exploration is
+    # ±2-4pt run-to-run noise at these sample sizes — five near-identical
+    # versions clustered at 69-72 while the v5.8 record run sat alone at 74.7.
+    # Exploration stays ON in production; during A/B validation the bandit
+    # exploits only (its EMAs still update from the modes actually used).
+    retriever.analyzer.memory.epsilon = 0.0
     evolver = Evolver(rag, retriever, llm_func=llm, llm_budget=10)
 
     sg_stats0 = retriever.sg.build_l1(rag.text_chunks._data)
