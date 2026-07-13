@@ -481,3 +481,45 @@
 - 다음: 인프라 하드닝 (검색 로직 무변경) — analyzer/evolver LLM에 프롬프트 해시 키 디스크 영속 캐시.
   같은 쿼리 → 같은 플랜 재사용 (그라운드룰 합치: 정답 미참조, LLM 산출물 캐싱일 뿐).
   반복 런의 CLI 콜 ~90% 절감 + 런 간 비교가능성 향상. 적용 후 v5.7 재검증.
+
+### 2026-07-13 13:31:52 — ver5 iteration 1 (LLM on)
+- All@20 100.0% · ValA@20 98.3% · ValB co@20/10/5 66.7/52.2/40.0%
+- latency p50/p95: all=36.6/48.1ms · tiers(valB)={'cache': 0, 'llm': 83, 'rules': 7}
+- SG: {'docs': 572, 'edges': 2780, 'l1_explicit': 1719, 'l2_co_retrieval': 1766, 'l3_llm_curated': 4, 'profiles': 3} · plan_cache: {'entries': 331, 'hits': 2, 'hit_rate': 0.005}
+- evolve: {'records': 376, 's_rules': {'decayed_layers': 2347}, 's_llm': {'typed_edges': 4, 'profiles': 3}, 'k_rules': {'stale_edges_removed': 0}, 'k_llm': {'wikified': 2}, 'llm_calls': 10, 'good': 150, 'attention': 45, 'elapsed_s': 147.1}
+
+### 2026-07-13 13:34:36 — ver5 iteration 2 (LLM on)
+- All@20 100.0% · ValA@20 98.9% · ValB co@20/10/5 71.1/54.4/40.0%
+- latency p50/p95: all=40.0/48.4ms · tiers(valB)={'cache': 80, 'llm': 3, 'rules': 7}
+- SG: {'docs': 572, 'edges': 2899, 'l1_explicit': 1719, 'l2_co_retrieval': 1921, 'l3_llm_curated': 8, 'profiles': 6} · plan_cache: {'entries': 332, 'hits': 170, 'hit_rate': 0.452}
+- evolve: {'records': 376, 's_rules': {'decayed_layers': 2379}, 's_llm': {'typed_edges': 4, 'profiles': 3}, 'k_rules': {'stale_edges_removed': 0}, 'k_llm': {'wikified': 2}, 'llm_calls': 10, 'good': 150, 'attention': 45, 'elapsed_s': 135.1}
+
+### 2026-07-13 13:45:45 — ver5 iteration 3 (LLM on)
+- All@20 100.0% · ValA@20 99.4% · ValB co@20/10/5 68.9/52.2/37.8%
+- latency p50/p95: all=40.8/9144.6ms · tiers(valB)={'cache': 26, 'llm': 61, 'rules': 3}
+- SG: {'docs': 572, 'edges': 3082, 'l1_explicit': 1719, 'l2_co_retrieval': 2147, 'l3_llm_curated': 12, 'profiles': 9} · plan_cache: {'entries': 365, 'hits': 106, 'hit_rate': 0.282}
+- evolve: {'records': 376, 's_rules': {'decayed_layers': 2199}, 's_llm': {'typed_edges': 4, 'profiles': 3}, 'k_rules': {'stale_edges_removed': 0}, 'k_llm': {'wikified': 2}, 'llm_calls': 10, 'good': 157, 'attention': 11, 'elapsed_s': 145.8}
+
+### 2026-07-13 13:49:11 — ver5 iteration 4 (LLM on)
+- All@20 100.0% · ValA@20 99.4% · ValB co@20/10/5 68.9/52.2/36.7%
+- latency p50/p95: all=41.4/65.4ms · tiers(valB)={'cache': 79, 'llm': 8, 'rules': 3}
+- SG: {'docs': 572, 'edges': 3092, 'l1_explicit': 1719, 'l2_co_retrieval': 2156, 'l3_llm_curated': 16, 'profiles': 12} · plan_cache: {'entries': 367, 'hits': 189, 'hit_rate': 0.503}
+- evolve: {'records': 376, 's_rules': {'decayed_layers': 2093}, 's_llm': {'typed_edges': 4, 'profiles': 3}, 'k_rules': {'stale_edges_removed': 0}, 'k_llm': {'wikified': 2}, 'llm_calls': 10, 'good': 155, 'attention': 9, 'elapsed_s': 138.8}
+
+### 2026-07-13 13:51:53 — ver5 iteration 5 (LLM on)
+- All@20 100.0% · ValA@20 99.4% · ValB co@20/10/5 70.0/53.3/37.8%
+- latency p50/p95: all=40.7/66.4ms · tiers(valB)={'cache': 35, 'llm': 49, 'rules': 6}
+- SG: {'docs': 572, 'edges': 3102, 'l1_explicit': 1719, 'l2_co_retrieval': 2163, 'l3_llm_curated': 20, 'profiles': 15} · plan_cache: {'entries': 367, 'hits': 134, 'hit_rate': 0.356}
+- evolve: {'records': 376, 's_rules': {'decayed_layers': 2049}, 's_llm': {'typed_edges': 4, 'profiles': 3}, 'k_rules': {'stale_edges_removed': 0}, 'k_llm': {'wikified': 2}, 'llm_calls': 10, 'good': 158, 'attention': 26, 'elapsed_s': 132.3}
+
+### 2026-07-10 — v5.7 재검증 (최초 완전 클린 런) 및 판정
+- LLM 캐시 도입 후 5회 무장애 완주 (fail 0, 캐시히트 iter5 133, 롤백 0, All 100 전 구간).
+- 결과: co@20 69.1±1.63 (66.7→70.0) / co@10 52.9±0.98 / co@5 38.5±1.48 — **역대 최고 안정성, 그러나 성장 정체.**
+- **판정: v5.4 챔피언 유지** (74.9, 70→78.9 상승 마감).
+- 통찰: v5.4의 우상향은 에코 루프가 **진짜 링크(L1 근거 쌍)를 강화한 효과**가 상당 부분.
+  확장이 L1 주도이므로 에코 쌍의 다수가 실제 card↔linked. I1의 전면 차단이 좋은 신호까지 제거 → 정체.
+  v5.6의 실패는 에코가 learned 좌석 경유로 무근거 쌍까지 증폭한 부분.
+- 부차 발견: haiku 샘플링 비결정성으로 iter1 레벨이 런마다 ±5pt — 판정은 궤적 중심이 옳음 (기존 기준 재확인).
+  LLM 캐시 적재 완료로 이후 런은 LLM 축 결정적.
+- v5.8: **선택적 에코** — 확장 문서 포함 쌍은 explicit_ref(L1) 레이어가 있는 경우에만 L2 강화 허용.
+  L1 근거 쌍의 사용 증거 강화는 정당(문서 선언 링크의 활용 확인), 무근거 쌍은 base 전용 유지.
