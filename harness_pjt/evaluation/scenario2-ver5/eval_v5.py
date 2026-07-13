@@ -145,6 +145,7 @@ async def eval_set(retriever, questions, co_metric=False):
     from harness_pjt.benchmark.questions import source_hit, co_retrieval_hit
 
     hits20 = 0
+    hits10 = 0
     scored = 0
     co_hits = {5: 0, 10: 0, 20: 0}
     latencies, qualities, tiers = [], [], {"cache": 0, "llm": 0, "rules": 0}
@@ -165,10 +166,13 @@ async def eval_set(retriever, questions, co_metric=False):
         scored += 1
         if source_hit(srcs[:TOP_K], q.get("expected_sources", [])):
             hits20 += 1
+        if source_hit(srcs[:10], q.get("expected_sources", [])):
+            hits10 += 1
     n = len(questions)
     out = {
         "n": n,
         "hit@20": pct(hits20, scored),
+        "hit@10": pct(hits10, scored),
         "lat_p50": round(statistics.median(latencies), 1) if latencies else 0,
         "lat_p95": round(sorted(latencies)[int(0.95 * (len(latencies) - 1))], 1) if latencies else 0,
         "q_mean": round(statistics.mean(qualities), 3) if qualities else 0,
