@@ -1242,3 +1242,46 @@
   L2 강화 16문서·evolver 후보 12문서로 확대. 서빙 결과는 불변, 이볼빙 시야만 확장.
   (선택적 에코·quality 게이트가 확대 창의 잡음 방어)
 - 유닛·스모크 10/10. **v5.21 동결 — v5.20 장기런 종료 후 10회 검증 예약.**
+
+### 2026-07-14 08:30:44 — ver5 iteration 5 (LLM on)
+- All@20 100.0% · ValA@20 99.4% · ValB co@20/10/5 87.8/71.1/52.2%
+- latency p50/p95: all=38.6/48.7ms · tiers(valB)={'cache': 27, 'llm': 0, 'rules': 63}
+- SG: {'docs': 572, 'edges': 2286, 'l1_explicit': 1719, 'l2_co_retrieval': 1676, 'l3_llm_curated': 14, 'profiles': 15} · plan_cache: {'entries': 367, 'hits': 138, 'hit_rate': 0.367}
+- evolve: {'records': 416, 's_rules': {'decayed_layers': 1053}, 's_llm': {'typed_edges': 3, 'profiles': 3}, 'k_rules': {'stale_edges_removed': 0}, 'k_llm': {'wikified': 0}, 'llm_calls': 48, 'good': 170, 'attention': 39, 'shadow_planner': {'analyzed': 40, 'promoted': 32}, 'elapsed_s': 69.1}
+
+### 2026-07-14 08:31:25 — ver5 iteration 6 (LLM on)
+- All@20 100.0% · ValA@20 99.4% · ValB co@20/10/5 90.0/71.1/52.2%
+- latency p50/p95: all=39.2/49.2ms · tiers(valB)={'cache': 29, 'llm': 0, 'rules': 61}
+- SG: {'docs': 572, 'edges': 2290, 'l1_explicit': 1719, 'l2_co_retrieval': 1686, 'l3_llm_curated': 17, 'profiles': 18} · plan_cache: {'entries': 368, 'hits': 143, 'hit_rate': 0.38}
+- evolve: {'records': 416, 's_rules': {'decayed_layers': 1008}, 's_llm': {'typed_edges': 3, 'profiles': 3}, 'k_rules': {'stale_edges_removed': 0}, 'k_llm': {'wikified': 0}, 'llm_calls': 48, 'good': 164, 'attention': 31, 'shadow_planner': {'analyzed': 40, 'promoted': 26}, 'elapsed_s': 15.5}
+
+### 2026-07-14 08:32:55 — ver5 iteration 7 (LLM on)
+- All@20 100.0% · ValA@20 99.4% · ValB co@20/10/5 88.9/67.8/50.0%
+- latency p50/p95: all=37.9/43.7ms · tiers(valB)={'cache': 27, 'llm': 0, 'rules': 63}
+- SG: {'docs': 572, 'edges': 2297, 'l1_explicit': 1719, 'l2_co_retrieval': 1694, 'l3_llm_curated': 18, 'profiles': 21} · plan_cache: {'entries': 368, 'hits': 137, 'hit_rate': 0.364}
+- evolve: {'records': 416, 's_rules': {'decayed_layers': 1007}, 's_llm': {'typed_edges': 1, 'profiles': 3}, 'k_rules': {'stale_edges_removed': 0}, 'k_llm': {'wikified': 0}, 'llm_calls': 48, 'good': 164, 'attention': 39, 'shadow_planner': {'analyzed': 40, 'promoted': 34}, 'elapsed_s': 64.3}
+
+### 2026-07-14 08:33:38 — ver5 iteration 8 (LLM on)
+- All@20 100.0% · ValA@20 99.4% · ValB co@20/10/5 91.1/74.4/57.8%
+- latency p50/p95: all=38.8/46.2ms · tiers(valB)={'cache': 35, 'llm': 0, 'rules': 55}
+- SG: {'docs': 572, 'edges': 2299, 'l1_explicit': 1719, 'l2_co_retrieval': 1695, 'l3_llm_curated': 20, 'profiles': 24} · plan_cache: {'entries': 368, 'hits': 149, 'hit_rate': 0.396}
+- evolve: {'records': 416, 's_rules': {'decayed_layers': 1020}, 's_llm': {'typed_edges': 2, 'profiles': 3}, 'k_rules': {'stale_edges_removed': 0}, 'k_llm': {'wikified': 0}, 'llm_calls': 48, 'good': 163, 'attention': 29, 'shadow_planner': {'analyzed': 40, 'promoted': 23}, 'elapsed_s': 18.1}
+
+### 2026-07-14 08:35:00 — ver5 iteration 9 (LLM on)
+- All@20 100.0% · ValA@20 99.4% · ValB co@20/10/5 86.7/67.8/50.0%
+- latency p50/p95: all=38.0/44.2ms · tiers(valB)={'cache': 25, 'llm': 0, 'rules': 65}
+- SG: {'docs': 572, 'edges': 2300, 'l1_explicit': 1719, 'l2_co_retrieval': 1700, 'l3_llm_curated': 21, 'profiles': 27} · plan_cache: {'entries': 368, 'hits': 138, 'hit_rate': 0.367}
+- evolve: {'records': 416, 's_rules': {'decayed_layers': 976}, 's_llm': {'typed_edges': 1, 'profiles': 3}, 'k_rules': {'stale_edges_removed': 0}, 'k_llm': {'wikified': 0}, 'llm_calls': 48, 'good': 167, 'attention': 42, 'shadow_planner': {'analyzed': 40, 'promoted': 34}, 'elapsed_s': 55.8}
+
+### 2026-07-14 08:35:53 — ver5 iteration 10 (LLM on)
+- All@20 100.0% · ValA@20 99.4% · ValB co@20/10/5 91.1/74.4/56.7%
+- latency p50/p95: all=39.2/46.3ms · tiers(valB)={'cache': 32, 'llm': 0, 'rules': 58}
+- SG: {'docs': 572, 'edges': 2300, 'l1_explicit': 1719, 'l2_co_retrieval': 1701, 'l3_llm_curated': 22, 'profiles': 30} · plan_cache: {'entries': 368, 'hits': 146, 'hit_rate': 0.388}
+- evolve: {'records': 416, 's_rules': {'decayed_layers': 976}, 's_llm': {'typed_edges': 1, 'profiles': 3}, 'k_rules': {'stale_edges_removed': 0}, 'k_llm': {'wikified': 0}, 'llm_calls': 48, 'good': 165, 'attention': 32, 'shadow_planner': {'analyzed': 40, 'promoted': 24}, 'elapsed_s': 28.0}
+
+### 2026-07-14 — v5.20 장기런 (10-iter) 완주: **신규 챔피언 승격**
+- co@10 61.1→74.4 마감 (피크 74.4×2, 전반5 67.1→후반5 71.1 = +4.0 장기 성장 실증),
+  co@20 평균 89.6·피크 93.3, All@10 97.1, ValA@10 94.4~95.0, **10회 무롤백**, p50 55~60ms.
+- 승격 근거: 재최적화 루프가 8~10사이클째에도 개선분 채굴 — 장기 자기진화 최초 실증.
+  v5.15.1 종점(71.1) 경신. 프로토콜에 장기런(10-iter) 표준화.
+- 다음: v5.21(넓은 관찰창) 10-iter 비교 검증.
