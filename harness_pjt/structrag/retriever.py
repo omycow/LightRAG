@@ -332,6 +332,12 @@ class StructRetriever:
                     and (self.analyzer.needs_background_analysis(query)
                          or quality <= self.rq.attention_gate)):
                 self._enqueue_analysis(query, quality)
+            # v5.20: cached plans that score below the reinforce gate get a
+            # background re-optimization shot — mid-quality plans were locked in
+            # the cache forever (low ones get pruned+retried, good ones deserve
+            # to stay; the middle band had no improvement path).
+            elif plan.source == "cache" and quality < self.rq.reinforce_gate:
+                self._enqueue_analysis(query, quality)
             # v5.8 selective echo: expansion-injected docs participate in L2
             # reinforcement only for pairs with explicit_ref provenance (see
             # reinforce_co_retrieval). v5.7's blanket base-only rule killed the
