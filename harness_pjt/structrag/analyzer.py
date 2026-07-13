@@ -254,6 +254,28 @@ def rule_intent(query: str) -> str:
     return "concept"
 
 
+# v5.17: complementary-artifact facet. A question about a TEST implies interest
+# in its spec/issues (the co-retrieval intent behind the query) — engineering-
+# domain ontology, not a corpus convention. Deterministic, no LLM, generated at
+# plan time so the facet both joins fusion and feeds facet_link learning.
+_COMPLEMENT_FACETS = {"test": "스펙 스펙문서 이슈 issue", "spec": "검증 테스트 test",
+                      "issue": "검증 테스트 test"}
+_TYPE_WORDS = {h for _, hints in _SKEL_TYPES for h in hints}
+
+
+def complementary_facet(query: str) -> dict | None:
+    q = query.lower()
+    dtype = next((n for n, hints in _SKEL_TYPES if any(h in q for h in hints)), None)
+    if dtype not in _COMPLEMENT_FACETS:
+        return None
+    from harness_pjt.structrag.quality import salient_terms
+    content = [t for t in salient_terms(query) if t not in _TYPE_WORDS][:8]
+    if len(content) < 2:
+        return None
+    return {"q": " ".join(content) + " " + _COMPLEMENT_FACETS[dtype],
+            "intent": "cross_doc", "mode": None, "_complement": True}
+
+
 def rule_plan(query: str) -> QueryPlan:
     parts = [p.strip() for p in _CONJ_SPLIT.split(query) if p and len(p.strip()) >= 8]
     subs = parts if len(parts) > 1 else [query]
@@ -328,6 +350,12 @@ class QueryAnalyzer:
         return False
 
     def _finalize(self, plan: QueryPlan) -> QueryPlan:
+        # v5.17: single-facet typed queries get a deterministic complementary
+        # facet (test↔spec/issue) — the implicit co-retrieval intent made explicit
+        if len(plan.subqueries) == 1:
+            comp = complementary_facet(plan.original)
+            if comp:
+                plan.subqueries.append(comp)
         # rule validation: never let an ID-bearing subquery lose its lexical route
         for sub in plan.subqueries:
             if _ID_TOKEN.search(sub["q"]) and sub["intent"] != "id_lookup":
@@ -335,6 +363,11 @@ class QueryAnalyzer:
         # mode consensus: intent candidates × strategy bandit, keyed by SHAPE (①)
         skel = skeleton(plan.original)
         for sub in plan.subqueries:
+            if sub.get("_complement"):
+                # synthetic facet text is never in the LLM keyword-extraction
+                # cache — graph modes would stall the hot path. Lexical only.
+                sub["mode"] = "hybrid"
+                continue
             candidates = INTENT_MODES.get(sub["intent"], INTENT_MODES["concept"])
             sub["mode"] = self.memory.select(skel, candidates)
         return plan
