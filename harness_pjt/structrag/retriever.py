@@ -255,8 +255,7 @@ class StructRetriever:
         if l1_c:
             top_list = l1_c[:EXPAND_L1_SLOTS] + ln_c[:EXPAND_BUDGET - EXPAND_L1_SLOTS]
         else:
-            # G4: reference-free corpora have no L1 candidates at all — reserving
-            # 4 seats for an empty class throttled every learned edge to 2 seats
+            # G6: reference-free corpora — don't reserve seats for an empty class
             top_list = ranked_exp[:EXPAND_BUDGET]
         top_expansion = dict(top_list)
         # v5.5 safety net: budget losers still get appended after the ranked
@@ -365,7 +364,7 @@ class StructRetriever:
             # growth engine; v5.6's no-rule version built an echo chamber.
             exp_docs = {os.path.basename(c.get("file_path", ""))
                         for c in final_chunks if c.get("_sg_expand")}
-            self.sg.reinforce_co_retrieval(observed_docs[:40], quality,
+            self.sg.reinforce_co_retrieval(observed_docs[:16], quality,
                                            quality_gate=self.rq.reinforce_gate,
                                            expansion_docs=exp_docs)
 

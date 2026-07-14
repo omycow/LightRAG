@@ -1404,80 +1404,9 @@
 - G3: 커버리지 후보를 (관찰 1위, 관찰 11~40위) 쌍으로 교체 — 검색이 그 쿼리에 실제 반응시킨 문서만.
   예산 15/사이클. G2 토큰 채널 폐기.
 
-### 2026-07-14 13:07:34 — ver5 iteration 1 (LLM on)
-- All@20 100.0% · ValA@20 99.4% · ValB co@20/10/5 63.3/55.6/35.6%
-- latency p50/p95: all=36.6/45.6ms · tiers(valB)={'cache': 0, 'llm': 0, 'rules': 90}
-- SG: {'docs': 572, 'edges': 4094, 'l1_explicit': 0, 'l2_co_retrieval': 2826, 'l3_llm_curated': 5, 'profiles': 0} · plan_cache: {'entries': 282, 'hits': 2, 'hit_rate': 0.005}
-- evolve: {'records': 376, 's_rules': {'decayed_layers': 5782, 'facet_queries': 105}, 's_llm': {'coverage_edges': 5}, 'k_rules': {'stale_edges_removed': 0}, 'k_llm': {}, 'llm_calls': 50, 'good': 185, 'attention': 98, 'shadow_planner': {'analyzed': 40, 'promoted': 39}, 'elapsed_s': 182.8}
-
-### 2026-07-14 13:10:52 — ver5 iteration 2 (LLM on)
-- All@20 100.0% · ValA@20 99.4% · ValB co@20/10/5 66.7/53.3/32.2%
-- latency p50/p95: all=46.2/61.7ms · tiers(valB)={'cache': 14, 'llm': 0, 'rules': 76}
-- SG: {'docs': 572, 'edges': 5376, 'l1_explicit': 0, 'l2_co_retrieval': 4177, 'l3_llm_curated': 8, 'profiles': 0} · plan_cache: {'entries': 363, 'hits': 92, 'hit_rate': 0.245}
-- evolve: {'records': 416, 's_rules': {'decayed_layers': 5740, 'facet_queries': 126}, 's_llm': {'coverage_edges': 3}, 'k_rules': {'stale_edges_removed': 0}, 'k_llm': {}, 'llm_calls': 50, 'good': 190, 'attention': 44, 'shadow_planner': {'analyzed': 40, 'promoted': 31}, 'elapsed_s': 159.3}
-
-### 2026-07-14 13:14:10 — ver5 iteration 3 (LLM on)
-- All@20 100.0% · ValA@20 99.4% · ValB co@20/10/5 66.7/53.3/27.8%
-- latency p50/p95: all=48.6/65.1ms · tiers(valB)={'cache': 15, 'llm': 0, 'rules': 75}
-- SG: {'docs': 572, 'edges': 5725, 'l1_explicit': 0, 'l2_co_retrieval': 4363, 'l3_llm_curated': 9, 'profiles': 0} · plan_cache: {'entries': 365, 'hits': 142, 'hit_rate': 0.378}
-- evolve: {'records': 416, 's_rules': {'decayed_layers': 5088, 'facet_queries': 117}, 's_llm': {'coverage_edges': 1}, 'k_rules': {'stale_edges_removed': 0}, 'k_llm': {}, 'llm_calls': 50, 'good': 183, 'attention': 44, 'shadow_planner': {'analyzed': 40, 'promoted': 28}, 'elapsed_s': 160.5}
-
-### 2026-07-14 13:17:25 — ver5 iteration 4 (LLM on)
-- All@20 100.0% · ValA@20 99.4% · ValB co@20/10/5 65.6/54.4/27.8%
-- latency p50/p95: all=48.5/65.0ms · tiers(valB)={'cache': 21, 'llm': 0, 'rules': 69}
-- SG: {'docs': 572, 'edges': 5956, 'l1_explicit': 0, 'l2_co_retrieval': 4504, 'l3_llm_curated': 11, 'profiles': 0} · plan_cache: {'entries': 366, 'hits': 149, 'hit_rate': 0.396}
-- evolve: {'records': 416, 's_rules': {'decayed_layers': 5048, 'facet_queries': 115}, 's_llm': {'coverage_edges': 2}, 'k_rules': {'stale_edges_removed': 0}, 'k_llm': {}, 'llm_calls': 50, 'good': 183, 'attention': 45, 'shadow_planner': {'analyzed': 40, 'promoted': 26}, 'elapsed_s': 155.9}
-
-### 2026-07-14 13:20:52 — ver5 iteration 5 (LLM on)
-- All@20 100.0% · ValA@20 99.4% · ValB co@20/10/5 64.4/54.4/27.8%
-- latency p50/p95: all=51.3/67.0ms · tiers(valB)={'cache': 18, 'llm': 0, 'rules': 72}
-- SG: {'docs': 572, 'edges': 6059, 'l1_explicit': 0, 'l2_co_retrieval': 4578, 'l3_llm_curated': 12, 'profiles': 0} · plan_cache: {'entries': 368, 'hits': 147, 'hit_rate': 0.391}
-- evolve: {'records': 416, 's_rules': {'decayed_layers': 4795, 'facet_queries': 117}, 's_llm': {'coverage_edges': 1}, 'k_rules': {'stale_edges_removed': 0}, 'k_llm': {}, 'llm_calls': 50, 'good': 185, 'attention': 48, 'shadow_planner': {'analyzed': 40, 'promoted': 26}, 'elapsed_s': 167.4}
-
-### 2026-07-14 — G3 판정 및 G4 (통계 승격 + 좌석 개방)
-- G3: co@10 평균 54.2, L3 12개 중 정답쌍 1 — 방향 유효(0→1)하나 LLM 처리량(12/5사이클)으로는
-  커버 29→65 불가. 통찰: 관찰꼬리 승격을 **LLM이 아니라 통계로 대량 처리**해야 함.
-- **구조 결함 발견**: NO_L1에서 확장 L1 전용 4석이 영구 공석 — G1~G3 내내 학습 엣지는 2석으로 뜀.
-- G4: ① L2 강화를 관찰 40 전폭으로, 랭크 차등 스텝(≤10위 +0.12 / 11~40위 +0.08) —
-  형제 쿼리 반복 공동관찰만 문턱 도달, 무작위 꼬리쌍은 자연 탈락. 선택적 에코를
-  "explicit_ref 또는 facet_link 근거"로 일반화 ② L1 후보 전무 시 6석 유효가중 순 개방
-  ③ 에스코트 3차 폴백: 강한 L2 (w≥0.6·4회+).
-- 유닛·스모크 10/10. **G4 동결 — NO_L1 5-iter.**
-
-### 2026-07-14 13:26:11 — ver5 iteration 1 (LLM on)
-- All@20 100.0% · ValA@20 99.4% · ValB co@20/10/5 64.4/54.4/35.6%
-- latency p50/p95: all=51.0/66.6ms · tiers(valB)={'cache': 0, 'llm': 0, 'rules': 90}
-- SG: {'docs': 572, 'edges': 11878, 'l1_explicit': 0, 'l2_co_retrieval': 11259, 'l3_llm_curated': 5, 'profiles': 0} · plan_cache: {'entries': 289, 'hits': 2, 'hit_rate': 0.005}
-- evolve: {'records': 376, 's_rules': {'decayed_layers': 17456, 'facet_queries': 101}, 's_llm': {'coverage_edges': 5}, 'k_rules': {'stale_edges_removed': 0}, 'k_llm': {}, 'llm_calls': 50, 'good': 178, 'attention': 106, 'shadow_planner': {'analyzed': 40, 'promoted': 38}, 'elapsed_s': 78.0}
-
-### 2026-07-14 13:28:10 — ver5 iteration 2 (LLM on)
-- All@20 100.0% · ValA@20 99.4% · ValB co@20/10/5 64.4/52.2/27.8%
-- latency p50/p95: all=78.0/95.8ms · tiers(valB)={'cache': 10, 'llm': 0, 'rules': 80}
-- SG: {'docs': 572, 'edges': 16043, 'l1_explicit': 0, 'l2_co_retrieval': 15472, 'l3_llm_curated': 6, 'profiles': 0} · plan_cache: {'entries': 366, 'hits': 92, 'hit_rate': 0.245}
-- evolve: {'records': 416, 's_rules': {'decayed_layers': 18416, 'facet_queries': 128}, 's_llm': {'coverage_edges': 1}, 'k_rules': {'stale_edges_removed': 0}, 'k_llm': {}, 'llm_calls': 50, 'good': 193, 'attention': 49, 'shadow_planner': {'analyzed': 40, 'promoted': 37}, 'elapsed_s': 62.4}
-
-### 2026-07-14 13:31:50 — ver5 iteration 3 (LLM on)
-- All@20 100.0% · ValA@20 99.4% · ValB co@20/10/5 61.1/45.6/24.4%
-- latency p50/p95: all=86.2/111.6ms · tiers(valB)={'cache': 20, 'llm': 0, 'rules': 70}
-- SG: {'docs': 572, 'edges': 17210, 'l1_explicit': 0, 'l2_co_retrieval': 16495, 'l3_llm_curated': 9, 'profiles': 0} · plan_cache: {'entries': 367, 'hits': 142, 'hit_rate': 0.378}
-- evolve: {'records': 416, 's_rules': {'decayed_layers': 17282, 'facet_queries': 132}, 's_llm': {'coverage_edges': 3}, 'k_rules': {'stale_edges_removed': 0}, 'k_llm': {}, 'llm_calls': 50, 'good': 201, 'attention': 47, 'shadow_planner': {'analyzed': 40, 'promoted': 30}, 'elapsed_s': 160.9}
-
-### 2026-07-14 13:35:15 — ver5 iteration 4 (LLM on)
-- All@20 100.0% · ValA@20 99.4% · ValB co@20/10/5 58.9/44.4/24.4%
-- latency p50/p95: all=91.7/121.2ms · tiers(valB)={'cache': 19, 'llm': 0, 'rules': 71}
-- SG: {'docs': 572, 'edges': 17998, 'l1_explicit': 0, 'l2_co_retrieval': 17189, 'l3_llm_curated': 9, 'profiles': 0} · plan_cache: {'entries': 368, 'hits': 153, 'hit_rate': 0.407}
-- evolve: {'records': 416, 's_rules': {'decayed_layers': 16758, 'facet_queries': 125}, 's_llm': {'coverage_edges': 0}, 'k_rules': {'stale_edges_removed': 0}, 'k_llm': {}, 'llm_calls': 50, 'good': 197, 'attention': 45, 'shadow_planner': {'analyzed': 40, 'promoted': 32}, 'elapsed_s': 143.5}
-
-### 2026-07-14 13:38:32 — ver5 iteration 5 (LLM on)
-- All@20 100.0% · ValA@20 99.4% · ValB co@20/10/5 60.0/44.4/24.4%
-- latency p50/p95: all=88.2/109.4ms · tiers(valB)={'cache': 23, 'llm': 0, 'rules': 67}
-- SG: {'docs': 572, 'edges': 18736, 'l1_explicit': 0, 'l2_co_retrieval': 17896, 'l3_llm_curated': 10, 'profiles': 0} · plan_cache: {'entries': 368, 'hits': 156, 'hit_rate': 0.415}
-- evolve: {'records': 416, 's_rules': {'decayed_layers': 17566, 'facet_queries': 123}, 's_llm': {'coverage_edges': 1}, 'k_rules': {'stale_edges_removed': 0}, 'k_llm': {}, 'llm_calls': 50, 'good': 190, 'attention': 44, 'shadow_planner': {'analyzed': 40, 'promoted': 34}, 'elapsed_s': 135.4}
-
-### 2026-07-14 — G4 판정 및 G5 (상보성 필터)
-- G4: co@10 54.4→44.4 **하락 — 기각.** 창 40 개방으로 정답쌍 L2 커버는 29→49로 늘었지만,
-  형제 카드 쌍(모든 형제 쿼리 상위권 동반)의 가중치가 폭주해 개방 좌석·L2 에스코트를 점령.
-  **통계의 최강 신호는 유사 쌍이지 상보 쌍이 아니다** — 예견된 함정의 실측.
-- G5: 상보성 판별 — 두 문서의 이름 토큰 자카드 ≥0.5면 구조 크레딧 0(형제), ≥0.3이면 스텝 ×0.4,
-  L2 에스코트 자격도 자카드 <0.3 요구. "연결돼야 할 문서는 서로 닮지 않았다" (D8의 쌍대).
-- 유닛·스모크 10/10. **G5 동결 — NO_L1 5-iter.**
+### 2026-07-14 — G5 판정 및 G6 (G3 복귀 + 증량)
+- G5: co@10 48.9→46.7 하락 — **기각.** 자카드 필터로도 통계 오염(저오버랩 유사쌍: 타제품 허브간 등)을
+  못 이김. **통계 물량 노선(G4/G5) 공식 폐기** — G-스코어보드: G3(LLM 정밀 승격) 54.2가 최고.
+- G6 = G3 코드 복원 + G4의 순기능만 이식(좌석 개방 — facet 엣지가 6석 활용) +
+  커버리지 채널 증량 (15→35/사이클, 앵커 top-3 페어링으로 후보쌍 3배).
+- 유닛·스모크 10/10. **G6 동결 — NO_L1 5-iter. 미달 시 정직한 상한선 보고로 캠페인 정리 예정.**

@@ -195,7 +195,7 @@ class Evolver:
         # extension: content-semantic, no reference markup needed, no answers.
         if self.llm_func and budget > 0:
             cov_added = 0
-            for anchor, cand, queries in self._coverage_candidates(good, limit=min(15, budget)):
+            for anchor, cand, queries in self._coverage_candidates(good, limit=min(35, budget)):
                 budget -= 1
                 report["llm_calls"] += 1
                 verdict = await self._propose_edge(anchor, cand, queries)
@@ -317,16 +317,16 @@ class Evolver:
             obs = r.get("observed") or []
             if len(obs) < 12:
                 continue
-            anchor = obs[0]
-            for cand in obs[10:40]:
-                key = tuple(sorted((anchor, cand)))
-                ek = f"{key[0]}||{key[1]}"
-                if key in seen or ek in edges or anchor == cand:
-                    continue
-                seen.add(key)
-                out.append((anchor, cand, [r["query"]]))
-                if len(out) >= limit * 4:
-                    break
+            for anchor in obs[:3]:
+                for cand in obs[10:40]:
+                    key = tuple(sorted((anchor, cand)))
+                    ek = f"{key[0]}||{key[1]}"
+                    if key in seen or ek in edges or anchor == cand:
+                        continue
+                    seen.add(key)
+                    out.append((anchor, cand, [r["query"]]))
+                    if len(out) >= limit * 4:
+                        break
             if len(out) >= limit * 4:
                 break
         return out[:limit]
