@@ -150,15 +150,7 @@ class Evolver:
         # ── Track S · rules ───────────────────────────────────────────────────
         removed = sg.decay()
         self.retriever.analyzer.cache.invalidate_low(min_quality=rq.attention_gate)
-        # facet_link (유저 설계): 분해된 서브쿼리들의 결과 교차쌍 — 한 정보요구의
-        # 다른 면을 답한 문서들의 상보성 증거. good 쿼리에서만, 백그라운드 전용.
-        facet_q = 0
-        for r in good:
-            tops = r.get("facet_tops") or []
-            if len(tops) >= 2:
-                sg.reinforce_facet_link(tops, r["quality"], quality_gate=rq.reinforce_gate)
-                facet_q += 1
-        report["s_rules"] = {"decayed_layers": removed, "facet_queries": facet_q}
+        report["s_rules"] = {"decayed_layers": removed}
 
         # ── Shadow planner (v5.15): background LLM analysis of queued queries ──
         # The hot path answers with cache/rules only; here the LLM plan gets
@@ -187,24 +179,6 @@ class Evolver:
                 except Exception:
                     pass
             report["shadow_planner"] = {"analyzed": analyzed, "promoted": promoted}
-
-        # ── Track S · LLM ①b coverage channel (G2): docs retrieval never surfaced
-        # Token-matched shortlist (query content tokens vs SG node tokens) of docs
-        # ABSENT from the 40-wide observation window → LLM pair-judges them against
-        # the query's top observed doc, chunk evidence required. This is the reach
-        # extension: content-semantic, no reference markup needed, no answers.
-        if self.llm_func and budget > 0:
-            cov_added = 0
-            for anchor, cand, queries in self._coverage_candidates(good, limit=min(35, budget)):
-                budget -= 1
-                report["llm_calls"] += 1
-                verdict = await self._propose_edge(anchor, cand, queries)
-                if verdict:
-                    rel, conf, rationale, evidence = verdict
-                    sg.add_curated_edge(anchor, cand, rel, evidence, rationale,
-                                        weight=min(0.9, 0.5 + conf * 0.4))
-                    cov_added += 1
-            report["s_llm"]["coverage_edges"] = cov_added
 
         # ── Track S · LLM ① typed structural edges ────────────────────────────
         if self.llm_func and budget > 0:
@@ -265,7 +239,7 @@ class Evolver:
         explained by an L1/L3 edge — the pairs where LLM curation adds information."""
         pair_queries: dict[tuple, list[str]] = defaultdict(list)
         for r in good:
-            docs = (r.get("observed") or r.get("retrieved", []))[:12]
+            docs = r.get("retrieved", [])[:8]
             for i in range(len(docs)):
                 for j in range(i + 1, len(docs)):
                     key = tuple(sorted((docs[i], docs[j])))
@@ -303,50 +277,6 @@ class Evolver:
         except Exception:
             pass
         return None
-
-    def _coverage_candidates(self, good: list[dict], limit: int) -> list[tuple[str, str, list[str]]]:
-        """G6.2: complementarity-prior candidate selection. Positional picking
-        (first 3 tail slots) gave gold pairs a ~10% proposal chance. Tail docs are
-        now ranked by a deterministic complementarity prior: lexically distant
-        from the anchor (linked docs don't look like their card — G5 lesson used
-        where it belongs) plus an opaque-ID-name bonus (jira-shaped files can't
-        win token matches anywhere else). Type-shaped queries first."""
-        from harness_pjt.structrag.analyzer import skeleton
-        from harness_pjt.structrag.structure_graph import _ID_TOKEN
-        nodes = self.retriever.sg._data["nodes"]
-        edges = self.retriever.sg._data["edges"]
-        ordered = sorted(good, key=lambda r: 0 if "type:none" not in skeleton(r["query"]) else 1)
-        out, seen = [], set()
-        for r in ordered:
-            obs = r.get("observed") or []
-            if len(obs) < 12:
-                continue
-            anchor = obs[0]
-            ta = set(nodes.get(anchor, {}).get("tokens", ()))
-            scored = []
-            for cand in obs[10:40]:
-                if cand == anchor:
-                    continue
-                tb = set(nodes.get(cand, {}).get("tokens", ()))
-                jac = len(ta & tb) / len(ta | tb) if (ta and tb) else 0.0
-                stem = cand.rsplit(".", 1)[0]
-                id_like = 1.0 if (_ID_TOKEN.fullmatch(stem) or len(tb) <= 2) else 0.0
-                scored.append(((1.0 - jac) + 0.5 * id_like, cand))
-            scored.sort(key=lambda x: -x[0])
-            per_q = 0
-            for _, cand in scored:
-                if per_q >= 3:
-                    break
-                key = tuple(sorted((anchor, cand)))
-                ek = f"{key[0]}||{key[1]}"
-                if key in seen or ek in edges:
-                    continue
-                seen.add(key)
-                out.append((anchor, cand, [r["query"]]))
-                per_q += 1
-            if len(out) >= limit:
-                break
-        return out[:limit]
 
     def _profile_candidates(self, recs: list[dict], limit: int) -> list[str]:
         counts = Counter(d for r in recs for d in r.get("retrieved", [])[:10])
