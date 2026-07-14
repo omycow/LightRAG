@@ -305,29 +305,34 @@ class Evolver:
         return None
 
     def _coverage_candidates(self, good: list[dict], limit: int) -> list[tuple[str, str, list[str]]]:
-        """G3 observation-tail promotion: pair the query's top doc with docs the
-        retrieval ALMOST served (observation ranks 11-40) — they responded to this
-        query, they're just outside the window. LLM confirms the relation (chunk
-        evidence) and the L3 edge lets expansion/escort promote them next time.
-        (G2's outside-window token matching scored 0 gold hits — the missing docs
-        were either already observed or token-invisible; retired.)"""
+        """G6.1 observation-tail promotion, ordering bug fixed: the scan used the
+        eval order (all-data -> ValA -> ValB) with an early break, so co-intent
+        queries' pairs NEVER reached the candidate table and the LLM spent every
+        cycle rejecting unrelated pairs from the wrong queries. Now: type-shaped
+        (asked-for-artifact) queries first, full scan, 3 pairs per query."""
+        from harness_pjt.structrag.analyzer import skeleton
         edges = self.retriever.sg._data["edges"]
+        ordered = sorted(good, key=lambda r: 0 if "type:none" not in skeleton(r["query"]) else 1)
         out, seen = [], set()
-        for r in good:
+        for r in ordered:
             obs = r.get("observed") or []
             if len(obs) < 12:
                 continue
+            per_q = 0
             for anchor in obs[:3]:
                 for cand in obs[10:40]:
+                    if per_q >= 3:
+                        break
                     key = tuple(sorted((anchor, cand)))
                     ek = f"{key[0]}||{key[1]}"
                     if key in seen or ek in edges or anchor == cand:
                         continue
                     seen.add(key)
                     out.append((anchor, cand, [r["query"]]))
-                    if len(out) >= limit * 4:
-                        break
-            if len(out) >= limit * 4:
+                    per_q += 1
+                if per_q >= 3:
+                    break
+            if len(out) >= limit:
                 break
         return out[:limit]
 
