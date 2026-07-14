@@ -252,7 +252,12 @@ class StructRetriever:
         # v5.7 I3: unused L1 seats are NOT released to learned candidates — echo-
         # strengthened L2 edges were claiming them with increasingly self-
         # referential docs. An unfilled seat goes back to base documents instead.
-        top_list = l1_c[:EXPAND_L1_SLOTS] + ln_c[:EXPAND_BUDGET - EXPAND_L1_SLOTS]
+        if l1_c:
+            top_list = l1_c[:EXPAND_L1_SLOTS] + ln_c[:EXPAND_BUDGET - EXPAND_L1_SLOTS]
+        else:
+            # G4: reference-free corpora have no L1 candidates at all — reserving
+            # 4 seats for an empty class throttled every learned edge to 2 seats
+            top_list = ranked_exp[:EXPAND_BUDGET]
         top_expansion = dict(top_list)
         # v5.5 safety net: budget losers still get appended after the ranked
         # window — serves co@20 while the reserved seats serve co@5/10.
@@ -360,7 +365,7 @@ class StructRetriever:
             # growth engine; v5.6's no-rule version built an echo chamber.
             exp_docs = {os.path.basename(c.get("file_path", ""))
                         for c in final_chunks if c.get("_sg_expand")}
-            self.sg.reinforce_co_retrieval(observed_docs[:16], quality,
+            self.sg.reinforce_co_retrieval(observed_docs[:40], quality,
                                            quality_gate=self.rq.reinforce_gate,
                                            expansion_docs=exp_docs)
 

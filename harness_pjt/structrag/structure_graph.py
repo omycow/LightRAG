@@ -184,30 +184,33 @@ class StructureGraph:
     # ── L2: co-retrieval reinforcement (quality-gated) / decay ──────────────
 
     def reinforce_co_retrieval(self, docs: list[str], quality: float, quality_gate: float = 0.6,
-                               expansion_docs: set[str] | None = None):
-        """Strengthen co-retrieval edges among docs jointly retrieved by a good query.
-
-        Selective echo (v5.8): pairs involving a doc WE injected via structural
-        expansion reinforce only when the pair already has explicit_ref (L1)
-        provenance — usage evidence for a document-declared link is legitimate,
-        while creating/strengthening non-declared pairs from our own output is
-        the echo chamber (v5.6 lesson). Blanket blocking (v5.7) cut the true-link
-        growth engine along with the noise; this keeps exactly the grounded half."""
+                               expansion_docs: set[str] | None = None,
+                               head_n: int = 10, head_step: float = 0.12,
+                               tail_step: float = 0.08):
+        """Strengthen co-retrieval edges among jointly OBSERVED docs (G4: full
+        observation window, rank-tiered — head pairs earn more per confirmation;
+        random tail pairs don't repeat across queries and never clear thresholds,
+        sibling-query gold pairs do). Selective echo, generalized: pairs with an
+        expansion-injected doc reinforce only when the pair carries explicit_ref
+        OR facet_link provenance."""
         if quality < quality_gate:
             return
         expansion_docs = expansion_docs or set()
-        docs = sorted(set(docs))
-        for i in range(len(docs)):
-            for j in range(i + 1, len(docs)):
-                key = _pair_key(docs[i], docs[j])
-                if docs[i] in expansion_docs or docs[j] in expansion_docs:
+        ranked = list(dict.fromkeys(d for d in docs if d))
+        for i in range(len(ranked)):
+            for j in range(i + 1, len(ranked)):
+                a, b = ranked[i], ranked[j]
+                key = _pair_key(a, b)
+                if a in expansion_docs or b in expansion_docs:
                     existing = self._data["edges"].get(key)
-                    if not existing or "explicit_ref" not in existing["layers"]:
+                    layers = existing["layers"] if existing else {}
+                    if "explicit_ref" not in layers and "facet_link" not in layers:
                         continue
+                step = head_step if (i < head_n and j < head_n) else tail_step
                 edge = self._data["edges"].setdefault(key, {"layers": {}, "hits": 0, "last_hit": 0})
                 layer = edge["layers"].setdefault("co_retrieval", {"w": 0.0, "count": 0})
                 layer["count"] += 1
-                layer["w"] = min(1.0, layer["w"] + 0.1)
+                layer["w"] = min(1.0, layer["w"] + step)
 
     def reinforce_facet_link(self, facet_tops: list[list[str]], quality: float,
                              quality_gate: float = 0.6):
@@ -241,24 +244,26 @@ class StructureGraph:
         v5.18 tie-break: among facet candidates, docs the CURRENT query's own
         facet retrievals surfaced (prefer set) win — cross-evidence between the
         learned graph and this query beats accumulated weight alone."""
-        best = {"explicit_ref": None, "facet_link": None}
+        best = {"explicit_ref": None, "facet_link": None, "co_retrieval": None}
         for key, edge in self._data["edges"].items():
             a, b = key.split("||", 1)
             if doc not in (a, b):
                 continue
             other = b if a == doc else a
-            for lname in ("explicit_ref", "facet_link"):
+            for lname in ("explicit_ref", "facet_link", "co_retrieval"):
                 layer = edge["layers"].get(lname)
                 if not layer:
                     continue
                 if lname == "facet_link" and layer.get("count", 0) < 2:
                     continue
-                bonus = 1.0 if (prefer and other in prefer and lname == "facet_link") else 0.0
+                if lname == "co_retrieval" and (layer["w"] < 0.6 or layer.get("count", 0) < 4):
+                    continue
+                bonus = 1.0 if (prefer and other in prefer and lname != "explicit_ref") else 0.0
                 cur = best[lname]
                 score = layer["w"] + bonus
                 if cur is None or score > cur[1]:
                     best[lname] = (other, score)
-        return best["explicit_ref"] or best["facet_link"]
+        return best["explicit_ref"] or best["facet_link"] or best["co_retrieval"]
 
     def decay(self, factor: float = 0.95, floor: float = 0.15) -> int:
         """Decay learned layers of edges never used since last decay; drop dead layers."""
