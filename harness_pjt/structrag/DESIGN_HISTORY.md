@@ -1491,3 +1491,15 @@
 - G7: 후보 소스 attention+good (attention 우선). 체인 전 고리 개별 실증 완료:
   attention 쿼리 → 카드 앵커 × 상보 프라이어 꼬리 → 판정 수락(12/12) → L3 → 승격(전환 83%).
 - **G7 동결 — NO_L1 5-iter.**
+
+### 2026-07-14 19:29:57 — ver5 iteration 1 (LLM on)
+- All@20 100.0% · ValA@20 99.4% · ValB co@20/10/5 63.3/55.6/35.6%
+- latency p50/p95: all=37.6/49.0ms · tiers(valB)={'cache': 0, 'llm': 0, 'rules': 90}
+- SG: {'docs': 572, 'edges': 4089, 'l1_explicit': 0, 'l2_co_retrieval': 2826, 'l3_llm_curated': 0, 'profiles': 0} · plan_cache: {'entries': 282, 'hits': 2, 'hit_rate': 0.005}
+- evolve: {'records': 376, 's_rules': {'decayed_layers': 5782, 'facet_queries': 105}, 's_llm': {'coverage_edges': 0}, 'k_rules': {'stale_edges_removed': 0}, 'k_llm': {}, 'llm_calls': 50, 'good': 185, 'attention': 98, 'shadow_planner': {'analyzed': 40, 'promoted': 39}, 'elapsed_s': 149.0}
+
+### 2026-07-14 — G7 iter1 진단 및 G7.1
+- G7 iter1: covEdges 0 — ① 섀도 플래너가 예산 40 선점, 커버리지엔 10콜 ② 그 10쌍은 동족 타 jira라
+  판정이 정당 거부. 거부는 캐시돼 재시도 무비용.
+- G7.1: 커버리지 채널 선순위(예약 25콜, 섀도 앞) + 쿼리당 5쌍. (재시작 중 pkill 자기매칭 사고로
+  G7 런 중단됨 — G7.1로 fresh 재검증)

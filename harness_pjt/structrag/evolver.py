@@ -160,6 +160,25 @@ class Evolver:
                 facet_q += 1
         report["s_rules"] = {"decayed_layers": removed, "facet_queries": facet_q}
 
+        # ── Track S · LLM ①b coverage channel (G2): docs retrieval never surfaced
+        # Token-matched shortlist (query content tokens vs SG node tokens) of docs
+        # ABSENT from the 40-wide observation window → LLM pair-judges them against
+        # the query's top observed doc, chunk evidence required. This is the reach
+        # extension: content-semantic, no reference markup needed, no answers.
+        if self.llm_func and budget > 0:
+            cov_added = 0
+            for anchor, cand, queries in self._coverage_candidates(
+                    attention + good, limit=min(25, budget)):
+                budget -= 1
+                report["llm_calls"] += 1
+                verdict = await self._propose_edge(anchor, cand, queries)
+                if verdict:
+                    rel, conf, rationale, evidence = verdict
+                    sg.add_curated_edge(anchor, cand, rel, evidence, rationale,
+                                        weight=min(0.9, 0.5 + conf * 0.4))
+                    cov_added += 1
+            report["s_llm"]["coverage_edges"] = cov_added
+
         # ── Shadow planner (v5.15): background LLM analysis of queued queries ──
         # The hot path answers with cache/rules only; here the LLM plan gets
         # generated, TEST-DRIVEN via a shadow retrieval, and promoted to the
@@ -187,25 +206,6 @@ class Evolver:
                 except Exception:
                     pass
             report["shadow_planner"] = {"analyzed": analyzed, "promoted": promoted}
-
-        # ── Track S · LLM ①b coverage channel (G2): docs retrieval never surfaced
-        # Token-matched shortlist (query content tokens vs SG node tokens) of docs
-        # ABSENT from the 40-wide observation window → LLM pair-judges them against
-        # the query's top observed doc, chunk evidence required. This is the reach
-        # extension: content-semantic, no reference markup needed, no answers.
-        if self.llm_func and budget > 0:
-            cov_added = 0
-            for anchor, cand, queries in self._coverage_candidates(
-                    attention + good, limit=min(35, budget)):
-                budget -= 1
-                report["llm_calls"] += 1
-                verdict = await self._propose_edge(anchor, cand, queries)
-                if verdict:
-                    rel, conf, rationale, evidence = verdict
-                    sg.add_curated_edge(anchor, cand, rel, evidence, rationale,
-                                        weight=min(0.9, 0.5 + conf * 0.4))
-                    cov_added += 1
-            report["s_llm"]["coverage_edges"] = cov_added
 
         # ── Track S · LLM ① typed structural edges ────────────────────────────
         if self.llm_func and budget > 0:
@@ -340,7 +340,7 @@ class Evolver:
             scored.sort(key=lambda x: -x[0])
             per_q = 0
             for _, cand in scored:
-                if per_q >= 3:
+                if per_q >= 5:
                     break
                 key = tuple(sorted((anchor, cand)))
                 ek = f"{key[0]}||{key[1]}"
