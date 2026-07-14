@@ -1364,3 +1364,42 @@
   관찰창 40위 밖인 문서를 숏리스트 → 관찰 1위 문서와의 관계를 LLM 청크증거 판정 → L3 엣지.
   검색 미도달 문서를 판정 테이블에 올리는 최초의 도달 확장 (내용 토큰 기반 = 제너럴, 참조표기 불요).
 - 유닛·스모크 10/10. **G2 동결 — NO_L1 5-iter.**
+
+### 2026-07-14 12:53:50 — ver5 iteration 1 (LLM on)
+- All@20 100.0% · ValA@20 99.4% · ValB co@20/10/5 63.3/55.6/35.6%
+- latency p50/p95: all=37.2/46.8ms · tiers(valB)={'cache': 0, 'llm': 0, 'rules': 90}
+- SG: {'docs': 572, 'edges': 4097, 'l1_explicit': 0, 'l2_co_retrieval': 2826, 'l3_llm_curated': 8, 'profiles': 0} · plan_cache: {'entries': 282, 'hits': 2, 'hit_rate': 0.005}
+- evolve: {'records': 376, 's_rules': {'decayed_layers': 5782, 'facet_queries': 105}, 's_llm': {'coverage_edges': 8}, 'k_rules': {'stale_edges_removed': 0}, 'k_llm': {}, 'llm_calls': 50, 'good': 185, 'attention': 98, 'shadow_planner': {'analyzed': 40, 'promoted': 39}, 'elapsed_s': 189.4}
+
+### 2026-07-14 12:56:48 — ver5 iteration 2 (LLM on)
+- All@20 100.0% · ValA@20 99.4% · ValB co@20/10/5 66.7/53.3/31.1%
+- latency p50/p95: all=46.7/63.5ms · tiers(valB)={'cache': 14, 'llm': 0, 'rules': 76}
+- SG: {'docs': 572, 'edges': 5450, 'l1_explicit': 0, 'l2_co_retrieval': 4270, 'l3_llm_curated': 12, 'profiles': 0} · plan_cache: {'entries': 363, 'hits': 95, 'hit_rate': 0.253}
+- evolve: {'records': 416, 's_rules': {'decayed_layers': 5766, 'facet_queries': 125}, 's_llm': {'coverage_edges': 4}, 'k_rules': {'stale_edges_removed': 0}, 'k_llm': {}, 'llm_calls': 50, 'good': 187, 'attention': 47, 'shadow_planner': {'analyzed': 40, 'promoted': 30}, 'elapsed_s': 141.0}
+
+### 2026-07-14 12:58:48 — ver5 iteration 3 (LLM on)
+- All@20 100.0% · ValA@20 99.4% · ValB co@20/10/5 66.7/53.3/28.9%
+- latency p50/p95: all=48.8/66.1ms · tiers(valB)={'cache': 16, 'llm': 0, 'rules': 74}
+- SG: {'docs': 572, 'edges': 5854, 'l1_explicit': 0, 'l2_co_retrieval': 4456, 'l3_llm_curated': 15, 'profiles': 0} · plan_cache: {'entries': 365, 'hits': 143, 'hit_rate': 0.38}
+- evolve: {'records': 416, 's_rules': {'decayed_layers': 4992, 'facet_queries': 118}, 's_llm': {'coverage_edges': 3}, 'k_rules': {'stale_edges_removed': 0}, 'k_llm': {}, 'llm_calls': 50, 'good': 183, 'attention': 45, 'shadow_planner': {'analyzed': 40, 'promoted': 29}, 'elapsed_s': 82.8}
+
+### 2026-07-14 13:00:08 — ver5 iteration 4 (LLM on)
+- All@20 100.0% · ValA@20 99.4% · ValB co@20/10/5 64.4/53.3/26.7%
+- latency p50/p95: all=49.9/65.2ms · tiers(valB)={'cache': 23, 'llm': 0, 'rules': 67}
+- SG: {'docs': 572, 'edges': 6008, 'l1_explicit': 0, 'l2_co_retrieval': 4575, 'l3_llm_curated': 16, 'profiles': 0} · plan_cache: {'entries': 366, 'hits': 153, 'hit_rate': 0.407}
+- evolve: {'records': 416, 's_rules': {'decayed_layers': 4911, 'facet_queries': 113}, 's_llm': {'coverage_edges': 1}, 'k_rules': {'stale_edges_removed': 0}, 'k_llm': {}, 'llm_calls': 50, 'good': 180, 'attention': 41, 'shadow_planner': {'analyzed': 40, 'promoted': 24}, 'elapsed_s': 41.2}
+
+### 2026-07-14 13:01:25 — ver5 iteration 5 (LLM on)
+- All@20 100.0% · ValA@20 99.4% · ValB co@20/10/5 63.3/53.3/30.0%
+- latency p50/p95: all=50.9/64.6ms · tiers(valB)={'cache': 20, 'llm': 0, 'rules': 70}
+- SG: {'docs': 572, 'edges': 6155, 'l1_explicit': 0, 'l2_co_retrieval': 4650, 'l3_llm_curated': 19, 'profiles': 0} · plan_cache: {'entries': 367, 'hits': 151, 'hit_rate': 0.402}
+- evolve: {'records': 416, 's_rules': {'decayed_layers': 4826, 'facet_queries': 116}, 's_llm': {'coverage_edges': 3}, 'k_rules': {'stale_edges_removed': 0}, 'k_llm': {}, 'llm_calls': 50, 'good': 183, 'attention': 42, 'shadow_planner': {'analyzed': 40, 'promoted': 27}, 'elapsed_s': 38.6}
+
+### 2026-07-14 — G2 판정 및 G3 (관찰꼬리 승격)
+- G2: co@10 평균 53.8 부동. **커버리지 엣지 19개 중 정답쌍 적중 0** — 토큰 숏리스트의 캐치-22 실증:
+  쿼리 토큰과 겹치는 문서는 이미 관찰창 안(필터로 제외), 놓치는 linked는 불투명 ID 파일명이라 토큰 매칭 불가.
+  "관찰창 밖" 필터가 정확히 역방향이었음. + 각주: 토큰 숏리스트는 파일명 유의미성 가정 내포(프로필 토큰이 일반화 경로).
+- **결정적 실측**: 정답 linked의 67/90이 관찰창 40 안에 존재 (top-10에 46, top-20에 53) —
+  문제의 3/4은 발굴이 아니라 "관찰꼬리(11~40위) → 구조 승격".
+- G3: 커버리지 후보를 (관찰 1위, 관찰 11~40위) 쌍으로 교체 — 검색이 그 쿼리에 실제 반응시킨 문서만.
+  예산 15/사이클. G2 토큰 채널 폐기.

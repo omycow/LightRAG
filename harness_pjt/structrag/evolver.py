@@ -195,7 +195,7 @@ class Evolver:
         # extension: content-semantic, no reference markup needed, no answers.
         if self.llm_func and budget > 0:
             cov_added = 0
-            for anchor, cand, queries in self._coverage_candidates(good, limit=min(10, budget)):
+            for anchor, cand, queries in self._coverage_candidates(good, limit=min(15, budget)):
                 budget -= 1
                 report["llm_calls"] += 1
                 verdict = await self._propose_edge(anchor, cand, queries)
@@ -304,38 +304,30 @@ class Evolver:
             pass
         return None
 
-    def _coverage_candidates(self, good: list[dict], limit: int,
-                             min_tok: int = 2) -> list[tuple[str, str, list[str]]]:
-        """G2 reach: for good queries, shortlist corpus docs sharing ≥min_tok
-        content tokens with the query but ABSENT from the observation window —
-        candidates retrieval itself never surfaced. Deterministic shortlist,
-        LLM makes the call (with chunk evidence) in the caller."""
-        import re as _re
-        nodes = self.retriever.sg._data["nodes"]
+    def _coverage_candidates(self, good: list[dict], limit: int) -> list[tuple[str, str, list[str]]]:
+        """G3 observation-tail promotion: pair the query's top doc with docs the
+        retrieval ALMOST served (observation ranks 11-40) — they responded to this
+        query, they're just outside the window. LLM confirms the relation (chunk
+        evidence) and the L3 edge lets expansion/escort promote them next time.
+        (G2's outside-window token matching scored 0 gold hits — the missing docs
+        were either already observed or token-invisible; retired.)"""
         edges = self.retriever.sg._data["edges"]
-        out, seen_pairs = [], set()
+        out, seen = [], set()
         for r in good:
-            observed = set(r.get("observed") or r.get("retrieved", []))
-            if not observed:
+            obs = r.get("observed") or []
+            if len(obs) < 12:
                 continue
-            anchor = (r.get("retrieved") or [None])[0]
-            if not anchor:
-                continue
-            q_toks = {t.lower() for t in _re.findall(r"[A-Za-z0-9][A-Za-z0-9_\-]{2,}|[가-힣]{2,}",
-                                                     r["query"])}
-            for bn, node in nodes.items():
-                if bn in observed:
+            anchor = obs[0]
+            for cand in obs[10:40]:
+                key = tuple(sorted((anchor, cand)))
+                ek = f"{key[0]}||{key[1]}"
+                if key in seen or ek in edges or anchor == cand:
                     continue
-                if len(q_toks & set(node.get("tokens", ()))) >= min_tok:
-                    key = tuple(sorted((anchor, bn)))
-                    ek = f"{key[0]}||{key[1]}"
-                    if key in seen_pairs or ek in edges:
-                        continue
-                    seen_pairs.add(key)
-                    out.append((anchor, bn, [r["query"]]))
-                    if len(out) >= limit * 3:
-                        break
-            if len(out) >= limit * 3:
+                seen.add(key)
+                out.append((anchor, cand, [r["query"]]))
+                if len(out) >= limit * 4:
+                    break
+            if len(out) >= limit * 4:
                 break
         return out[:limit]
 
