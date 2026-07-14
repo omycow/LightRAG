@@ -305,12 +305,15 @@ class Evolver:
         return None
 
     def _coverage_candidates(self, good: list[dict], limit: int) -> list[tuple[str, str, list[str]]]:
-        """G6.1 observation-tail promotion, ordering bug fixed: the scan used the
-        eval order (all-data -> ValA -> ValB) with an early break, so co-intent
-        queries' pairs NEVER reached the candidate table and the LLM spent every
-        cycle rejecting unrelated pairs from the wrong queries. Now: type-shaped
-        (asked-for-artifact) queries first, full scan, 3 pairs per query."""
+        """G6.2: complementarity-prior candidate selection. Positional picking
+        (first 3 tail slots) gave gold pairs a ~10% proposal chance. Tail docs are
+        now ranked by a deterministic complementarity prior: lexically distant
+        from the anchor (linked docs don't look like their card — G5 lesson used
+        where it belongs) plus an opaque-ID-name bonus (jira-shaped files can't
+        win token matches anywhere else). Type-shaped queries first."""
         from harness_pjt.structrag.analyzer import skeleton
+        from harness_pjt.structrag.structure_graph import _ID_TOKEN
+        nodes = self.retriever.sg._data["nodes"]
         edges = self.retriever.sg._data["edges"]
         ordered = sorted(good, key=lambda r: 0 if "type:none" not in skeleton(r["query"]) else 1)
         out, seen = [], set()
@@ -318,20 +321,29 @@ class Evolver:
             obs = r.get("observed") or []
             if len(obs) < 12:
                 continue
+            anchor = obs[0]
+            ta = set(nodes.get(anchor, {}).get("tokens", ()))
+            scored = []
+            for cand in obs[10:40]:
+                if cand == anchor:
+                    continue
+                tb = set(nodes.get(cand, {}).get("tokens", ()))
+                jac = len(ta & tb) / len(ta | tb) if (ta and tb) else 0.0
+                stem = cand.rsplit(".", 1)[0]
+                id_like = 1.0 if (_ID_TOKEN.fullmatch(stem) or len(tb) <= 2) else 0.0
+                scored.append(((1.0 - jac) + 0.5 * id_like, cand))
+            scored.sort(key=lambda x: -x[0])
             per_q = 0
-            for anchor in obs[:3]:
-                for cand in obs[10:40]:
-                    if per_q >= 3:
-                        break
-                    key = tuple(sorted((anchor, cand)))
-                    ek = f"{key[0]}||{key[1]}"
-                    if key in seen or ek in edges or anchor == cand:
-                        continue
-                    seen.add(key)
-                    out.append((anchor, cand, [r["query"]]))
-                    per_q += 1
+            for _, cand in scored:
                 if per_q >= 3:
                     break
+                key = tuple(sorted((anchor, cand)))
+                ek = f"{key[0]}||{key[1]}"
+                if key in seen or ek in edges:
+                    continue
+                seen.add(key)
+                out.append((anchor, cand, [r["query"]]))
+                per_q += 1
             if len(out) >= limit:
                 break
         return out[:limit]

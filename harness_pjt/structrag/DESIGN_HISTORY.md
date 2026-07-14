@@ -1445,3 +1445,40 @@
 - G6: co@10 51~55 밴드, covEdges 5→1 — 증량 무효. **원인 버그**: 후보 스캔이 평가 순서(all→ValA→ValB)
   그대로 조기 중단 → co-의도(ValB형) 쿼리의 쌍이 후보 테이블에 진입 불가. G3부터 잠복.
 - G6.1: 타입 골격 쿼리 우선 정렬 + 전체 스캔 + 쿼리당 3쌍 상한. 결함 수정이므로 즉시 재검증.
+
+### 2026-07-14 18:50:21 — ver5 iteration 1 (LLM on)
+- All@20 100.0% · ValA@20 99.4% · ValB co@20/10/5 63.3/55.6/35.6%
+- latency p50/p95: all=39.5/46.0ms · tiers(valB)={'cache': 0, 'llm': 0, 'rules': 90}
+- SG: {'docs': 572, 'edges': 4093, 'l1_explicit': 0, 'l2_co_retrieval': 2826, 'l3_llm_curated': 4, 'profiles': 0} · plan_cache: {'entries': 282, 'hits': 2, 'hit_rate': 0.005}
+- evolve: {'records': 376, 's_rules': {'decayed_layers': 5782, 'facet_queries': 105}, 's_llm': {'coverage_edges': 4}, 'k_rules': {'stale_edges_removed': 0}, 'k_llm': {}, 'llm_calls': 50, 'good': 185, 'attention': 98, 'shadow_planner': {'analyzed': 40, 'promoted': 39}, 'elapsed_s': 172.2}
+
+### 2026-07-14 18:52:18 — ver5 iteration 2 (LLM on)
+- All@20 100.0% · ValA@20 99.4% · ValB co@20/10/5 65.6/52.2/32.2%
+- latency p50/p95: all=46.8/62.2ms · tiers(valB)={'cache': 14, 'llm': 0, 'rules': 76}
+- SG: {'docs': 572, 'edges': 5276, 'l1_explicit': 0, 'l2_co_retrieval': 3981, 'l3_llm_curated': 7, 'profiles': 0} · plan_cache: {'entries': 362, 'hits': 92, 'hit_rate': 0.245}
+- evolve: {'records': 416, 's_rules': {'decayed_layers': 5304, 'facet_queries': 127}, 's_llm': {'coverage_edges': 3}, 'k_rules': {'stale_edges_removed': 0}, 'k_llm': {}, 'llm_calls': 50, 'good': 191, 'attention': 44, 'shadow_planner': {'analyzed': 40, 'promoted': 30}, 'elapsed_s': 79.8}
+
+### 2026-07-14 18:54:35 — ver5 iteration 3 (LLM on)
+- All@20 100.0% · ValA@20 99.4% · ValB co@20/10/5 66.7/52.2/27.8%
+- latency p50/p95: all=48.2/61.9ms · tiers(valB)={'cache': 17, 'llm': 0, 'rules': 73}
+- SG: {'docs': 572, 'edges': 5595, 'l1_explicit': 0, 'l2_co_retrieval': 4149, 'l3_llm_curated': 11, 'profiles': 0} · plan_cache: {'entries': 366, 'hits': 146, 'hit_rate': 0.388}
+- evolve: {'records': 416, 's_rules': {'decayed_layers': 4593, 'facet_queries': 117}, 's_llm': {'coverage_edges': 4}, 'k_rules': {'stale_edges_removed': 0}, 'k_llm': {}, 'llm_calls': 50, 'good': 182, 'attention': 42, 'shadow_planner': {'analyzed': 40, 'promoted': 29}, 'elapsed_s': 99.4}
+
+### 2026-07-14 18:56:02 — ver5 iteration 4 (LLM on)
+- All@20 100.0% · ValA@20 99.4% · ValB co@20/10/5 65.6/50.0/25.6%
+- latency p50/p95: all=49.0/66.2ms · tiers(valB)={'cache': 20, 'llm': 0, 'rules': 70}
+- SG: {'docs': 572, 'edges': 5796, 'l1_explicit': 0, 'l2_co_retrieval': 4250, 'l3_llm_curated': 12, 'profiles': 0} · plan_cache: {'entries': 367, 'hits': 150, 'hit_rate': 0.399}
+- evolve: {'records': 416, 's_rules': {'decayed_layers': 4461, 'facet_queries': 116}, 's_llm': {'coverage_edges': 1}, 'k_rules': {'stale_edges_removed': 0}, 'k_llm': {}, 'llm_calls': 50, 'good': 184, 'attention': 39, 'shadow_planner': {'analyzed': 40, 'promoted': 25}, 'elapsed_s': 48.3}
+
+### 2026-07-14 18:58:18 — ver5 iteration 5 (LLM on)
+- All@20 100.0% · ValA@20 99.4% · ValB co@20/10/5 65.6/47.8/27.8%
+- latency p50/p95: all=49.0/61.5ms · tiers(valB)={'cache': 18, 'llm': 0, 'rules': 72}
+- SG: {'docs': 572, 'edges': 5936, 'l1_explicit': 0, 'l2_co_retrieval': 4304, 'l3_llm_curated': 15, 'profiles': 0} · plan_cache: {'entries': 367, 'hits': 147, 'hit_rate': 0.391}
+- evolve: {'records': 416, 's_rules': {'decayed_layers': 4270, 'facet_queries': 117}, 's_llm': {'coverage_edges': 3}, 'k_rules': {'stale_edges_removed': 0}, 'k_llm': {}, 'llm_calls': 50, 'good': 187, 'attention': 45, 'shadow_planner': {'analyzed': 40, 'promoted': 23}, 'elapsed_s': 98.5}
+
+### 2026-07-14 — G6.1 판정 및 G6.2 (상보성 프라이어 후보 선별)
+- G6.1: 평균 51.6 — 순서 버그는 고쳤지만 쿼리당 3쌍이 꼬리 맨앞(11~13위) 위치 고정 →
+  linked 제안 확률 ~10%. **기각.**
+- G6.2: 꼬리 후보를 상보성 프라이어로 정렬 — (1−앵커와의 토큰 자카드) + ID형 불투명 파일명 보너스.
+  G5 교훈(닮은 문서는 링크 아님)을 강화 게이트가 아닌 **후보 조준**에 적용. 이 노선의 완결 시도이며,
+  결과와 무관하게 이후 캠페인 정리 보고 예정 (사전 고지된 판정선 60+).
