@@ -150,7 +150,15 @@ class Evolver:
         # ── Track S · rules ───────────────────────────────────────────────────
         removed = sg.decay()
         self.retriever.analyzer.cache.invalidate_low(min_quality=rq.attention_gate)
-        report["s_rules"] = {"decayed_layers": removed}
+        # facet_link (유저 설계): 분해된 서브쿼리들의 결과 교차쌍 — 한 정보요구의
+        # 다른 면을 답한 문서들의 상보성 증거. good 쿼리에서만, 백그라운드 전용.
+        facet_q = 0
+        for r in good:
+            tops = r.get("facet_tops") or []
+            if len(tops) >= 2:
+                sg.reinforce_facet_link(tops, r["quality"], quality_gate=rq.reinforce_gate)
+                facet_q += 1
+        report["s_rules"] = {"decayed_layers": removed, "facet_queries": facet_q}
 
         # ── Shadow planner (v5.15): background LLM analysis of queued queries ──
         # The hot path answers with cache/rules only; here the LLM plan gets

@@ -1285,3 +1285,44 @@
 - 승격 근거: 재최적화 루프가 8~10사이클째에도 개선분 채굴 — 장기 자기진화 최초 실증.
   v5.15.1 종점(71.1) 경신. 프로토콜에 장기런(10-iter) 표준화.
 - 다음: v5.21(넓은 관찰창) 10-iter 비교 검증.
+
+### 2026-07-14 08:38:31 — ver5 iteration 1 (LLM on)
+- All@20 100.0% · ValA@20 99.4% · ValB co@20/10/5 86.7/60.0/32.2%
+- latency p50/p95: all=39.0/44.9ms · tiers(valB)={'cache': 0, 'llm': 0, 'rules': 90}
+- SG: {'docs': 572, 'edges': 3174, 'l1_explicit': 1719, 'l2_co_retrieval': 2695, 'l3_llm_curated': 5, 'profiles': 3} · plan_cache: {'entries': 348, 'hits': 2, 'hit_rate': 0.005}
+- evolve: {'records': 376, 's_rules': {'decayed_layers': 3057}, 's_llm': {'typed_edges': 5, 'profiles': 3}, 'k_rules': {'stale_edges_removed': 0}, 'k_llm': {'wikified': 1}, 'llm_calls': 49, 'good': 163, 'attention': 60, 'shadow_planner': {'analyzed': 40, 'promoted': 38}, 'elapsed_s': 74.6}
+
+### 2026-07-14 08:40:17 — ver5 iteration 2 (LLM on)
+- All@20 100.0% · ValA@20 99.4% · ValB co@20/10/5 91.1/64.4/38.9%
+- latency p50/p95: all=40.0/46.2ms · tiers(valB)={'cache': 16, 'llm': 0, 'rules': 74}
+- SG: {'docs': 572, 'edges': 3565, 'l1_explicit': 1719, 'l2_co_retrieval': 3139, 'l3_llm_curated': 10, 'profiles': 6} · plan_cache: {'entries': 366, 'hits': 124, 'hit_rate': 0.33}
+- evolve: {'records': 416, 's_rules': {'decayed_layers': 3336}, 's_llm': {'typed_edges': 5, 'profiles': 3}, 'k_rules': {'stale_edges_removed': 0}, 'k_llm': {'wikified': 0}, 'llm_calls': 48, 'good': 181, 'attention': 36, 'shadow_planner': {'analyzed': 40, 'promoted': 32}, 'elapsed_s': 81.1}
+
+### 2026-07-14 08:42:14 — ver5 iteration 3 (LLM on)
+- All@20 100.0% · ValA@20 99.4% · ValB co@20/10/5 85.6/65.6/41.1%
+- latency p50/p95: all=42.0/50.5ms · tiers(valB)={'cache': 22, 'llm': 0, 'rules': 68}
+- SG: {'docs': 572, 'edges': 3784, 'l1_explicit': 1719, 'l2_co_retrieval': 3400, 'l3_llm_curated': 12, 'profiles': 9} · plan_cache: {'entries': 368, 'hits': 130, 'hit_rate': 0.346}
+- evolve: {'records': 416, 's_rules': {'decayed_layers': 3147}, 's_llm': {'typed_edges': 2, 'profiles': 3}, 'k_rules': {'stale_edges_removed': 0}, 'k_llm': {'wikified': 0}, 'llm_calls': 48, 'good': 176, 'attention': 39, 'shadow_planner': {'analyzed': 40, 'promoted': 31}, 'elapsed_s': 90.5}
+
+### 2026-07-14 08:44:30 — ver5 iteration 4 (LLM on)
+- All@20 100.0% · ValA@20 99.4% · ValB co@20/10/5 93.3/72.2/48.9%
+- latency p50/p95: all=42.4/49.7ms · tiers(valB)={'cache': 33, 'llm': 0, 'rules': 57}
+- SG: {'docs': 572, 'edges': 3870, 'l1_explicit': 1719, 'l2_co_retrieval': 3489, 'l3_llm_curated': 15, 'profiles': 12} · plan_cache: {'entries': 368, 'hits': 143, 'hit_rate': 0.38}
+- evolve: {'records': 416, 's_rules': {'decayed_layers': 3124}, 's_llm': {'typed_edges': 3, 'profiles': 3}, 'k_rules': {'stale_edges_removed': 0}, 'k_llm': {'wikified': 0}, 'llm_calls': 48, 'good': 166, 'attention': 28, 'shadow_planner': {'analyzed': 40, 'promoted': 23}, 'elapsed_s': 107.8}
+
+### 2026-07-14 08:46:39 — ver5 iteration 5 (LLM on)
+- All@20 100.0% · ValA@20 99.4% · ValB co@20/10/5 87.8/64.4/41.1%
+- latency p50/p95: all=42.7/59.3ms · tiers(valB)={'cache': 27, 'llm': 0, 'rules': 63}
+- SG: {'docs': 572, 'edges': 3936, 'l1_explicit': 1719, 'l2_co_retrieval': 3563, 'l3_llm_curated': 17, 'profiles': 15} · plan_cache: {'entries': 368, 'hits': 137, 'hit_rate': 0.364}
+- evolve: {'records': 416, 's_rules': {'decayed_layers': 3208}, 's_llm': {'typed_edges': 2, 'profiles': 3}, 'k_rules': {'stale_edges_removed': 0}, 'k_llm': {'wikified': 0}, 'llm_calls': 48, 'good': 166, 'attention': 38, 'shadow_planner': {'analyzed': 40, 'promoted': 29}, 'elapsed_s': 101.0}
+
+## G-시리즈 개시 (2026-07-14, 유저 방향 확정): L1 배제 — 제너럴 스택 캠페인
+- **방향**: L1(명시참조 스캐너)은 "참조가 기계친화적으로 적힌 문서"에서만 강한 코퍼스 특화 지름길.
+  일반 시스템은 **facet_link + L2 + L3 세 증거만으로** L1 스택 동급(co@10 ~69-74 / co@20 ~90)까지.
+  목표 달성까지 G-사이클 반복. 모든 런 STRUCTRAG_NO_L1=1.
+- G1 (v5.22) 조립: 챔피언(v5.20) 스택 − L1 + facet_link 복원(유저 설계: 분해 서브쿼리 결과 교차쌍,
+  L1 자리 0.9) + 상보 facet 상시 가동(한글 추출기 수정판, facet 재료 공급) + 넓은 관찰창(v5.21,
+  원래 facet 재료용이던 것) + 에스코트 facet 폴백(2회 확인+현재쿼리 교차증거).
+- 반성 기록: facet은 유저가 채택 확정한 레이어였는데 v5.19 기각 시 통째 리버트로 챔피언에서 유실,
+  관찰창도 facet 맥락과 분리 검증하는 오류 — 구성 판단 미스로 명기.
+- 시작점 참고: 직전 NO_L1 최선 co@10 52.2 / co@20 63.3. 갭 +17/+27.
