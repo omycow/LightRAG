@@ -1483,56 +1483,11 @@
   G5 교훈(닮은 문서는 링크 아님)을 강화 게이트가 아닌 **후보 조준**에 적용. 이 노선의 완결 시도이며,
   결과와 무관하게 이후 캠페인 정리 보고 예정 (사전 고지된 판정선 60+).
 
-### 2026-07-14 19:01:31 — ver5 iteration 1 (LLM on)
-- All@20 100.0% · ValA@20 99.4% · ValB co@20/10/5 63.3/55.6/35.6%
-- latency p50/p95: all=41.2/53.3ms · tiers(valB)={'cache': 0, 'llm': 0, 'rules': 90}
-- SG: {'docs': 572, 'edges': 4091, 'l1_explicit': 0, 'l2_co_retrieval': 2826, 'l3_llm_curated': 2, 'profiles': 0} · plan_cache: {'entries': 282, 'hits': 2, 'hit_rate': 0.005}
-- evolve: {'records': 376, 's_rules': {'decayed_layers': 5782, 'facet_queries': 105}, 's_llm': {'coverage_edges': 2}, 'k_rules': {'stale_edges_removed': 0}, 'k_llm': {}, 'llm_calls': 50, 'good': 185, 'attention': 98, 'shadow_planner': {'analyzed': 40, 'promoted': 39}, 'elapsed_s': 89.9}
-
-### 2026-07-14 19:03:15 — ver5 iteration 2 (LLM on)
-- All@20 100.0% · ValA@20 99.4% · ValB co@20/10/5 65.6/52.2/32.2%
-- latency p50/p95: all=46.5/61.2ms · tiers(valB)={'cache': 14, 'llm': 0, 'rules': 76}
-- SG: {'docs': 572, 'edges': 5279, 'l1_explicit': 0, 'l2_co_retrieval': 3984, 'l3_llm_curated': 3, 'profiles': 0} · plan_cache: {'entries': 362, 'hits': 92, 'hit_rate': 0.245}
-- evolve: {'records': 416, 's_rules': {'decayed_layers': 5372, 'facet_queries': 127}, 's_llm': {'coverage_edges': 1}, 'k_rules': {'stale_edges_removed': 0}, 'k_llm': {}, 'llm_calls': 50, 'good': 192, 'attention': 44, 'shadow_planner': {'analyzed': 40, 'promoted': 30}, 'elapsed_s': 66.5}
-
-### 2026-07-14 19:05:42 — ver5 iteration 3 (LLM on)
-- All@20 100.0% · ValA@20 99.4% · ValB co@20/10/5 66.7/52.2/27.8%
-- latency p50/p95: all=49.7/64.8ms · tiers(valB)={'cache': 17, 'llm': 0, 'rules': 73}
-- SG: {'docs': 572, 'edges': 5651, 'l1_explicit': 0, 'l2_co_retrieval': 4155, 'l3_llm_curated': 5, 'profiles': 0} · plan_cache: {'entries': 366, 'hits': 146, 'hit_rate': 0.388}
-- evolve: {'records': 416, 's_rules': {'decayed_layers': 4611, 'facet_queries': 117}, 's_llm': {'coverage_edges': 2}, 'k_rules': {'stale_edges_removed': 0}, 'k_llm': {}, 'llm_calls': 50, 'good': 183, 'attention': 42, 'shadow_planner': {'analyzed': 40, 'promoted': 29}, 'elapsed_s': 108.3}
-
-### 2026-07-14 19:07:01 — ver5 iteration 4 (LLM on)
-- All@20 100.0% · ValA@20 99.4% · ValB co@20/10/5 65.6/50.0/25.6%
-- latency p50/p95: all=49.5/67.7ms · tiers(valB)={'cache': 20, 'llm': 0, 'rules': 70}
-- SG: {'docs': 572, 'edges': 5853, 'l1_explicit': 0, 'l2_co_retrieval': 4262, 'l3_llm_curated': 6, 'profiles': 0} · plan_cache: {'entries': 367, 'hits': 149, 'hit_rate': 0.396}
-- evolve: {'records': 416, 's_rules': {'decayed_layers': 4457, 'facet_queries': 116}, 's_llm': {'coverage_edges': 1}, 'k_rules': {'stale_edges_removed': 0}, 'k_llm': {}, 'llm_calls': 50, 'good': 184, 'attention': 39, 'shadow_planner': {'analyzed': 40, 'promoted': 26}, 'elapsed_s': 39.8}
-
-### 2026-07-14 19:09:46 — ver5 iteration 5 (LLM on)
-- All@20 100.0% · ValA@20 99.4% · ValB co@20/10/5 65.6/47.8/27.8%
-- latency p50/p95: all=51.9/67.3ms · tiers(valB)={'cache': 19, 'llm': 0, 'rules': 71}
-- SG: {'docs': 572, 'edges': 5972, 'l1_explicit': 0, 'l2_co_retrieval': 4316, 'l3_llm_curated': 7, 'profiles': 0} · plan_cache: {'entries': 367, 'hits': 149, 'hit_rate': 0.396}
-- evolve: {'records': 416, 's_rules': {'decayed_layers': 4273, 'facet_queries': 117}, 's_llm': {'coverage_edges': 1}, 'k_rules': {'stale_edges_removed': 0}, 'k_llm': {}, 'llm_calls': 50, 'good': 185, 'attention': 43, 'shadow_planner': {'analyzed': 40, 'promoted': 22}, 'elapsed_s': 125.1}
-
-## G-캠페인 최종 정리 (2026-07-14): 무참조 상한선 실측 보고
-### 전체 증거표 (모두 NO_L1, P1 5-iter, co@10 평균)
-| 구성 | co@10 | 핵심 발견 |
-|---|---|---|
-| L2/L3만 (ablation A) | 50.0 | 공동출현 통계의 도달 한계 |
-| C-시리즈 (facet v1~v2) | 48.5~52.2 | 커버→전환은 됨(83%), 커버 부족 |
-| G1 facet 풀조립 | 52.9 | 커버 29/90 |
-| G2 토큰 숏리스트 | 53.8 | 캐치-22, 정답적중 0/19 |
-| **G3 관찰꼬리 LLM 승격** | **54.2** | 최고. 적중 1, 처리량 병목 |
-| G4 통계 물량 | 48.5↓ | 유사쌍 폭주 (상보성 원리 발견) |
-| G5 +자카드 필터 | ~48↓ | 필터로 오염 못 이김 |
-| G6~G6.2 (버그수정·조준개선) | 51.6~51.8 | 순서버그·위치편향 수정에도 LLM 수락 병목 잔존 |
-### 결론
-1. **이 벤치마크의 co-태스크에서 문서 선언 참조(L1)는 ~15-20pt의 대체 불가 신호.** 태스크 자체가
-   참조로 정의된 쌍(카드 메타→linked)을 묻는 구조라, 내용 통계·분해 facet으로는 대규모 발견 불가:
-   ① 통계 최강 신호는 유사쌍 ② facet 도달 ≤ 검색 도달 ③ LLM 쌍판정은 정밀하나 수락 처리량 극소
-   (판정 보수성 문제 미해결 — 향후 과제).
-2. 무참조 상한선 (이 아키텍처·이 벤치마크): **co@10 ≈ 52~55**, 목표(69-74) 미달로 캠페인 종료.
-3. 수확: 좌석개방 수정, 상보성 원리(D8 쌍대), 관찰창 인프라, facet 레이어(멀티의도 실효),
-   후보 순서 버그 수정, 그리고 "명시 참조의 정보가치 정량화"라는 일반성 연구 결과.
-4. 권고: 참조 있는 코퍼스 = 챔피언 v5.20(L1 스택). 무참조 코퍼스 = G3 구성이 현 최선(54.2),
-   차기 과제는 LLM 쌍판정 수락 병목 해부(발췌 품질·프롬프트·기준).
-- 챔피언 v5.20 코드 트리 복원.
+### 2026-07-14 — 캠페인 재개 (유저 재확인): G7 — 판정 무죄 실증과 attention-first
+- 정리 보고 후 유저 재질문("개선 여지 없나")으로 마지막 미해부 단계(LLM 판정) 직접 실험:
+  **정답쌍 12/12 수락 (conf 0.75~0.92)** — 판정기는 처음부터 무죄.
+- 진짜 범인: 커버리지 후보를 good(p60+)에서만 채집 — **co-미스 쿼리는 정의상 저품질이라
+  attention에 있음.** "저품질에 집중"이라는 attention 큐 철학이 이 채널에만 미적용된 자기모순.
+- G7: 후보 소스 attention+good (attention 우선). 체인 전 고리 개별 실증 완료:
+  attention 쿼리 → 카드 앵커 × 상보 프라이어 꼬리 → 판정 수락(12/12) → L3 → 승격(전환 83%).
+- **G7 동결 — NO_L1 5-iter.**
