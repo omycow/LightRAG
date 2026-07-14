@@ -188,6 +188,24 @@ class Evolver:
                     pass
             report["shadow_planner"] = {"analyzed": analyzed, "promoted": promoted}
 
+        # ── Track S · LLM ①b coverage channel (G2): docs retrieval never surfaced
+        # Token-matched shortlist (query content tokens vs SG node tokens) of docs
+        # ABSENT from the 40-wide observation window → LLM pair-judges them against
+        # the query's top observed doc, chunk evidence required. This is the reach
+        # extension: content-semantic, no reference markup needed, no answers.
+        if self.llm_func and budget > 0:
+            cov_added = 0
+            for anchor, cand, queries in self._coverage_candidates(good, limit=min(10, budget)):
+                budget -= 1
+                report["llm_calls"] += 1
+                verdict = await self._propose_edge(anchor, cand, queries)
+                if verdict:
+                    rel, conf, rationale, evidence = verdict
+                    sg.add_curated_edge(anchor, cand, rel, evidence, rationale,
+                                        weight=min(0.9, 0.5 + conf * 0.4))
+                    cov_added += 1
+            report["s_llm"]["coverage_edges"] = cov_added
+
         # ── Track S · LLM ① typed structural edges ────────────────────────────
         if self.llm_func and budget > 0:
             added = 0
@@ -285,6 +303,41 @@ class Evolver:
         except Exception:
             pass
         return None
+
+    def _coverage_candidates(self, good: list[dict], limit: int,
+                             min_tok: int = 2) -> list[tuple[str, str, list[str]]]:
+        """G2 reach: for good queries, shortlist corpus docs sharing ≥min_tok
+        content tokens with the query but ABSENT from the observation window —
+        candidates retrieval itself never surfaced. Deterministic shortlist,
+        LLM makes the call (with chunk evidence) in the caller."""
+        import re as _re
+        nodes = self.retriever.sg._data["nodes"]
+        edges = self.retriever.sg._data["edges"]
+        out, seen_pairs = [], set()
+        for r in good:
+            observed = set(r.get("observed") or r.get("retrieved", []))
+            if not observed:
+                continue
+            anchor = (r.get("retrieved") or [None])[0]
+            if not anchor:
+                continue
+            q_toks = {t.lower() for t in _re.findall(r"[A-Za-z0-9][A-Za-z0-9_\-]{2,}|[가-힣]{2,}",
+                                                     r["query"])}
+            for bn, node in nodes.items():
+                if bn in observed:
+                    continue
+                if len(q_toks & set(node.get("tokens", ()))) >= min_tok:
+                    key = tuple(sorted((anchor, bn)))
+                    ek = f"{key[0]}||{key[1]}"
+                    if key in seen_pairs or ek in edges:
+                        continue
+                    seen_pairs.add(key)
+                    out.append((anchor, bn, [r["query"]]))
+                    if len(out) >= limit * 3:
+                        break
+            if len(out) >= limit * 3:
+                break
+        return out[:limit]
 
     def _profile_candidates(self, recs: list[dict], limit: int) -> list[str]:
         counts = Counter(d for r in recs for d in r.get("retrieved", [])[:10])

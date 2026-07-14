@@ -156,7 +156,7 @@ class StructRetriever:
                 rankings.append(ids)
                 sub_docs = list(dict.fromkeys(
                     os.path.basename(pool[cid].get("file_path", ""))
-                    for cid in ids[:8] if pool[cid].get("file_path")))[:4]
+                    for cid in ids[:12] if pool[cid].get("file_path")))[:6]
                 facet_tops.append(sub_docs)
 
         # Independent bm25 + vector rankings on the rewritten query: full-width so

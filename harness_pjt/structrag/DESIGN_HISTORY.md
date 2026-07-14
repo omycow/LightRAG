@@ -1326,3 +1326,41 @@
 - 반성 기록: facet은 유저가 채택 확정한 레이어였는데 v5.19 기각 시 통째 리버트로 챔피언에서 유실,
   관찰창도 facet 맥락과 분리 검증하는 오류 — 구성 판단 미스로 명기.
 - 시작점 참고: 직전 NO_L1 최선 co@10 52.2 / co@20 63.3. 갭 +17/+27.
+
+### 2026-07-14 12:40:20 — ver5 iteration 1 (LLM on)
+- All@20 100.0% · ValA@20 99.4% · ValB co@20/10/5 63.3/55.6/35.6%
+- latency p50/p95: all=38.5/52.7ms · tiers(valB)={'cache': 0, 'llm': 0, 'rules': 90}
+- SG: {'docs': 572, 'edges': 3288, 'l1_explicit': 0, 'l2_co_retrieval': 2826, 'l3_llm_curated': 5, 'profiles': 3} · plan_cache: {'entries': 280, 'hits': 2, 'hit_rate': 0.005}
+- evolve: {'records': 376, 's_rules': {'decayed_layers': 5782, 'facet_queries': 105}, 's_llm': {'typed_edges': 5, 'profiles': 3}, 'k_rules': {'stale_edges_removed': 0}, 'k_llm': {'wikified': 1}, 'llm_calls': 49, 'good': 185, 'attention': 98, 'shadow_planner': {'analyzed': 40, 'promoted': 37}, 'elapsed_s': 16.5}
+
+### 2026-07-14 12:41:36 — ver5 iteration 2 (LLM on)
+- All@20 100.0% · ValA@20 99.4% · ValB co@20/10/5 63.3/51.1/32.2%
+- latency p50/p95: all=45.0/60.1ms · tiers(valB)={'cache': 14, 'llm': 0, 'rules': 76}
+- SG: {'docs': 572, 'edges': 4486, 'l1_explicit': 0, 'l2_co_retrieval': 4124, 'l3_llm_curated': 10, 'profiles': 6} · plan_cache: {'entries': 356, 'hits': 96, 'hit_rate': 0.255}
+- evolve: {'records': 416, 's_rules': {'decayed_layers': 6005, 'facet_queries': 123}, 's_llm': {'typed_edges': 5, 'profiles': 3}, 'k_rules': {'stale_edges_removed': 0}, 'k_llm': {'wikified': 0}, 'llm_calls': 48, 'good': 182, 'attention': 61, 'shadow_planner': {'analyzed': 40, 'promoted': 33}, 'elapsed_s': 38.9}
+
+### 2026-07-14 12:43:31 — ver5 iteration 3 (LLM on)
+- All@20 100.0% · ValA@20 99.4% · ValB co@20/10/5 63.3/54.4/33.3%
+- latency p50/p95: all=45.8/61.6ms · tiers(valB)={'cache': 15, 'llm': 0, 'rules': 75}
+- SG: {'docs': 572, 'edges': 4823, 'l1_explicit': 0, 'l2_co_retrieval': 4320, 'l3_llm_curated': 14, 'profiles': 9} · plan_cache: {'entries': 368, 'hits': 137, 'hit_rate': 0.364}
+- evolve: {'records': 416, 's_rules': {'decayed_layers': 5143, 'facet_queries': 124}, 's_llm': {'typed_edges': 4, 'profiles': 3}, 'k_rules': {'stale_edges_removed': 0}, 'k_llm': {'wikified': 0}, 'llm_calls': 48, 'good': 187, 'attention': 56, 'shadow_planner': {'analyzed': 40, 'promoted': 33}, 'elapsed_s': 79.1}
+
+### 2026-07-14 12:45:13 — ver5 iteration 4 (LLM on)
+- All@20 100.0% · ValA@20 99.4% · ValB co@20/10/5 66.7/52.2/32.2%
+- latency p50/p95: all=47.2/65.2ms · tiers(valB)={'cache': 18, 'llm': 0, 'rules': 72}
+- SG: {'docs': 572, 'edges': 4942, 'l1_explicit': 0, 'l2_co_retrieval': 4411, 'l3_llm_curated': 19, 'profiles': 12} · plan_cache: {'entries': 371, 'hits': 152, 'hit_rate': 0.404}
+- evolve: {'records': 416, 's_rules': {'decayed_layers': 5074, 'facet_queries': 123}, 's_llm': {'typed_edges': 5, 'profiles': 3}, 'k_rules': {'stale_edges_removed': 0}, 'k_llm': {'wikified': 0}, 'llm_calls': 48, 'good': 187, 'attention': 41, 'shadow_planner': {'analyzed': 40, 'promoted': 27}, 'elapsed_s': 63.7}
+
+### 2026-07-14 12:47:26 — ver5 iteration 5 (LLM on)
+- All@20 100.0% · ValA@20 99.4% · ValB co@20/10/5 66.7/51.1/27.8%
+- latency p50/p95: all=47.0/66.0ms · tiers(valB)={'cache': 21, 'llm': 0, 'rules': 69}
+- SG: {'docs': 572, 'edges': 5075, 'l1_explicit': 0, 'l2_co_retrieval': 4506, 'l3_llm_curated': 24, 'profiles': 15} · plan_cache: {'entries': 371, 'hits': 148, 'hit_rate': 0.394}
+- evolve: {'records': 416, 's_rules': {'decayed_layers': 5039, 'facet_queries': 120}, 's_llm': {'typed_edges': 5, 'profiles': 3}, 'k_rules': {'stale_edges_removed': 0}, 'k_llm': {'wikified': 0}, 'llm_calls': 48, 'good': 188, 'attention': 36, 'shadow_planner': {'analyzed': 40, 'promoted': 28}, 'elapsed_s': 95.0}
+
+### 2026-07-14 — G1 판정 및 G2
+- G1: co@10 평균 52.9 / co@20 63.3→66.7. **결정적 진전**: 정답쌍 facet 커버 29/90 (전건 에스코트 자격),
+  커버된 쿼리는 linked top-10 진입 24/29 (83%) — **소비 경로는 정상, 병목은 커버리지**로 확정.
+- G2: ① facet 캡처 4→6 (관찰창 재료 심화) ② **L3 커버리지 채널** — 쿼리 콘텐츠 토큰과 2개+ 겹치는데
+  관찰창 40위 밖인 문서를 숏리스트 → 관찰 1위 문서와의 관계를 LLM 청크증거 판정 → L3 엣지.
+  검색 미도달 문서를 판정 테이블에 올리는 최초의 도달 확장 (내용 토큰 기반 = 제너럴, 참조표기 불요).
+- 유닛·스모크 10/10. **G2 동결 — NO_L1 5-iter.**
