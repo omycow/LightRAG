@@ -27,10 +27,6 @@ from harness_pjt.structrag.structure_graph import StructureGraph
 
 RRF_K = 60
 SCOPE_BOOST = 0.6      # weight of the scope pseudo-ranking in fusion
-OBSERVE_K = 40         # v5.21: background observation window — evolving sees this
-                       # far regardless of the serve top_k (ver4's wide-EVOLVE-
-                       # window concept, lost in the structrag rewrite)
-MIN_RETRIEVE_K = 20    # internal rankings never narrower than this
 EXPAND_TOP_DOCS = 5    # how many top hit docs get SG-neighbor expansion
 EXPAND_NEIGHBORS = 4   # neighbors per hit doc
 EXPAND_CHUNKS = 2      # chunks pulled per neighbor doc
@@ -121,8 +117,6 @@ class StructRetriever:
             plan = await self.analyzer.analyze(
                 query, min_cache_quality=self.rq.promote_gate)
 
-        rk = max(MIN_RETRIEVE_K, top_k)  # observation-rich internal width (v5.21)
-
         # 2. SCOPE — seeds from query tokens/IDs + plan doc hints → SG 1-hop
         seeds = self.sg.match_docs_by_tokens(plan.rewrite, top_n=4)
         for hint in plan.doc_hints:
@@ -136,7 +130,7 @@ class StructRetriever:
         rankings: list[list[str]] = []
         pool: dict[str, dict] = {}
         executed: set[tuple[str, str]] = set()
-        facet_tops: list[list[str]] = []  # per-subquery top docs (facet_link, 유저 설계)
+        facet_docs: set[str] = set()  # v5.34: this-query facet hits (escort tie-break only)
         for sub in plan.subqueries:
             # Graph modes (mix/local/global) run their own LLM keyword extraction —
             # feed them the ORIGINAL query so the LLM-response cache stays hot; the
@@ -145,7 +139,7 @@ class StructRetriever:
             if (sub["mode"], q_text) in executed:
                 continue
             executed.add((sub["mode"], q_text))
-            results = await _run_mode(self.rag, sub["mode"], q_text, rk)
+            results = await _run_mode(self.rag, sub["mode"], q_text, top_k)
             ids = []
             for c in results:
                 cid = _cid(c)
@@ -154,16 +148,15 @@ class StructRetriever:
                     ids.append(cid)
             if ids:
                 rankings.append(ids)
-                sub_docs = list(dict.fromkeys(
-                    os.path.basename(pool[cid].get("file_path", ""))
-                    for cid in ids[:12] if pool[cid].get("file_path")))[:6]
-                facet_tops.append(sub_docs)
+                if sub.get("_complement"):
+                    facet_docs.update(os.path.basename(pool[cid].get("file_path", ""))
+                                      for cid in ids[:6] if pool[cid].get("file_path"))
 
         # Independent bm25 + vector rankings on the rewritten query: full-width so
         # lexical evidence gets equal votes in fusion (rare-term/ID queries), and
         # they double as the QPP evidence for quality scoring.
-        vec_results = await query_vector(self.rag, plan.rewrite, top_k=rk)
-        bm25_results = query_bm25(self.rag, plan.rewrite, top_k=rk)
+        vec_results = await query_vector(self.rag, plan.rewrite, top_k=top_k)
+        bm25_results = query_bm25(self.rag, plan.rewrite, top_k=top_k)
         vec_ids = [_cid(c) for c in vec_results]
         bm25_ids = [_cid(c) for c in bm25_results]
         for c in vec_results + bm25_results:
@@ -252,11 +245,7 @@ class StructRetriever:
         # v5.7 I3: unused L1 seats are NOT released to learned candidates — echo-
         # strengthened L2 edges were claiming them with increasingly self-
         # referential docs. An unfilled seat goes back to base documents instead.
-        if l1_c:
-            top_list = l1_c[:EXPAND_L1_SLOTS] + ln_c[:EXPAND_BUDGET - EXPAND_L1_SLOTS]
-        else:
-            # G6: reference-free corpora — don't reserve seats for an empty class
-            top_list = ranked_exp[:EXPAND_BUDGET]
+        top_list = l1_c[:EXPAND_L1_SLOTS] + ln_c[:EXPAND_BUDGET - EXPAND_L1_SLOTS]
         top_expansion = dict(top_list)
         # v5.5 safety net: budget losers still get appended after the ranked
         # window — serves co@20 while the reserved seats serve co@5/10.
@@ -266,23 +255,27 @@ class StructRetriever:
         merged.update({d: v[0] for d, v in top_expansion.items()})
         doc_rank = sorted(merged, key=lambda d: -merged[d])
 
-        # v5.14 escort + v5.22: the #1 doc's strongest declared link takes rank 2;
-        # facet_link neighbors (confirmed ≥2, cross-evidenced against THIS query's
-        # own facet results) are the fallback source (user design: facet sits
-        # right under L1).
+        # v5.14 escort: the #1 doc's single strongest explicit-ref neighbor is
+        # placed directly behind it. Path-expansion logic (Asai §1): if the best
+        # match declares one link above all others, that link is the best second
+        # guess. Structural signal only (edge weight — D8), costs one slot.
         if doc_rank:
             top1 = doc_rank[0]
-            cur_facet_docs = {d for tops in facet_tops for d in tops}
-            esc_nb = self.sg.get_escort_neighbor(top1, prefer=cur_facet_docs or None)
-            if esc_nb:
-                esc = esc_nb[0]
+            l1_nbs = [(nb, w) for nb, w, is_l1 in self.sg.get_neighbors_layered(
+                top1, top_n=3, min_weight=0.3) if is_l1]
+            if l1_nbs:
+                # v5.34 cross-evidence tie-break: among the top-1 doc's declared
+                # links, prefer one this query's OWN facet retrieval surfaced —
+                # same-turn signal, no accumulation, no drift
+                preferred = [x for x in l1_nbs if x[0] in facet_docs]
+                esc = (preferred[0] if preferred else l1_nbs[0])[0]
                 if esc in doc_rank:
                     doc_rank.remove(esc)
                 doc_rank.insert(1, esc)
                 if esc not in top_expansion and esc not in doc_chunks:
                     picked, _ = self._best_chunks_of_doc(esc, plan.rewrite, EXPAND_CHUNKS)
                     if picked:
-                        top_expansion[esc] = (merged.get(top1, 0.0), top1, esc_nb[1], picked, True)
+                        top_expansion[esc] = (merged.get(top1, 0.0), top1, (preferred[0] if preferred else l1_nbs[0])[1], picked, True)
                     else:
                         doc_rank.remove(esc)
 
@@ -333,11 +326,6 @@ class StructRetriever:
         retrieved_docs = list(dict.fromkeys(
             os.path.basename(c.get("file_path", "")) for c in final_chunks if c.get("file_path")
         ))
-        # v5.21 observation list: served docs first (order preserved), then the
-        # rest of the doc ranking out to OBSERVE_K — evolving watches wider than
-        # the user-facing window without touching what gets served
-        observed_docs = retrieved_docs + [d for d in doc_rank[:OBSERVE_K]
-                                          if d not in retrieved_docs]
         self.rq.add(quality)
         if learn:
             self.analyzer.feedback(query, plan, quality,
@@ -364,7 +352,7 @@ class StructRetriever:
             # growth engine; v5.6's no-rule version built an echo chamber.
             exp_docs = {os.path.basename(c.get("file_path", ""))
                         for c in final_chunks if c.get("_sg_expand")}
-            self.sg.reinforce_co_retrieval(observed_docs[:16], quality,
+            self.sg.reinforce_co_retrieval(retrieved_docs[:10], quality,
                                            quality_gate=self.rq.reinforce_gate,
                                            expansion_docs=exp_docs)
 
@@ -375,8 +363,6 @@ class StructRetriever:
             "subqueries": [{"q": s["q"][:80], "intent": s["intent"], "mode": s["mode"]}
                            for s in plan.subqueries],
             "scope": list(scope)[:12], "retrieved": retrieved_docs[:20],
-            "observed": observed_docs[:OBSERVE_K],
-            "facet_tops": facet_tops if len(facet_tops) >= 2 else [],
             "quality": quality, "signals": q["signals"],
             "sg_expand": supplement_count, "latency_ms": latency_ms,
         })
