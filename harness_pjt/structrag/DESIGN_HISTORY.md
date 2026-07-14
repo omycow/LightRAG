@@ -1516,47 +1516,9 @@
 - G7.2: ① breadth-first 로테이션 (쿼리당 1쌍씩 순회, 25슬롯이 25개 쿼리에 분산 → ValB 확실 도달)
   ② 거부 쌍 evolver state 영구 기억 — 사이클마다 신규 쌍만 심사 (5사이클 = 125 신규쌍 탐사).
 
-### 2026-07-14 19:47:20 — ver5 iteration 1 (LLM on)
-- All@20 100.0% · ValA@20 99.4% · ValB co@20/10/5 63.3/55.6/35.6%
-- latency p50/p95: all=37.9/48.5ms · tiers(valB)={'cache': 0, 'llm': 0, 'rules': 90}
-- SG: {'docs': 572, 'edges': 4096, 'l1_explicit': 0, 'l2_co_retrieval': 2826, 'l3_llm_curated': 7, 'profiles': 0} · plan_cache: {'entries': 269, 'hits': 2, 'hit_rate': 0.005}
-- evolve: {'records': 376, 's_rules': {'decayed_layers': 5782, 'facet_queries': 105}, 's_llm': {'coverage_edges': 7}, 'k_rules': {'stale_edges_removed': 0}, 'k_llm': {}, 'llm_calls': 50, 'good': 185, 'attention': 98, 'shadow_planner': {'analyzed': 25, 'promoted': 24}, 'elapsed_s': 342.7}
-
-### 2026-07-14 19:48:49 — ver5 iteration 2 (LLM on)
-- All@20 100.0% · ValA@20 99.4% · ValB co@20/10/5 67.8/52.2/32.2%
-- latency p50/p95: all=44.1/58.9ms · tiers(valB)={'cache': 10, 'llm': 0, 'rules': 80}
-- SG: {'docs': 572, 'edges': 5198, 'l1_explicit': 0, 'l2_co_retrieval': 4058, 'l3_llm_curated': 8, 'profiles': 0} · plan_cache: {'entries': 345, 'hits': 85, 'hit_rate': 0.226}
-- evolve: {'records': 401, 's_rules': {'decayed_layers': 5308, 'facet_queries': 117}, 's_llm': {'coverage_edges': 1}, 'k_rules': {'stale_edges_removed': 0}, 'k_llm': {}, 'llm_calls': 50, 'good': 181, 'attention': 54, 'shadow_planner': {'analyzed': 25, 'promoted': 20}, 'elapsed_s': 51.5}
-
-### 2026-07-14 19:49:50 — ver5 iteration 3 (LLM on)
-- All@20 100.0% · ValA@20 99.4% · ValB co@20/10/5 70.0/54.4/30.0%
-- latency p50/p95: all=48.0/65.0ms · tiers(valB)={'cache': 13, 'llm': 0, 'rules': 77}
-- SG: {'docs': 572, 'edges': 5548, 'l1_explicit': 0, 'l2_co_retrieval': 4251, 'l3_llm_curated': 8, 'profiles': 0} · plan_cache: {'entries': 357, 'hits': 133, 'hit_rate': 0.354}
-- evolve: {'records': 401, 's_rules': {'decayed_layers': 4440, 'facet_queries': 113}, 's_llm': {'coverage_edges': 0}, 'k_rules': {'stale_edges_removed': 0}, 'k_llm': {}, 'llm_calls': 50, 'good': 177, 'attention': 46, 'shadow_planner': {'analyzed': 25, 'promoted': 20}, 'elapsed_s': 23.6}
-
-### 2026-07-14 19:50:48 — ver5 iteration 4 (LLM on)
-- All@20 100.0% · ValA@20 99.4% · ValB co@20/10/5 68.9/51.1/27.8%
-- latency p50/p95: all=50.6/63.9ms · tiers(valB)={'cache': 15, 'llm': 0, 'rules': 75}
-- SG: {'docs': 572, 'edges': 5641, 'l1_explicit': 0, 'l2_co_retrieval': 4322, 'l3_llm_curated': 8, 'profiles': 0} · plan_cache: {'entries': 360, 'hits': 138, 'hit_rate': 0.367}
-- evolve: {'records': 401, 's_rules': {'decayed_layers': 4207, 'facet_queries': 112}, 's_llm': {'coverage_edges': 0}, 'k_rules': {'stale_edges_removed': 0}, 'k_llm': {}, 'llm_calls': 50, 'good': 180, 'attention': 48, 'shadow_planner': {'analyzed': 25, 'promoted': 19}, 'elapsed_s': 20.3}
-
-### 2026-07-14 19:51:52 — ver5 iteration 5 (LLM on)
-- All@20 100.0% · ValA@20 99.4% · ValB co@20/10/5 70.0/51.1/28.9%
-- latency p50/p95: all=48.3/64.3ms · tiers(valB)={'cache': 10, 'llm': 0, 'rules': 80}
-- SG: {'docs': 572, 'edges': 5721, 'l1_explicit': 0, 'l2_co_retrieval': 4343, 'l3_llm_curated': 8, 'profiles': 0} · plan_cache: {'entries': 360, 'hits': 139, 'hit_rate': 0.37}
-- evolve: {'records': 400, 's_rules': {'decayed_layers': 4034, 'facet_queries': 113}, 's_llm': {'coverage_edges': 0}, 'k_rules': {'stale_edges_removed': 0}, 'k_llm': {}, 'llm_calls': 50, 'good': 182, 'attention': 51, 'shadow_planner': {'analyzed': 25, 'promoted': 20}, 'elapsed_s': 24.8}
-
-## G-캠페인 2차 정리 (2026-07-15): 재개 후 4실험 — 인과 사슬 완결, 최종 종료
-- 재개 사유: 유저 재질문 → 미해부 단계(LLM 판정) 직접 실험.
-- 실험 1 (판정 프로브): 정답쌍 12/12 수락 (conf .75-.92) — **판정기 무죄.**
-- 실험 2 (G7~G7.2): attention-first + 선순위 예산 + breadth-first + 거부기억 — covEdges 7→0 소진.
-  거부기억이 증명: 후보 전수 심사에도 골드 미도달. **필요 심사량 = 쿼리당 ~30쌍 × 90 = 2,700판정**
-  vs 예산 25/사이클 — 처리량 수학으로 불가.
-- 실험 3 (비대칭 반복 스크린): 헤드앵커×꼬리 반복은 **리콜 우수 (골드 57/90)**, 정밀도 0.4%.
-- 실험 4 (PMI+상보성 랭킹): 골드 파트너가 앵커별 9~45위 — **통계는 골드를 상위로 못 올림.**
-- **최종 인과 사슬**: 통계 = 리콜은 되나 랭킹 불가 / LLM = 랭킹 되나(12/12) 물량 불가 / 
-  두 약점이 맞물려 무참조 상한 co@10 ≈ 52-55 (13개 구성 + 4개 독립 실험으로 확정).
-- **남은 유일 경로 (식별됨, 미실행)**: 일회성 벌크 큐레이션 — 2,700쌍을 한 번에 LLM 심사
-  (판정은 캐시 영구화, 코퍼스당 1회 비용). 오늘 막힌 것은 설계가 아니라 LLM 쿼터.
-  qwen(로컬)로는 ~22h, 쿼터 여유 시 haiku로 ~3h. 차기 세션 후보 1순위.
-- 챔피언 v5.20 복원. G-라인 전체 태그 보존 (v5.22-G1 ~ v5.32-G7.2).
+### 2026-07-15 — v5.33-ALL (유저 지적): L1+facet+L2+L3 총동원 — 사상 첫 결합 검증
+- 발견된 공백: facet 계열(facet_link·상보facet·관찰창·facet에스코트)은 전부 NO_L1로만 검증됨.
+  v5.14(79.1)는 facet 이전 + 인라인 LLM. **전 레이어 결합의 클린 런이 존재하지 않았음.**
+- v5.33-ALL = G7.2 스택 + L1 ON (env 없음). L1 존재 시: 확장 L1 4석 정상 작동, 에스코트 L1 1순위,
+  커버리지 채널은 L1 기존재 쌍 스킵(잔여 구조만 탐색). 균일 레이턴시 유지.
+- 판정선: v5.20(74.4/89.6) 초과 시 신규 플래그십, v5.14(79.1) 근접 시 "정밀모드 무용화" 보너스.

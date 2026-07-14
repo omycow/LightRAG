@@ -39,6 +39,25 @@ INTENT_MODES = {
 
 _CONJ_SPLIT = re.compile(r"(?:\?|그리고|및 또한|\band\b(?=\s+(?:how|what|which|where)))", re.IGNORECASE)
 
+# v5.19: query-conditional structure intensity. The query's own wording says how
+# much companion-document machinery it wants (user insight):
+#   off   — bare ID lookup, no relation markers → no escort/expansion (no slot waste)
+#   light — default: champion (v5.15.1) behavior exactly
+#   full  — explicit co-intent → complementary facets + facet learning
+_CO_MARKERS = re.compile(r"관련|연관|함께|같이|비교|일치|대응|매핑|이랑|랑\s|도\s*(?:있|알|보)|"
+                         r"related|corresponding|along with|as well", re.IGNORECASE)
+
+
+def structure_intensity(query: str) -> str:
+    parts = [p for p in _CONJ_SPLIT.split(query) if len(p.strip()) >= 8]
+    q = query.lower()
+    families = sum(1 for _, hints in _SKEL_TYPES if any(h in q for h in hints))
+    if len(parts) >= 2 or _CO_MARKERS.search(query) or families >= 2:
+        return "full"
+    if _ID_TOKEN.search(query) and len(query) < 40:
+        return "off"
+    return "light"
+
 
 @dataclass
 class QueryPlan:
@@ -48,6 +67,7 @@ class QueryPlan:
     doc_hints: list[str] = field(default_factory=list)
     source: str = "rules"  # "cache" | "llm" | "rules" — how THIS query got the plan
     origin: str = ""       # "llm" | "rules" — who authored the plan (survives caching)
+    intensity: str = "light"  # "off" | "light" | "full" — structure machinery dial (v5.19)
 
     def __post_init__(self):
         if not self.origin:
@@ -56,13 +76,14 @@ class QueryPlan:
     def to_dict(self) -> dict:
         return {"original": self.original, "rewrite": self.rewrite,
                 "subqueries": self.subqueries, "doc_hints": self.doc_hints,
-                "source": self.source, "origin": self.origin}
+                "source": self.source, "origin": self.origin,
+                "intensity": self.intensity}
 
     @staticmethod
     def from_dict(d: dict) -> "QueryPlan":
         return QueryPlan(d["original"], d["rewrite"], d["subqueries"],
                          d.get("doc_hints", []), d.get("source", "cache"),
-                         d.get("origin", ""))
+                         d.get("origin", ""), d.get("intensity", "light"))
 
 
 def fingerprint(query: str) -> str:
@@ -254,6 +275,41 @@ def rule_intent(query: str) -> str:
     return "concept"
 
 
+# v5.17: complementary-artifact facet. A question about a TEST implies interest
+# in its spec/issues (the co-retrieval intent behind the query) — engineering-
+# domain ontology, not a corpus convention. Deterministic, no LLM, generated at
+# plan time so the facet both joins fusion and feeds facet_link learning.
+# v5.18: one facet per complementary artifact TYPE — a mixed "spec issue" facet
+# blurred BM25 targeting; separate facets pinpoint each artifact family.
+_COMPLEMENT_FACETS = {"test": ["스펙 spec 규격", "이슈 issue 문제 보고"],
+                      "spec": ["검증 테스트 test"],
+                      "issue": ["검증 테스트 test"]}
+_TYPE_WORDS = {h for _, hints in _SKEL_TYPES for h in hints}
+
+
+def complementary_facet(query: str) -> list[dict]:
+    q = query.lower()
+    dtype = next((n for n, hints in _SKEL_TYPES if any(h in q for h in hints)), None)
+    if dtype not in _COMPLEMENT_FACETS:
+        return []
+    # own extractor: quality.salient_terms drops 2-char Korean tokens (엔진, 이슈…)
+    # — fine for QPP scoring, fatal for facet targeting on Korean-heavy queries
+    from harness_pjt.structrag.quality import _KO_PARTICLE
+    toks = re.findall(r"[A-Za-z0-9][A-Za-z0-9_\-]{2,}|[가-힣]{2,}", query)
+    stop = {"있고", "있어", "있나요", "있는지", "대한", "어떤", "무엇", "관련", "그리고"}
+    content = []
+    for t in toks:
+        t = _KO_PARTICLE.sub("", t.lower()) if re.search(r"[가-힣]", t) else t.lower()
+        if len(t) >= 2 and t not in _TYPE_WORDS and t not in stop and t not in content:
+            content.append(t)
+    content = content[:8]
+    if len(content) < 2:
+        return []
+    return [{"q": " ".join(content) + " " + suffix,
+             "intent": "cross_doc", "mode": None, "_complement": True}
+            for suffix in _COMPLEMENT_FACETS[dtype]]
+
+
 def rule_plan(query: str) -> QueryPlan:
     parts = [p.strip() for p in _CONJ_SPLIT.split(query) if p and len(p.strip()) >= 8]
     subs = parts if len(parts) > 1 else [query]
@@ -328,6 +384,13 @@ class QueryAnalyzer:
         return False
 
     def _finalize(self, plan: QueryPlan) -> QueryPlan:
+        # v5.19: intensity decides how much structure machinery this query gets;
+        # complementary facets only when the query explicitly wants companions
+        plan.intensity = structure_intensity(plan.original)
+        # G-시리즈: 상보 facet은 항상 가동 — L1 없는 일반 시스템에서 facet_link의
+        # 주 재료 공급기 (단일의도 쿼리의 암묵적 연관 관심을 명시화)
+        if len(plan.subqueries) == 1:
+            plan.subqueries.extend(complementary_facet(plan.original))
         # rule validation: never let an ID-bearing subquery lose its lexical route
         for sub in plan.subqueries:
             if _ID_TOKEN.search(sub["q"]) and sub["intent"] != "id_lookup":
@@ -335,6 +398,11 @@ class QueryAnalyzer:
         # mode consensus: intent candidates × strategy bandit, keyed by SHAPE (①)
         skel = skeleton(plan.original)
         for sub in plan.subqueries:
+            if sub.get("_complement"):
+                # synthetic facet text is never in the LLM keyword-extraction
+                # cache — graph modes would stall the hot path. Lexical only.
+                sub["mode"] = "hybrid"
+                continue
             candidates = INTENT_MODES.get(sub["intent"], INTENT_MODES["concept"])
             sub["mode"] = self.memory.select(skel, candidates)
         return plan
