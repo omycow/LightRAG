@@ -207,6 +207,18 @@ class StructureGraph:
                     if "explicit_ref" not in layers and "facet_link" not in layers:
                         continue
                 step = head_step if (i < head_n and j < head_n) else tail_step
+                # G5 complementarity filter: lexically-similar pairs (sibling
+                # cards share most name tokens) are SIMILARITY, not the
+                # complementary links co-retrieval needs ("docs that belong
+                # together don't look alike" — dual of D8). Discount them hard.
+                ta = set(self._data["nodes"].get(a, {}).get("tokens", ()))
+                tb = set(self._data["nodes"].get(b, {}).get("tokens", ()))
+                if ta and tb:
+                    jac = len(ta & tb) / len(ta | tb)
+                    if jac >= 0.5:
+                        continue          # near-siblings: no structural credit
+                    if jac >= 0.3:
+                        step *= 0.4       # related family: slow lane
                 edge = self._data["edges"].setdefault(key, {"layers": {}, "hits": 0, "last_hit": 0})
                 layer = edge["layers"].setdefault("co_retrieval", {"w": 0.0, "count": 0})
                 layer["count"] += 1
@@ -256,8 +268,13 @@ class StructureGraph:
                     continue
                 if lname == "facet_link" and layer.get("count", 0) < 2:
                     continue
-                if lname == "co_retrieval" and (layer["w"] < 0.6 or layer.get("count", 0) < 4):
-                    continue
+                if lname == "co_retrieval":
+                    if layer["w"] < 0.6 or layer.get("count", 0) < 4:
+                        continue
+                    ta = set(self._data["nodes"].get(doc, {}).get("tokens", ()))
+                    tb = set(self._data["nodes"].get(other, {}).get("tokens", ()))
+                    if ta and tb and len(ta & tb) / len(ta | tb) >= 0.3:
+                        continue          # similar doc — not an escort target
                 bonus = 1.0 if (prefer and other in prefer and lname != "explicit_ref") else 0.0
                 cur = best[lname]
                 score = layer["w"] + bonus

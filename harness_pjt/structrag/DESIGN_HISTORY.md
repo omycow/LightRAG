@@ -1443,3 +1443,41 @@
   "explicit_ref 또는 facet_link 근거"로 일반화 ② L1 후보 전무 시 6석 유효가중 순 개방
   ③ 에스코트 3차 폴백: 강한 L2 (w≥0.6·4회+).
 - 유닛·스모크 10/10. **G4 동결 — NO_L1 5-iter.**
+
+### 2026-07-14 13:26:11 — ver5 iteration 1 (LLM on)
+- All@20 100.0% · ValA@20 99.4% · ValB co@20/10/5 64.4/54.4/35.6%
+- latency p50/p95: all=51.0/66.6ms · tiers(valB)={'cache': 0, 'llm': 0, 'rules': 90}
+- SG: {'docs': 572, 'edges': 11878, 'l1_explicit': 0, 'l2_co_retrieval': 11259, 'l3_llm_curated': 5, 'profiles': 0} · plan_cache: {'entries': 289, 'hits': 2, 'hit_rate': 0.005}
+- evolve: {'records': 376, 's_rules': {'decayed_layers': 17456, 'facet_queries': 101}, 's_llm': {'coverage_edges': 5}, 'k_rules': {'stale_edges_removed': 0}, 'k_llm': {}, 'llm_calls': 50, 'good': 178, 'attention': 106, 'shadow_planner': {'analyzed': 40, 'promoted': 38}, 'elapsed_s': 78.0}
+
+### 2026-07-14 13:28:10 — ver5 iteration 2 (LLM on)
+- All@20 100.0% · ValA@20 99.4% · ValB co@20/10/5 64.4/52.2/27.8%
+- latency p50/p95: all=78.0/95.8ms · tiers(valB)={'cache': 10, 'llm': 0, 'rules': 80}
+- SG: {'docs': 572, 'edges': 16043, 'l1_explicit': 0, 'l2_co_retrieval': 15472, 'l3_llm_curated': 6, 'profiles': 0} · plan_cache: {'entries': 366, 'hits': 92, 'hit_rate': 0.245}
+- evolve: {'records': 416, 's_rules': {'decayed_layers': 18416, 'facet_queries': 128}, 's_llm': {'coverage_edges': 1}, 'k_rules': {'stale_edges_removed': 0}, 'k_llm': {}, 'llm_calls': 50, 'good': 193, 'attention': 49, 'shadow_planner': {'analyzed': 40, 'promoted': 37}, 'elapsed_s': 62.4}
+
+### 2026-07-14 13:31:50 — ver5 iteration 3 (LLM on)
+- All@20 100.0% · ValA@20 99.4% · ValB co@20/10/5 61.1/45.6/24.4%
+- latency p50/p95: all=86.2/111.6ms · tiers(valB)={'cache': 20, 'llm': 0, 'rules': 70}
+- SG: {'docs': 572, 'edges': 17210, 'l1_explicit': 0, 'l2_co_retrieval': 16495, 'l3_llm_curated': 9, 'profiles': 0} · plan_cache: {'entries': 367, 'hits': 142, 'hit_rate': 0.378}
+- evolve: {'records': 416, 's_rules': {'decayed_layers': 17282, 'facet_queries': 132}, 's_llm': {'coverage_edges': 3}, 'k_rules': {'stale_edges_removed': 0}, 'k_llm': {}, 'llm_calls': 50, 'good': 201, 'attention': 47, 'shadow_planner': {'analyzed': 40, 'promoted': 30}, 'elapsed_s': 160.9}
+
+### 2026-07-14 13:35:15 — ver5 iteration 4 (LLM on)
+- All@20 100.0% · ValA@20 99.4% · ValB co@20/10/5 58.9/44.4/24.4%
+- latency p50/p95: all=91.7/121.2ms · tiers(valB)={'cache': 19, 'llm': 0, 'rules': 71}
+- SG: {'docs': 572, 'edges': 17998, 'l1_explicit': 0, 'l2_co_retrieval': 17189, 'l3_llm_curated': 9, 'profiles': 0} · plan_cache: {'entries': 368, 'hits': 153, 'hit_rate': 0.407}
+- evolve: {'records': 416, 's_rules': {'decayed_layers': 16758, 'facet_queries': 125}, 's_llm': {'coverage_edges': 0}, 'k_rules': {'stale_edges_removed': 0}, 'k_llm': {}, 'llm_calls': 50, 'good': 197, 'attention': 45, 'shadow_planner': {'analyzed': 40, 'promoted': 32}, 'elapsed_s': 143.5}
+
+### 2026-07-14 13:38:32 — ver5 iteration 5 (LLM on)
+- All@20 100.0% · ValA@20 99.4% · ValB co@20/10/5 60.0/44.4/24.4%
+- latency p50/p95: all=88.2/109.4ms · tiers(valB)={'cache': 23, 'llm': 0, 'rules': 67}
+- SG: {'docs': 572, 'edges': 18736, 'l1_explicit': 0, 'l2_co_retrieval': 17896, 'l3_llm_curated': 10, 'profiles': 0} · plan_cache: {'entries': 368, 'hits': 156, 'hit_rate': 0.415}
+- evolve: {'records': 416, 's_rules': {'decayed_layers': 17566, 'facet_queries': 123}, 's_llm': {'coverage_edges': 1}, 'k_rules': {'stale_edges_removed': 0}, 'k_llm': {}, 'llm_calls': 50, 'good': 190, 'attention': 44, 'shadow_planner': {'analyzed': 40, 'promoted': 34}, 'elapsed_s': 135.4}
+
+### 2026-07-14 — G4 판정 및 G5 (상보성 필터)
+- G4: co@10 54.4→44.4 **하락 — 기각.** 창 40 개방으로 정답쌍 L2 커버는 29→49로 늘었지만,
+  형제 카드 쌍(모든 형제 쿼리 상위권 동반)의 가중치가 폭주해 개방 좌석·L2 에스코트를 점령.
+  **통계의 최강 신호는 유사 쌍이지 상보 쌍이 아니다** — 예견된 함정의 실측.
+- G5: 상보성 판별 — 두 문서의 이름 토큰 자카드 ≥0.5면 구조 크레딧 0(형제), ≥0.3이면 스텝 ×0.4,
+  L2 에스코트 자격도 자카드 <0.3 요구. "연결돼야 할 문서는 서로 닮지 않았다" (D8의 쌍대).
+- 유닛·스모크 10/10. **G5 동결 — NO_L1 5-iter.**
