@@ -177,6 +177,9 @@ class Evolver:
                     sg.add_curated_edge(anchor, cand, rel, evidence, rationale,
                                         weight=min(0.9, 0.5 + conf * 0.4))
                     cov_added += 1
+                else:
+                    self._state.setdefault("judged_rejected", []).append(
+                        "||".join(sorted((anchor, cand))))
             report["s_llm"]["coverage_edges"] = cov_added
 
         # ── Shadow planner (v5.15): background LLM analysis of queued queries ──
@@ -305,23 +308,19 @@ class Evolver:
             pass
         return None
 
-    def _coverage_candidates(self, good: list[dict], limit: int) -> list[tuple[str, str, list[str]]]:
-        """G7: candidates source ATTENTION-first (+good) — co-miss queries are
-        low-quality BY DEFINITION (missing structure tanks their score); excluding
-        them excluded every gold pair from the judge's table. Direct probe proved
-        the judge accepts gold pairs 12/12 at conf 0.75-0.92 once proposed.
-        G6.2: complementarity-prior candidate selection. Positional picking
-        (first 3 tail slots) gave gold pairs a ~10% proposal chance. Tail docs are
-        now ranked by a deterministic complementarity prior: lexically distant
-        from the anchor (linked docs don't look like their card — G5 lesson used
-        where it belongs) plus an opaque-ID-name bonus (jira-shaped files can't
-        win token matches anywhere else). Type-shaped queries first."""
+    def _coverage_candidates(self, recs: list[dict], limit: int) -> list[tuple[str, str, list[str]]]:
+        """G7.2: breadth-first rotation + rejected-pair memory. Depth-first
+        filling let the first (ValA-shaped) queries consume every slot; now each
+        query contributes its best NEW pair per pass. Pairs the judge already
+        rejected are remembered in evolver state and never re-proposed — every
+        cycle explores fresh pairs."""
         from harness_pjt.structrag.analyzer import skeleton
         from harness_pjt.structrag.structure_graph import _ID_TOKEN
         nodes = self.retriever.sg._data["nodes"]
         edges = self.retriever.sg._data["edges"]
-        ordered = sorted(good, key=lambda r: 0 if "type:none" not in skeleton(r["query"]) else 1)
-        out, seen = [], set()
+        rejected = set(self._state.setdefault("judged_rejected", []))
+        ordered = sorted(recs, key=lambda r: 0 if "type:none" not in skeleton(r["query"]) else 1)
+        per_query = []
         for r in ordered:
             obs = r.get("observed") or []
             if len(obs) < 12:
@@ -332,26 +331,31 @@ class Evolver:
             for cand in obs[10:40]:
                 if cand == anchor:
                     continue
+                ek = "||".join(sorted((anchor, cand)))
+                if ek in edges or ek in rejected:
+                    continue
                 tb = set(nodes.get(cand, {}).get("tokens", ()))
                 jac = len(ta & tb) / len(ta | tb) if (ta and tb) else 0.0
                 stem = cand.rsplit(".", 1)[0]
                 id_like = 1.0 if (_ID_TOKEN.fullmatch(stem) or len(tb) <= 2) else 0.0
-                scored.append(((1.0 - jac) + 0.5 * id_like, cand))
+                scored.append(((1.0 - jac) + 0.5 * id_like, anchor, cand, r["query"]))
             scored.sort(key=lambda x: -x[0])
-            per_q = 0
-            for _, cand in scored:
-                if per_q >= 5:
-                    break
-                key = tuple(sorted((anchor, cand)))
-                ek = f"{key[0]}||{key[1]}"
-                if key in seen or ek in edges:
+            if scored:
+                per_query.append([(a, c, q) for _, a, c, q in scored[:5]])
+        out, seen = [], set()
+        for depth in range(5):
+            for pairs in per_query:
+                if depth >= len(pairs):
+                    continue
+                a, c, q = pairs[depth]
+                key = tuple(sorted((a, c)))
+                if key in seen:
                     continue
                 seen.add(key)
-                out.append((anchor, cand, [r["query"]]))
-                per_q += 1
-            if len(out) >= limit:
-                break
-        return out[:limit]
+                out.append((a, c, [q]))
+                if len(out) >= limit:
+                    return out
+        return out
 
     def _profile_candidates(self, recs: list[dict], limit: int) -> list[str]:
         counts = Counter(d for r in recs for d in r.get("retrieved", [])[:10])

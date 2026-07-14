@@ -1503,3 +1503,15 @@
   판정이 정당 거부. 거부는 캐시돼 재시도 무비용.
 - G7.1: 커버리지 채널 선순위(예약 25콜, 섀도 앞) + 쿼리당 5쌍. (재시작 중 pkill 자기매칭 사고로
   G7 런 중단됨 — G7.1로 fresh 재검증)
+
+### 2026-07-14 19:38:24 — ver5 iteration 1 (LLM on)
+- All@20 100.0% · ValA@20 99.4% · ValB co@20/10/5 63.3/55.6/35.6%
+- latency p50/p95: all=38.7/49.0ms · tiers(valB)={'cache': 0, 'llm': 0, 'rules': 90}
+- SG: {'docs': 572, 'edges': 4090, 'l1_explicit': 0, 'l2_co_retrieval': 2826, 'l3_llm_curated': 1, 'profiles': 0} · plan_cache: {'entries': 269, 'hits': 2, 'hit_rate': 0.005}
+- evolve: {'records': 376, 's_rules': {'decayed_layers': 5782, 'facet_queries': 105}, 's_llm': {'coverage_edges': 1}, 'k_rules': {'stale_edges_removed': 0}, 'k_llm': {}, 'llm_calls': 50, 'good': 185, 'attention': 98, 'shadow_planner': {'analyzed': 25, 'promoted': 24}, 'elapsed_s': 221.2}
+
+### 2026-07-14 — G7.1 iter1 진단 및 G7.2
+- G7.1: covEdges 1 — ① type 정렬 내 안정정렬로 ValA(180문항, 동일 골격)가 슬롯 독식 (depth-first)
+  ② 거부 쌍 기억 부재로 매 사이클 동일 쌍 재제안. (+운영사고 2건: pkill 자기매칭으로 런 2회 조기종료)
+- G7.2: ① breadth-first 로테이션 (쿼리당 1쌍씩 순회, 25슬롯이 25개 쿼리에 분산 → ValB 확실 도달)
+  ② 거부 쌍 evolver state 영구 기억 — 사이클마다 신규 쌍만 심사 (5사이클 = 125 신규쌍 탐사).
