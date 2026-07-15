@@ -172,90 +172,53 @@ quality는 EVOLVE 트리거에 사용됩니다:
 
 ---
 
-## EVOLVE — 그래프 진화 전략
+## EVOLVE — 그래프 진화 사이클
 
-Wiki 계층에 해당합니다. 7가지 전략이 **새 지식 유입 → 기존 지식 개선 → 불필요한 지식 제거** 순서로 그래프를 진화시킵니다. 원본 청크(Raw 계층)를 source of truth로 삼아 엔티티/릴레이션을 추가, 수정, 제거합니다.
+에이전트는 골든 LightRAG에서 시작하여, 쿼리를 처리할 때마다 관찰한 패턴을 그래프에 반영합니다. 개선된 그래프는 다음 쿼리에서 그래프 순회를 통해 즉시 활용됩니다 — 추가 LLM 호출 없이, 이미 그래프에 녹아든 지식을 바로 꺼내갑니다.
+
+```
+쿼리·리트리브 관찰  →  백그라운드 그래프 개선  →  다음 쿼리에서 그래프 순회로 바로 활용
+```
 
 ![EVOLVE Strategies](images/evolve_strategies.png)
 
-### A. 새 지식 유입
+---
 
-#### 전략 1: Artifact Ingestion (산출물 재삽입)
+### 검색 방법 학습
 
-에이전트가 생성한 쿼리 답변, 요약, 분석 리포트 등을 그래프에 재삽입합니다. LLM Wiki에서 좋은 답변이 위키 페이지로 편입되는 것과 동일합니다.
+쿼리마다 어떤 문서가 유용했는지 누적 기억합니다. 유사한 쿼리가 다시 오면, 이미 알고 있는 관련 문서 목록을 힌트로 붙여 검색 범위를 사전에 좁혀줍니다. 보조 문서 관계 그래프가 원본 KG가 놓친 관련 문서를 실시간으로 보완합니다.
 
-```python
-answer = await rag.aquery("LightRAG 아키텍처 요약")
-await agent.ingest_artifact(answer, label="architecture_summary")
-# → 청킹 → LLM 추출 → 그래프에 새 노드/엣지 추가
-```
+두 가지 영속적 저장소가 이 학습을 뒷받침합니다:
+- **쿼리-문서 라우팅 기억** (`wikigraph_meta/qsm.json`): 쿼리 지문 → 관련 문서 목록 매핑. 다음 유사 쿼리 시 검색 전 적용.
+- **문서 관계 보조 그래프** (`wikigraph_meta/drg.json`): 공동 검색 빈도 기반 문서 간 연결 강도. 검색 후 누락 문서 보완에 사용. 원본 KG에 미치는 영향 없음, 항상 빈 그래프에서 시작.
 
-내부적으로 `rag.ainsert()`를 호출하므로 일반 문서와 동일한 파이프라인을 거칩니다.
+### 그래프 관계 확장
 
-#### 전략 2: Document Sync (원본 문서 변경 동기화)
+쿼리·리트리브에서 관찰한 패턴을 지식 그래프에 직접 구워넣습니다. 한 번 그래프에 추가된 관계는 이후 모든 쿼리에서 그래프 순회로 즉시 활용됩니다.
 
-디렉토리의 파일 변경을 content hash로 감지하여 변경분만 자동 재삽입합니다.
+- **공동 검색 관계 강화**: 3회 이상 함께 검색됐지만 직접 연결이 없는 엔티티 쌍을 KG 엣지로 연결합니다.
+- **단축 경로 생성**: A→B→C로 반복 접근하는 패턴이 쌓이면 A→C 직접 경로를 만듭니다.
+- **문서 구조 관계 주입**: 코퍼스 전체 문서에 앵커 엔티티를 생성하고, 공동 검색 패턴으로부터 문서 간·엔티티 간 횡단 경로를 KG에 추가합니다. 특정 문서를 찾으면 구조적으로 연결된 문서까지 그래프 순회로 자동 도달합니다.
+- **새 지식 유입**: 에이전트 산출물(쿼리 답변, 요약 등)이나 파일 변경분을 그래프에 재삽입합니다.
 
-```python
-result = await agent.watch("./docs/")
-# → content hash 비교 → 변경된 파일만 ingest → 그래프 업데이트
-```
+### 지식 정확도 유지
 
-수정된 파일은 재삽입되어 기존 엔티티에 description이 병합되고, 삭제된 파일은 전략 6(Source Verification)이 다음 사이클에서 근거 상실 엣지를 제거합니다.
+원본 청크를 source of truth로 삼아 그래프 품질을 지속 관리합니다.
 
-### B. 기존 지식 개선
+- 청크는 검색됐지만 그래프 엔티티가 없으면 → 원본 청크를 재분석해 누락된 엔티티·관계를 보강합니다.
+- 문서가 삭제·변경되어 근거를 잃은 관계는 → 자동으로 제거합니다.
+- 동일 엔티티에 충돌하는 설명이 쌓이면 → LLM이 하나의 정확한 설명으로 통합합니다.
 
-#### 전략 3: Co-retrieval Strengthening (공동 검색 관계 강화)
+---
 
-쿼리 로그에서 3회 이상 함께 검색된 엔티티 쌍에 직접 연결이 없으면, LLM이 양쪽 description을 보고 관계를 추론하여 새 엣지를 생성합니다. `weight=0.5`, `source_id="wikigraph_evolve"`로 마킹됩니다.
-
-#### 전략 4: Gap Filling (추출 누락 보강)
-
-쿼리에서 원본 청크는 검색됐지만 그래프 엔티티가 없는 경우, 해당 청크 텍스트를 LLM에 전달하여 엔티티/관계를 재추출합니다. **원본 청크에 근거가 있는 경우에만** 동작하며, 원본에도 없으면 "문서 추가 필요" 리포트만 출력합니다. 이 전략만이 새 엔티티 노드를 추가할 수 있습니다.
-
-#### 전략 5: Shortcut Path (다중 홉 단축)
-
-A→B→C 경로가 3회 이상 사용되면 A→C 직접 엣지를 `weight=0.5`로 생성합니다.
-
-#### 전략 7: Contradiction Resolution (모순 통합)
-
-같은 엔티티에 `<SEP>` 구분으로 병합된 description이 2개 이상이면, LLM에게 하나의 정확한 설명으로 통합을 요청하여 노드를 수정합니다.
-
-### C. 불필요한 지식 제거
-
-#### 전략 6: Source Verification (근거 상실 관계 제거)
-
-그래프의 모든 엣지의 `source_id`를 검사하여, 해당 청크가 `text_chunks`에서 사라진 엣지를 제거합니다. EVOLVE가 생성한 엣지(`wikigraph_evolve`)는 원래 source chunk이 없으므로 제외됩니다. 문서 업데이트/삭제 시 그래프가 자동으로 따라갑니다.
-
-### 전략 요약
-
-| | 전략 | 소스 | 그래프 변경 |
-|---|---|---|---|
-| **유입** | 1. Artifact Ingestion | 에이전트 산출물 | 노드+엣지 **추가** |
-| | 2. Document Sync | 파일 시스템 | 노드+엣지 **추가/갱신** |
-| **개선** | 3. Co-retrieval | 쿼리 로그 | 엣지 **추가** |
-| | 4. Gap Filling | 원본 청크 | 노드+엣지 **추가** |
-| | 5. Shortcut | 쿼리 로그 | 엣지 **추가** |
-| | 7. Contradiction | 그래프 노드 | 노드 **수정** |
-| **제거** | 6. Source Verification | text_chunks | 엣지 **제거** |
-
-### 전략의 이론적 배경
-
-전략 1~3은 Knowledge Graph Completion(KGC) 분야의 기존 연구에 기반합니다.
-
-**Co-retrieval → Link Prediction**: 엔티티 공동 출현(co-occurrence)으로 누락된 엣지를 예측하는 것은 KGC의 표준 접근법입니다. [NoGE(Node Co-occurrence based GNN)](https://arxiv.org/abs/2104.07396)는 엔티티-릴레이션 간 공동 출현 빈도를 그래프 임베딩에 통합하여 link prediction 성능을 개선합니다. 우리의 co-retrieval 전략은 이를 쿼리 로그 기반으로 단순화한 것입니다.
-
-**Gap Filling → Extraction Repair**: [Self-Improving RAG for KG Construction](https://ojs.iscram.org/index.php/Proceedings/article/view/154)은 RAG 파이프라인의 추출 누락을 피드백 루프로 보강하는 프레임워크를 제안합니다. 우리의 gap filling은 이를 "청크에 근거가 있는 경우에만 재추출"로 제한하여 hallucination을 방지합니다.
-
-**Shortcut → Transitive Closure**: 그래프에서 A→B→C 경로로부터 A→C 관계를 추론하는 것은 transitive closure 기반 KGC의 기본 원리입니다. [SMORE](https://arxiv.org/abs/2110.14890)는 대규모 KG에서 multi-hop reasoning을 통한 graph completion을, [Practical GraphRAG](https://arxiv.org/abs/2507.03226)는 그래프 순회와 벡터 검색을 RRF로 결합하는 hybrid retrieval을 제안합니다.
-
-### EVOLVE 트리거 조건
+### EVOLVE 트리거
 
 | 조건 | 설명 |
 |---|---|
-| quality < 0.5 (reactive) | EVALUATE에서 결과 품질이 낮으면 즉시 트리거 |
-| N번째 쿼리 (proactive) | `auto_evolve_interval` (기본 5) 마다 자동 트리거 |
-| 수동 호출 | `agent.evolve()` 로 명시적 트리거 |
+| quality < 0.5 (reactive) | 결과 품질이 낮으면 즉시 트리거 |
+| N번째 쿼리 (proactive) | `auto_evolve_interval`(기본 5)마다 자동 트리거 |
+| 배치 누적 (agentic) | `evolve_every`(기본 50) 쿼리마다 `batch_evolve()` 자동 실행 |
+| 수동 호출 | `agent.evolve()` 또는 `agent.batch_evolve()` |
 
 ---
 
@@ -333,20 +296,29 @@ Final graph: 20 nodes, 27 edges (13 original + 14 auto-generated)
 ```
 harness_pjt/
 ├── wikigraph/
-│   ├── agent.py           # LangGraph StateGraph + WikiGraphAgent API
-│   ├── config.py          # Schema 계층: EVOLVE/LINT 임계값
-│   ├── state.py           # LangGraph 상태 스키마 (TypedDict)
-│   ├── metadata.py        # 쿼리 로그 + 엔티티 메타데이터 영속화
-│   ├── sources.py         # Raw 계층: 파일 수집, 변경 감지
+│   ├── agent.py                # LangGraph StateGraph + WikiGraphAgent API + agentic_query()
+│   ├── adaptive_retriever.py   # Agentic 검색 파이프라인 (라우팅 기억 → 검색 → 보조 그래프 보완 → 학습)
+│   ├── qsm.py                  # 쿼리-문서 라우팅 기억 (wikigraph_meta/qsm.json 영속화)
+│   ├── drg.py                  # 문서 관계 보조 그래프 (wikigraph_meta/drg.json 영속화)
+│   ├── config.py               # Schema 계층: EVOLVE/LINT 임계값
+│   ├── state.py                # LangGraph 상태 스키마 (TypedDict)
+│   ├── metadata.py             # 쿼리 로그 + 엔티티 메타데이터 영속화
+│   ├── sources.py              # Raw 계층: 파일 수집, 변경 감지
 │   └── operations/
-│       ├── ingest.py      # Raw → Wiki: rag.ainsert() + 검증
-│       ├── query.py       # Wiki 검색: rag.aquery_data() + 로깅 + 평가
-│       ├── evolve.py      # Wiki 진화: 3가지 전략으로 그래프 증분 개선
-│       └── lint.py        # Schema 점검: 5가지 구조 점검 + 자동 정리
+│       ├── ingest.py           # Raw → Wiki: rag.ainsert() + 검증
+│       ├── query.py            # Wiki 검색: rag.aquery_data() + 로깅 + 평가
+│       ├── evolve.py           # Wiki 진화: 범주 1+2 전략으로 그래프 증분 개선
+│       └── lint.py             # Schema 점검: 5가지 구조 점검 + 자동 정리
 ├── demo_wikigraph.ipynb
 ├── demo_hybrid_search.ipynb
 └── README.md
 ```
+
+---
+
+## 벤치마크 실행 가이드
+
+> 자세한 실행 방법은 [benchmark/README.md](benchmark/README.md)를 참조하세요.
 
 ---
 
@@ -355,6 +327,8 @@ harness_pjt/
 ```python
 from wikigraph.agent import WikiGraphAgent
 from wikigraph.config import WikiGraphConfig
+from wikigraph.qsm import QueryStructuralMemory
+from wikigraph.drg import DocRelationGraph
 
 rag = LightRAG(
     working_dir="./my_kb",
@@ -364,15 +338,25 @@ rag = LightRAG(
 )
 await rag.initialize_storages()
 
-agent = WikiGraphAgent(rag, WikiGraphConfig(auto_evolve_interval=5))
-
 # Raw: 문서 삽입 (증분)
+agent = WikiGraphAgent(rag, WikiGraphConfig(auto_evolve_interval=5), evolve_every=50)
 await agent.ingest(["문서 내용..."])
 
-# Wiki: 검색 + 자동 진화
+# Agentic 검색: 쿼리-문서 라우팅 기억 + 보조 그래프를 함께 사용
+# 사용할수록 검색 품질이 향상됨 (매 50 쿼리마다 백그라운드 EVOLVE 자동 실행)
+qsm = QueryStructuralMemory("./my_kb")
+drg = DocRelationGraph("./my_kb")
+agent.attach_memories(qsm, drg)
+
+result = await agent.agentic_query("질문", top_k=20)
+# result["chunks"]        — 최종 검색 결과 (KG 결과 + 보조 그래프 보완)
+# result["drg_supplement"] — 보조 그래프가 추가한 청크 수
+# result["evolve_fired"]   — 이번 쿼리로 EVOLVE가 트리거됐는지 여부
+
+# (선택) 표준 LangGraph 쿼리: 자동 EVOLVE 없는 단순 검색
 result = await agent.query("질문")
 
-# Wiki: 수동 진화 트리거
+# (선택) 수동 진화 트리거
 await agent.evolve()
 
 # Schema: 구조 점검
