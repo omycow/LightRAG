@@ -1,0 +1,605 @@
+{
+  "iterations": [
+    {
+      "iter": 1,
+      "timestamp": "2026-07-06 20:18:36",
+      "total_mutations": 500,
+      "scores": {
+        "top_k_5": {
+          "all_data": {
+            "hybrid": 94.3,
+            "mix_bm25": 89.6,
+            "mix_bm25_co": null,
+            "vector": 79.2,
+            "bm25": 93.4
+          },
+          "val_A": {
+            "hybrid": 86.7,
+            "mix_bm25": 77.8,
+            "mix_bm25_co": null,
+            "vector": 43.9,
+            "bm25": 99.4
+          },
+          "val_B": {
+            "hybrid": 88.9,
+            "mix_bm25": 84.4,
+            "mix_bm25_co": 20.0,
+            "vector": 64.4,
+            "bm25": 100.0
+          }
+        },
+        "top_k_10": {
+          "all_data": {
+            "hybrid": 97.2,
+            "mix_bm25": 97.2,
+            "mix_bm25_co": null,
+            "vector": 89.6,
+            "bm25": 98.1
+          },
+          "val_A": {
+            "hybrid": 98.9,
+            "mix_bm25": 91.7,
+            "mix_bm25_co": null,
+            "vector": 61.1,
+            "bm25": 99.4
+          },
+          "val_B": {
+            "hybrid": 100.0,
+            "mix_bm25": 92.2,
+            "mix_bm25_co": 37.8,
+            "vector": 73.3,
+            "bm25": 100.0
+          }
+        },
+        "top_k_15": {
+          "all_data": {
+            "hybrid": 99.1,
+            "mix_bm25": 98.1,
+            "mix_bm25_co": null,
+            "vector": 91.5,
+            "bm25": 98.1
+          },
+          "val_A": {
+            "hybrid": 99.4,
+            "mix_bm25": 99.4,
+            "mix_bm25_co": null,
+            "vector": 68.9,
+            "bm25": 99.4
+          },
+          "val_B": {
+            "hybrid": 100.0,
+            "mix_bm25": 100.0,
+            "mix_bm25_co": 50.0,
+            "vector": 81.1,
+            "bm25": 100.0
+          }
+        },
+        "top_k_20": {
+          "all_data": {
+            "hybrid": 99.1,
+            "mix_bm25": 99.1,
+            "mix_bm25_co": null,
+            "vector": 93.4,
+            "bm25": 98.1
+          },
+          "val_A": {
+            "hybrid": 99.4,
+            "mix_bm25": 99.4,
+            "mix_bm25_co": null,
+            "vector": 73.9,
+            "bm25": 99.4
+          },
+          "val_B": {
+            "hybrid": 100.0,
+            "mix_bm25": 100.0,
+            "mix_bm25_co": 54.4,
+            "vector": 84.4,
+            "bm25": 100.0
+          }
+        }
+      }
+    },
+    {
+      "iter": 2,
+      "timestamp": "2026-07-06 20:21:51",
+      "total_mutations": 85,
+      "scores": {
+        "top_k_5": {
+          "all_data": {
+            "hybrid": 94.3,
+            "mix_bm25": 89.6,
+            "mix_bm25_co": null,
+            "vector": 79.2,
+            "bm25": 93.4
+          },
+          "val_A": {
+            "hybrid": 86.7,
+            "mix_bm25": 77.8,
+            "mix_bm25_co": null,
+            "vector": 43.9,
+            "bm25": 99.4
+          },
+          "val_B": {
+            "hybrid": 88.9,
+            "mix_bm25": 84.4,
+            "mix_bm25_co": 20.0,
+            "vector": 64.4,
+            "bm25": 100.0
+          }
+        },
+        "top_k_10": {
+          "all_data": {
+            "hybrid": 97.2,
+            "mix_bm25": 97.2,
+            "mix_bm25_co": null,
+            "vector": 89.6,
+            "bm25": 98.1
+          },
+          "val_A": {
+            "hybrid": 98.9,
+            "mix_bm25": 92.2,
+            "mix_bm25_co": null,
+            "vector": 61.1,
+            "bm25": 99.4
+          },
+          "val_B": {
+            "hybrid": 100.0,
+            "mix_bm25": 94.4,
+            "mix_bm25_co": 37.8,
+            "vector": 73.3,
+            "bm25": 100.0
+          }
+        },
+        "top_k_15": {
+          "all_data": {
+            "hybrid": 99.1,
+            "mix_bm25": 98.1,
+            "mix_bm25_co": null,
+            "vector": 91.5,
+            "bm25": 98.1
+          },
+          "val_A": {
+            "hybrid": 99.4,
+            "mix_bm25": 99.4,
+            "mix_bm25_co": null,
+            "vector": 68.9,
+            "bm25": 99.4
+          },
+          "val_B": {
+            "hybrid": 100.0,
+            "mix_bm25": 100.0,
+            "mix_bm25_co": 50.0,
+            "vector": 81.1,
+            "bm25": 100.0
+          }
+        },
+        "top_k_20": {
+          "all_data": {
+            "hybrid": 99.1,
+            "mix_bm25": 99.1,
+            "mix_bm25_co": null,
+            "vector": 93.4,
+            "bm25": 98.1
+          },
+          "val_A": {
+            "hybrid": 99.4,
+            "mix_bm25": 99.4,
+            "mix_bm25_co": null,
+            "vector": 73.9,
+            "bm25": 99.4
+          },
+          "val_B": {
+            "hybrid": 100.0,
+            "mix_bm25": 100.0,
+            "mix_bm25_co": 54.4,
+            "vector": 84.4,
+            "bm25": 100.0
+          }
+        }
+      }
+    },
+    {
+      "iter": 3,
+      "timestamp": "2026-07-06 20:53:11",
+      "total_mutations": 78,
+      "scores": {
+        "top_k_5": {
+          "all_data": {
+            "hybrid": 94.3,
+            "mix_bm25": 89.6,
+            "mix_bm25_co": null,
+            "vector": 79.2,
+            "bm25": 93.4
+          },
+          "val_A": {
+            "hybrid": 86.7,
+            "mix_bm25": 76.7,
+            "mix_bm25_co": null,
+            "vector": 43.9,
+            "bm25": 99.4
+          },
+          "val_B": {
+            "hybrid": 88.9,
+            "mix_bm25": 82.2,
+            "mix_bm25_co": 23.3,
+            "vector": 64.4,
+            "bm25": 100.0
+          }
+        },
+        "top_k_10": {
+          "all_data": {
+            "hybrid": 97.2,
+            "mix_bm25": 97.2,
+            "mix_bm25_co": null,
+            "vector": 89.6,
+            "bm25": 98.1
+          },
+          "val_A": {
+            "hybrid": 98.9,
+            "mix_bm25": 92.2,
+            "mix_bm25_co": null,
+            "vector": 61.1,
+            "bm25": 99.4
+          },
+          "val_B": {
+            "hybrid": 100.0,
+            "mix_bm25": 93.3,
+            "mix_bm25_co": 42.2,
+            "vector": 73.3,
+            "bm25": 100.0
+          }
+        },
+        "top_k_15": {
+          "all_data": {
+            "hybrid": 99.1,
+            "mix_bm25": 99.1,
+            "mix_bm25_co": null,
+            "vector": 91.5,
+            "bm25": 98.1
+          },
+          "val_A": {
+            "hybrid": 99.4,
+            "mix_bm25": 99.4,
+            "mix_bm25_co": null,
+            "vector": 68.9,
+            "bm25": 99.4
+          },
+          "val_B": {
+            "hybrid": 100.0,
+            "mix_bm25": 100.0,
+            "mix_bm25_co": 54.4,
+            "vector": 81.1,
+            "bm25": 100.0
+          }
+        },
+        "top_k_20": {
+          "all_data": {
+            "hybrid": 99.1,
+            "mix_bm25": 99.1,
+            "mix_bm25_co": null,
+            "vector": 93.4,
+            "bm25": 98.1
+          },
+          "val_A": {
+            "hybrid": 99.4,
+            "mix_bm25": 99.4,
+            "mix_bm25_co": null,
+            "vector": 73.9,
+            "bm25": 99.4
+          },
+          "val_B": {
+            "hybrid": 100.0,
+            "mix_bm25": 100.0,
+            "mix_bm25_co": 57.8,
+            "vector": 84.4,
+            "bm25": 100.0
+          }
+        }
+      }
+    },
+    {
+      "iter": 4,
+      "timestamp": "2026-07-06 20:57:06",
+      "total_mutations": 22,
+      "scores": {
+        "top_k_5": {
+          "all_data": {
+            "hybrid": 94.3,
+            "mix_bm25": 89.6,
+            "mix_bm25_co": null,
+            "vector": 79.2,
+            "bm25": 93.4
+          },
+          "val_A": {
+            "hybrid": 86.7,
+            "mix_bm25": 76.7,
+            "mix_bm25_co": null,
+            "vector": 43.9,
+            "bm25": 99.4
+          },
+          "val_B": {
+            "hybrid": 88.9,
+            "mix_bm25": 82.2,
+            "mix_bm25_co": 23.3,
+            "vector": 64.4,
+            "bm25": 100.0
+          }
+        },
+        "top_k_10": {
+          "all_data": {
+            "hybrid": 97.2,
+            "mix_bm25": 97.2,
+            "mix_bm25_co": null,
+            "vector": 89.6,
+            "bm25": 98.1
+          },
+          "val_A": {
+            "hybrid": 98.9,
+            "mix_bm25": 92.2,
+            "mix_bm25_co": null,
+            "vector": 61.1,
+            "bm25": 99.4
+          },
+          "val_B": {
+            "hybrid": 100.0,
+            "mix_bm25": 93.3,
+            "mix_bm25_co": 42.2,
+            "vector": 73.3,
+            "bm25": 100.0
+          }
+        },
+        "top_k_15": {
+          "all_data": {
+            "hybrid": 99.1,
+            "mix_bm25": 99.1,
+            "mix_bm25_co": null,
+            "vector": 91.5,
+            "bm25": 98.1
+          },
+          "val_A": {
+            "hybrid": 99.4,
+            "mix_bm25": 99.4,
+            "mix_bm25_co": null,
+            "vector": 68.9,
+            "bm25": 99.4
+          },
+          "val_B": {
+            "hybrid": 100.0,
+            "mix_bm25": 100.0,
+            "mix_bm25_co": 54.4,
+            "vector": 81.1,
+            "bm25": 100.0
+          }
+        },
+        "top_k_20": {
+          "all_data": {
+            "hybrid": 99.1,
+            "mix_bm25": 99.1,
+            "mix_bm25_co": null,
+            "vector": 93.4,
+            "bm25": 98.1
+          },
+          "val_A": {
+            "hybrid": 99.4,
+            "mix_bm25": 99.4,
+            "mix_bm25_co": null,
+            "vector": 73.9,
+            "bm25": 99.4
+          },
+          "val_B": {
+            "hybrid": 100.0,
+            "mix_bm25": 100.0,
+            "mix_bm25_co": 57.8,
+            "vector": 84.4,
+            "bm25": 100.0
+          }
+        }
+      }
+    },
+    {
+      "iter": 5,
+      "timestamp": "2026-07-07 00:10:22",
+      "total_mutations": 335,
+      "da_updates": 572,
+      "dcsg_edges": 250,
+      "cdrb_edges": 85,
+      "scores": {
+        "top_k_5": {
+          "all_data": {
+            "hybrid": 94.3,
+            "mix_bm25": 89.6,
+            "mix_bm25_co": null,
+            "vector": 79.2,
+            "bm25": 93.4
+          },
+          "val_A": {
+            "hybrid": 86.7,
+            "mix_bm25": 76.7,
+            "mix_bm25_co": null,
+            "vector": 43.9,
+            "bm25": 99.4
+          },
+          "val_B": {
+            "hybrid": 88.9,
+            "mix_bm25": 82.2,
+            "mix_bm25_co": 23.3,
+            "vector": 64.4,
+            "bm25": 100.0
+          }
+        },
+        "top_k_10": {
+          "all_data": {
+            "hybrid": 97.2,
+            "mix_bm25": 97.2,
+            "mix_bm25_co": null,
+            "vector": 89.6,
+            "bm25": 98.1
+          },
+          "val_A": {
+            "hybrid": 98.9,
+            "mix_bm25": 92.2,
+            "mix_bm25_co": null,
+            "vector": 61.1,
+            "bm25": 99.4
+          },
+          "val_B": {
+            "hybrid": 100.0,
+            "mix_bm25": 93.3,
+            "mix_bm25_co": 43.3,
+            "vector": 73.3,
+            "bm25": 100.0
+          }
+        },
+        "top_k_15": {
+          "all_data": {
+            "hybrid": 99.1,
+            "mix_bm25": 99.1,
+            "mix_bm25_co": null,
+            "vector": 91.5,
+            "bm25": 98.1
+          },
+          "val_A": {
+            "hybrid": 99.4,
+            "mix_bm25": 99.4,
+            "mix_bm25_co": null,
+            "vector": 68.9,
+            "bm25": 99.4
+          },
+          "val_B": {
+            "hybrid": 100.0,
+            "mix_bm25": 100.0,
+            "mix_bm25_co": 54.4,
+            "vector": 81.1,
+            "bm25": 100.0
+          }
+        },
+        "top_k_20": {
+          "all_data": {
+            "hybrid": 99.1,
+            "mix_bm25": 99.1,
+            "mix_bm25_co": null,
+            "vector": 93.4,
+            "bm25": 98.1
+          },
+          "val_A": {
+            "hybrid": 99.4,
+            "mix_bm25": 99.4,
+            "mix_bm25_co": null,
+            "vector": 73.9,
+            "bm25": 99.4
+          },
+          "val_B": {
+            "hybrid": 100.0,
+            "mix_bm25": 100.0,
+            "mix_bm25_co": 57.8,
+            "vector": 84.4,
+            "bm25": 100.0
+          }
+        }
+      }
+    },
+    {
+      "iter": 6,
+      "timestamp": "2026-07-07 00:15:01",
+      "total_mutations": 99,
+      "da_updates": 0,
+      "dcsg_edges": 33,
+      "cdrb_edges": 66,
+      "qsm_val_b_co20": null,
+      "scores": {
+        "top_k_5": {
+          "all_data": {
+            "hybrid": 94.3,
+            "mix_bm25": 89.6,
+            "mix_bm25_co": null,
+            "vector": 79.2,
+            "bm25": 93.4
+          },
+          "val_A": {
+            "hybrid": 86.7,
+            "mix_bm25": 76.7,
+            "mix_bm25_co": null,
+            "vector": 43.9,
+            "bm25": 99.4
+          },
+          "val_B": {
+            "hybrid": 88.9,
+            "mix_bm25": 81.1,
+            "mix_bm25_co": 23.3,
+            "vector": 64.4,
+            "bm25": 100.0
+          }
+        },
+        "top_k_10": {
+          "all_data": {
+            "hybrid": 97.2,
+            "mix_bm25": 94.3,
+            "mix_bm25_co": null,
+            "vector": 89.6,
+            "bm25": 98.1
+          },
+          "val_A": {
+            "hybrid": 98.9,
+            "mix_bm25": 92.2,
+            "mix_bm25_co": null,
+            "vector": 61.1,
+            "bm25": 99.4
+          },
+          "val_B": {
+            "hybrid": 100.0,
+            "mix_bm25": 95.6,
+            "mix_bm25_co": 44.4,
+            "vector": 73.3,
+            "bm25": 100.0
+          }
+        },
+        "top_k_15": {
+          "all_data": {
+            "hybrid": 99.1,
+            "mix_bm25": 97.2,
+            "mix_bm25_co": null,
+            "vector": 91.5,
+            "bm25": 98.1
+          },
+          "val_A": {
+            "hybrid": 99.4,
+            "mix_bm25": 99.4,
+            "mix_bm25_co": null,
+            "vector": 68.9,
+            "bm25": 99.4
+          },
+          "val_B": {
+            "hybrid": 100.0,
+            "mix_bm25": 100.0,
+            "mix_bm25_co": 52.2,
+            "vector": 81.1,
+            "bm25": 100.0
+          }
+        },
+        "top_k_20": {
+          "all_data": {
+            "hybrid": 99.1,
+            "mix_bm25": 98.1,
+            "mix_bm25_co": null,
+            "vector": 93.4,
+            "bm25": 98.1
+          },
+          "val_A": {
+            "hybrid": 99.4,
+            "mix_bm25": 99.4,
+            "mix_bm25_co": null,
+            "vector": 73.9,
+            "bm25": 99.4
+          },
+          "val_B": {
+            "hybrid": 100.0,
+            "mix_bm25": 100.0,
+            "mix_bm25_co": 56.7,
+            "vector": 84.4,
+            "bm25": 100.0
+          }
+        }
+      }
+    }
+  ]
+}

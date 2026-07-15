@@ -91,3 +91,9 @@ memory-bank
 
 # native_parser/docx CLI output (audit JSONL + image dir)
 /parse_output/
+
+# StructRAG/benchmark: working copies and caches (golden lives in harness_pjt/rag_data)
+harness_pjt/evaluation/scenario*/rag_data/
+harness_pjt/**/__pycache__/
+harness_pjt/evaluation/scenario*/results/*.log
+harness_pjt/benchmark/results/*.log
