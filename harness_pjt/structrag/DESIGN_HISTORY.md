@@ -1219,3 +1219,56 @@
   ② 에스코트 당회 교차증거 타이브레이크 (L1 이웃 top3 중 이번 쿼리 facet 결과 교집합 우선).
   facet_link 레이어·학습 없음 = 드리프트 원천 부재. 비용: 타입 질문 p50 ~100ms (LLM 0 유지).
 - 유닛·스모크 10/10. **v5.34 동결 — 5-iter 검증. 판정선: v5.20(74.4) 초과.**
+
+### 2026-07-15 08:30:27 — ver5 iteration 5 (LLM on)
+- All@20 100.0% · ValA@20 99.4% · ValB co@20/10/5 81.1/58.9/28.9%
+- latency p50/p95: all=47.5/63.3ms · tiers(valB)={'cache': 13, 'llm': 0, 'rules': 77}
+- SG: {'docs': 572, 'edges': 5978, 'l1_explicit': 1719, 'l2_co_retrieval': 3669, 'l3_llm_curated': 36, 'profiles': 0} · plan_cache: {'entries': 367, 'hits': 131, 'hit_rate': 0.348}
+- evolve: {'records': 401, 's_rules': {'decayed_layers': 3216, 'facet_queries': 115}, 's_llm': {'coverage_edges': 5}, 'k_rules': {'stale_edges_removed': 0}, 'k_llm': {}, 'llm_calls': 50, 'good': 181, 'attention': 41, 'shadow_planner': {'analyzed': 25, 'promoted': 19}, 'elapsed_s': 434.6}
+
+### 2026-07-15 08:31:32 — ver5 iteration 1 (LLM on)
+- All@20 100.0% · ValA@20 99.4% · ValB co@20/10/5 86.7/68.9/44.4%
+- latency p50/p95: all=37.5/51.1ms · tiers(valB)={'cache': 0, 'llm': 0, 'rules': 90}
+- SG: {'docs': 572, 'edges': 2151, 'l1_explicit': 1719, 'l2_co_retrieval': 1306, 'l3_llm_curated': 3, 'profiles': 3} · plan_cache: {'entries': 349, 'hits': 2, 'hit_rate': 0.005}
+- evolve: {'records': 376, 's_rules': {'decayed_layers': 993}, 's_llm': {'typed_edges': 3, 'profiles': 3}, 'k_rules': {'stale_edges_removed': 0}, 'k_llm': {'wikified': 1}, 'llm_calls': 49, 'good': 164, 'attention': 59, 'shadow_planner': {'analyzed': 40, 'promoted': 35}, 'elapsed_s': 22.8}
+
+### 2026-07-15 08:32:45 — ver5 iteration 2 (LLM on)
+- All@20 100.0% · ValA@20 99.4% · ValB co@20/10/5 90.0/73.3/52.2%
+- latency p50/p95: all=37.7/55.9ms · tiers(valB)={'cache': 17, 'llm': 0, 'rules': 73}
+- SG: {'docs': 572, 'edges': 2233, 'l1_explicit': 1719, 'l2_co_retrieval': 1525, 'l3_llm_curated': 7, 'profiles': 6} · plan_cache: {'entries': 366, 'hits': 123, 'hit_rate': 0.327}
+- evolve: {'records': 416, 's_rules': {'decayed_layers': 1128}, 's_llm': {'typed_edges': 4, 'profiles': 3}, 'k_rules': {'stale_edges_removed': 0}, 'k_llm': {'wikified': 0}, 'llm_calls': 48, 'good': 188, 'attention': 34, 'shadow_planner': {'analyzed': 40, 'promoted': 29}, 'elapsed_s': 39.9}
+
+### 2026-07-15 08:34:46 — ver5 iteration 3 (LLM on)
+- All@20 100.0% · ValA@20 99.4% · ValB co@20/10/5 88.9/72.2/48.9%
+- latency p50/p95: all=39.2/57.9ms · tiers(valB)={'cache': 21, 'llm': 0, 'rules': 69}
+- SG: {'docs': 572, 'edges': 2284, 'l1_explicit': 1719, 'l2_co_retrieval': 1642, 'l3_llm_curated': 11, 'profiles': 9} · plan_cache: {'entries': 366, 'hits': 128, 'hit_rate': 0.34}
+- evolve: {'records': 416, 's_rules': {'decayed_layers': 1109}, 's_llm': {'typed_edges': 4, 'profiles': 3}, 'k_rules': {'stale_edges_removed': 0}, 'k_llm': {'wikified': 0}, 'llm_calls': 48, 'good': 188, 'attention': 39, 'shadow_planner': {'analyzed': 40, 'promoted': 28}, 'elapsed_s': 88.4}
+
+### 2026-07-15 08:36:35 — ver5 iteration 4 (LLM on)
+- All@20 100.0% · ValA@20 99.4% · ValB co@20/10/5 88.9/76.7/56.7%
+- latency p50/p95: all=40.2/57.7ms · tiers(valB)={'cache': 30, 'llm': 0, 'rules': 60}
+- SG: {'docs': 572, 'edges': 2303, 'l1_explicit': 1719, 'l2_co_retrieval': 1688, 'l3_llm_curated': 15, 'profiles': 12} · plan_cache: {'entries': 366, 'hits': 142, 'hit_rate': 0.378}
+- evolve: {'records': 416, 's_rules': {'decayed_layers': 1168}, 's_llm': {'typed_edges': 4, 'profiles': 3}, 'k_rules': {'stale_edges_removed': 0}, 'k_llm': {'wikified': 0}, 'llm_calls': 48, 'good': 176, 'attention': 35, 'shadow_planner': {'analyzed': 40, 'promoted': 21}, 'elapsed_s': 76.1}
+
+### 2026-07-15 08:37:50 — ver5 iteration 5 (LLM on)
+- All@20 100.0% · ValA@20 99.4% · ValB co@20/10/5 90.0/74.4/53.3%
+- latency p50/p95: all=39.2/54.3ms · tiers(valB)={'cache': 28, 'llm': 0, 'rules': 62}
+- SG: {'docs': 572, 'edges': 2315, 'l1_explicit': 1719, 'l2_co_retrieval': 1701, 'l3_llm_curated': 19, 'profiles': 15} · plan_cache: {'entries': 366, 'hits': 140, 'hit_rate': 0.372}
+- evolve: {'records': 416, 's_rules': {'decayed_layers': 1139}, 's_llm': {'typed_edges': 4, 'profiles': 3}, 'k_rules': {'stale_edges_removed': 0}, 'k_llm': {'wikified': 0}, 'llm_calls': 48, 'good': 169, 'attention': 39, 'shadow_planner': {'analyzed': 40, 'promoted': 25}, 'elapsed_s': 41.3}
+
+### 2026-07-15 — v5.34 5-iter 검증 판정: **판정선 돌파, 신규 플래그십**
+| iter | co@5 | co@10 | co@20 | All@10 | ValA@10 | p50(ms) |
+|---|---|---|---|---|---|---|
+| 1 | 44.4 | 68.9 | 86.7 | 96.2 | 97.2 | 92 |
+| 2 | 52.2 | 73.3 | 90.0 | 97.1 | 97.2 | 91 |
+| 3 | 48.9 | 72.2 | 88.9 | 97.1 | 97.8 | 89 |
+| 4 | 56.7 | **76.7** | 88.9 | 97.1 | 97.2 | 92 |
+| 5 | 53.3 | 74.4 | **90.0** | 97.1 | 97.2 | 92 |
+
+- **v5.20 대비**: 10-iter 종점(co@10 74.4)을 **5-iter 만에 도달**, 피크 76.7은 v5.20 전 구간 최고치 상회.
+  co@20 90.0(+0.4), co@5 피크 56.7(균일 레이턴시 체제 최고), ValA@10 97.2~97.8(v5.20 대비 +3~4
+  — 에스코트 당회 교차증거가 오답 에스코트 억제), All@20 100 / ValA@20 99.4 유지, 롤백 0, 핫패스 LLM 0.
+- ALL과의 대비가 인과 확증: 동일 룰 부품에서 facet_link 축적만 제거 → 하락(71.1→62.2)이 상승(68.9→76.7)으로 반전.
+  **facet 직관의 최종 형태 = 당회(same-turn) 증거로만 소비, 레이어로 축적하지 않는다.**
+- 비용: ValB p50 ~92ms (v5.20 ~58ms 대비 +34ms, 상보 facet 서브쿼리 1회분) — 균일성 유지, p95 104ms.
+- **판정: v5.34 = 신규 플래그십.** 라인업 = v5.34 플래그십 / v5.20 저지연 프로파일(58ms) / v5.14 정밀 모드(79.1, 인라인 LLM 대기).
