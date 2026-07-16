@@ -20,7 +20,7 @@ badge: structrag-v5.21
 report_path: harness_pjt/structrag/DESIGN_HISTORY.md (tag structrag-v5.21)
 
 # ── 기본 성능: SHS Final Benchmark 100 (judge gpt-5.3-codex) ──
-final_score: 0.0000                    # TODO: SHS 런 결과 기입
+final_score: 0.7641
 
 # 판정 분포 — 세 값을 모두 채우거나, 모두 지울 것
 pass: 0                                # TODO
