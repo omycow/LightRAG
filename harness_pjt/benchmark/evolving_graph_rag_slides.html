@@ -1,0 +1,358 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Evolving Graph RAG — 발표 장표</title>
+<style>
+  :root {
+    color-scheme: light;
+    --page: #f9f9f7;
+    --surface: #fcfcfb;
+    --ink: #0b0b0b;
+    --ink-2: #52514e;
+    --muted: #898781;
+    --grid: #e1e0d9;
+    --baseline: #c3c2b7;
+    --border: rgba(11,11,11,0.10);
+    --accent: #2a78d6;
+    --accent-deep: #1c5cab;
+    --good: #0ca30c;
+    --warning: #fab219;
+    --critical: #d03b3b;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:where(:not([data-theme="light"])) {
+      color-scheme: dark;
+      --page: #0d0d0d;
+      --surface: #1a1a19;
+      --ink: #ffffff;
+      --ink-2: #c3c2b7;
+      --muted: #898781;
+      --grid: #2c2c2a;
+      --baseline: #383835;
+      --border: rgba(255,255,255,0.10);
+      --accent: #3987e5;
+      --accent-deep: #6da7ec;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --page: #0d0d0d;
+    --surface: #1a1a19;
+    --ink: #ffffff;
+    --ink-2: #c3c2b7;
+    --muted: #898781;
+    --grid: #2c2c2a;
+    --baseline: #383835;
+    --border: rgba(255,255,255,0.10);
+    --accent: #3987e5;
+    --accent-deep: #6da7ec;
+  }
+
+  * { margin: 0; box-sizing: border-box; }
+  body {
+    background: var(--page);
+    color: var(--ink);
+    word-break: keep-all;
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    padding: 40px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 40px;
+    align-items: center;
+  }
+
+  .slide {
+    width: min(1160px, 100%);
+    aspect-ratio: 16 / 9;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: clamp(26px, 4.5vw, 58px) clamp(30px, 5vw, 68px);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    position: relative;
+  }
+  @media (max-width: 900px) { .slide { aspect-ratio: auto; min-height: 480px; } }
+  @media print {
+    @page { size: 320mm 180mm; margin: 0; }
+    body { padding: 0; gap: 0; background: #fff; }
+    .slide {
+      width: 320mm; height: 180mm; aspect-ratio: auto; max-width: none;
+      border: none; border-radius: 0; break-after: page;
+      padding: 14mm 17mm;
+    }
+  }
+
+  .kicker {
+    font-size: 13px; font-weight: 700; letter-spacing: .14em;
+    text-transform: uppercase; color: var(--accent); margin-bottom: 12px;
+  }
+  h2 { font-size: clamp(24px, 2.8vw, 34px); line-height: 1.25; letter-spacing: -0.01em; }
+  .pageno { position: absolute; bottom: 20px; right: 28px; font-size: 12px; color: var(--muted); }
+  .footnote { position: absolute; bottom: 20px; left: 28px; font-size: 12px; color: var(--muted); }
+
+  /* ---------- title slide ---------- */
+  .title-slide { justify-content: center; }
+  .title-slide .graphbg { position: absolute; right: -70px; top: -40px; width: 44%; height: 112%; opacity: .55; pointer-events: none; }
+  .t-kicker { font-size: 14px; font-weight: 700; letter-spacing: .18em; text-transform: uppercase; color: var(--accent); margin-bottom: 20px; }
+  .t-title { font-size: clamp(44px, 6vw, 74px); font-weight: 800; letter-spacing: -0.025em; line-height: 1.05; }
+  .t-title .thin { display: block; font-size: .38em; font-weight: 500; color: var(--ink-2); letter-spacing: 0; margin-top: 20px; }
+  .t-meta { margin-top: 44px; display: flex; gap: 14px; align-items: center; font-size: 14px; color: var(--muted); flex-wrap: wrap; }
+  .t-meta .dot { width: 4px; height: 4px; border-radius: 50%; background: var(--baseline); }
+
+  /* ---------- shared blocks ---------- */
+  .center-col { flex: 1; display: flex; flex-direction: column; justify-content: center; gap: 22px; min-height: 0; }
+
+  /* motivation */
+  .m-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+  .m-card {
+    border: 1px solid var(--border); border-radius: 12px; padding: 22px 22px 20px;
+  }
+  .m-card .num { font-size: 13px; font-weight: 700; color: var(--accent); margin-bottom: 10px; }
+  .m-card b { display: block; font-size: 17px; margin-bottom: 8px; letter-spacing: -0.01em; }
+  .m-card p { font-size: 13.5px; color: var(--ink-2); line-height: 1.55; }
+  .m-goal {
+    border-radius: 12px; padding: 20px 26px;
+    background: linear-gradient(120deg, color-mix(in oklab, var(--accent) 12%, var(--surface)), color-mix(in oklab, var(--accent) 4%, var(--surface)));
+    border: 1px solid color-mix(in oklab, var(--accent) 25%, transparent);
+    display: flex; align-items: baseline; gap: 18px; flex-wrap: wrap;
+  }
+  .m-goal .g-word { font-size: 15px; font-weight: 800; color: var(--accent-deep); letter-spacing: .06em; }
+  .m-goal .g-text { font-size: clamp(15px, 1.8vw, 19px); font-weight: 600; line-height: 1.5; }
+
+  /* design */
+  .flow { display: grid; grid-template-columns: 175px 30px 1fr; gap: 10px; align-items: stretch; }
+  .node {
+    border: 1.5px solid var(--accent); border-radius: 12px;
+    padding: 14px 16px; display: flex; flex-direction: column; justify-content: center; gap: 8px;
+  }
+  .node .nt { font-weight: 800; font-size: 15px; }
+  .node .nd { color: var(--ink-2); font-size: 12.5px; line-height: 1.6; }
+  .arrowcol { display: flex; align-items: center; justify-content: center; color: var(--muted); font-size: 18px; }
+  .paths { display: grid; grid-template-rows: 1fr 1fr; gap: 10px; }
+  .path { border-radius: 12px; padding: 13px 18px; display: flex; flex-direction: column; gap: 8px; justify-content: center; }
+  .path.serve { background: color-mix(in oklab, var(--accent) 7%, var(--surface)); border: 1px solid color-mix(in oklab, var(--accent) 25%, transparent); }
+  .path.evolve { border: 1.5px dashed var(--baseline); }
+  .path .pt { font-weight: 700; font-size: 14px; display: flex; align-items: center; gap: 9px; }
+  .path .pt .tag {
+    font-size: 10.5px; font-weight: 700; letter-spacing: .08em; padding: 3px 9px;
+    border-radius: 99px; color: #fcfcfb; background: var(--accent);
+  }
+  .path.evolve .pt .tag { background: var(--muted); }
+  .chain { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; font-size: 12px; color: var(--ink-2); }
+  .step {
+    border: 1px solid var(--border); border-radius: 7px; padding: 5px 10px;
+    background: var(--surface); white-space: nowrap;
+  }
+  .chain .sep { color: var(--muted); }
+  .d-cols { display: grid; grid-template-columns: 1fr 1.1fr; gap: 26px; }
+  .d-col-title { font-size: 12px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); margin-bottom: 9px; }
+  .d-defs { display: flex; flex-direction: column; gap: 8px; }
+  .d-def { display: grid; grid-template-columns: 92px 1fr; gap: 12px; font-size: 12.5px; align-items: baseline;
+           padding: 7px 4px 7px 12px; border-left: 3px solid var(--accent); border-radius: 3px; }
+  .d-def.gray { border-left-color: var(--baseline); }
+  .d-def b { font-size: 13px; }
+  .d-def span { color: var(--ink-2); line-height: 1.5; }
+
+  /* eval */
+  .s3-body { flex: 1; display: grid; grid-template-columns: 295px 1fr; gap: 40px; align-items: center; }
+  .hero { display: flex; flex-direction: column; gap: 22px; }
+  .hero .label { font-size: 13px; font-weight: 700; color: var(--ink-2); }
+  .hero .big { font-size: clamp(56px, 7vw, 86px); font-weight: 800; letter-spacing: -0.02em; line-height: 1; color: var(--ink); }
+  .hero .cap { font-size: 12px; color: var(--muted); line-height: 1.5; margin-top: 8px; }
+  .judge { display: flex; flex-direction: column; gap: 8px; }
+  .jbar { display: flex; height: 26px; border-radius: 6px; overflow: hidden; gap: 2px; }
+  .jseg.p { background: var(--good); border-radius: 5px 0 0 5px; }
+  .jseg.q { background: var(--warning); }
+  .jseg.f { background: var(--critical); border-radius: 0 5px 5px 0; }
+  .jlegend { display: flex; gap: 16px; font-size: 12.5px; color: var(--ink-2); flex-wrap: wrap; }
+  .jlegend span::before { content: ""; display: inline-block; width: 9px; height: 9px; border-radius: 2px; margin-right: 6px; }
+  .jlegend .lp::before { background: var(--good); }
+  .jlegend .lq::before { background: var(--warning); }
+  .jlegend .lf::before { background: var(--critical); }
+
+  .metrics { display: flex; flex-direction: column; gap: 15px; }
+  .mrow { display: grid; grid-template-columns: 215px 1fr 62px; align-items: center; gap: 12px; font-size: 13.5px; }
+  .mrow .mname { color: var(--ink-2); }
+  .mrow .mname small { color: var(--muted); font-size: 11px; }
+  .track { height: 15px; background: color-mix(in oklab, var(--ink) 5%, var(--surface)); border-radius: 4px; position: relative; }
+  .fill { position: absolute; inset: 0 auto 0 0; background: var(--accent); border-radius: 4px; }
+  .mrow .mval { font-weight: 700; font-variant-numeric: tabular-nums; text-align: right; }
+  .takeaways { margin-top: 10px; display: flex; flex-direction: column; gap: 8px; }
+  .takeaways div { font-size: 13px; color: var(--ink-2); line-height: 1.55; }
+  .takeaways b { color: var(--ink); }
+</style>
+</head>
+<body>
+
+<!-- ══════════ SLIDE 1 · TITLE ══════════ -->
+<section class="slide title-slide">
+  <svg class="graphbg" viewBox="0 0 560 480" fill="none" aria-hidden="true">
+    <g stroke="var(--accent)" stroke-opacity=".22" stroke-width="1.5">
+      <path d="M120 300 L245 180 L400 235 L330 372 L120 300 M245 180 L330 372 M400 235 L505 130 M245 180 L300 60 L440 95 M400 235 L440 95 M505 130 L440 95 M120 300 L60 420 M330 372 L250 455"/>
+    </g>
+    <g fill="var(--accent)">
+      <circle cx="120" cy="300" r="9" fill-opacity=".85"/>
+      <circle cx="245" cy="180" r="13" fill-opacity=".9"/>
+      <circle cx="400" cy="235" r="10" fill-opacity=".7"/>
+      <circle cx="330" cy="372" r="8" fill-opacity=".55"/>
+      <circle cx="300" cy="60" r="7" fill-opacity=".45"/>
+      <circle cx="440" cy="95" r="10" fill-opacity=".6"/>
+      <circle cx="505" cy="130" r="6" fill-opacity=".4"/>
+      <circle cx="60" cy="420" r="6" fill-opacity=".35"/>
+      <circle cx="250" cy="455" r="7" fill-opacity=".4"/>
+    </g>
+  </svg>
+  <div class="t-kicker">SHS Final Benchmark 100</div>
+  <div class="t-title">
+    Evolving<br>Graph RAG
+    <span class="thin">검색할수록 스스로 좋아지는 self-evolving Graph RAG</span>
+  </div>
+  <div class="t-meta">
+    <span>bwkim</span><span class="dot"></span><span>2026. 07</span>
+  </div>
+</section>
+
+<!-- ══════════ SLIDE 2 · MOTIVATION ══════════ -->
+<section class="slide">
+  <div class="kicker">Motivation</div>
+  <h2>RAG가 검색 경험에서 배울 수 있다면?</h2>
+  <div class="center-col">
+    <div class="m-cards">
+      <div class="m-card">
+        <div class="num">01</div>
+        <b>멈춰 있는 시스템</b>
+        <p>인덱싱이 끝나면 그대로 고정 — 천 번을 검색해도 품질은 첫날과 같다.</p>
+      </div>
+      <div class="m-card">
+        <div class="num">02</div>
+        <b>반복되는 실패</b>
+        <p>어떤 질문이 어떻게 어긋나는지 기억하지 못해, 같은 실수를 되풀이한다.</p>
+      </div>
+      <div class="m-card">
+        <div class="num">03</div>
+        <b>버려지는 신호</b>
+        <p>질문과 검색 결과의 관계는 "무엇이 통했는지" 말해주는 데이터인데, 응답 후 버려진다.</p>
+      </div>
+    </div>
+    <div class="m-goal">
+      <span class="g-word">GOAL</span>
+      <span class="g-text">검색 기록을 재료로, LLM-wiki처럼 그래프를 진화 — 서빙 지연 · 정답 참조 · 회귀 없이</span>
+    </div>
+  </div>
+  <div class="pageno">2 / 4</div>
+</section>
+
+<!-- ══════════ SLIDE 3 · DESIGN ══════════ -->
+<section class="slide">
+  <div class="kicker">Design</div>
+  <h2>서빙은 빠르게, 학습은 뒤에서</h2>
+  <div class="center-col">
+    <div class="flow">
+      <div class="node">
+        <span class="nt">Analyze</span>
+        <span class="nd">플랜 캐시 → 룰 →<br>새 질문만 심층 분석<br>(쿼리 분해 · 키워드 추출)</span>
+      </div>
+      <div class="arrowcol">→</div>
+      <div class="paths">
+        <div class="path serve">
+          <div class="pt"><span class="tag">SERVE</span>최적 쿼리 경로</div>
+          <div class="chain">
+            <span class="step">키워드 · 벡터 · 그래프 채널 조합</span><span class="sep">→</span>
+            <span class="step">구조 그래프 이웃 확장</span><span class="sep">→</span>
+            <span class="step">융합 랭킹</span><span class="sep">→</span>
+            <span class="step"><b>Answer</b></span>
+          </div>
+        </div>
+        <div class="path evolve">
+          <div class="pt"><span class="tag">EVOLVE</span>백그라운드 진화</div>
+          <div class="chain">
+            <span class="step">분해 쿼리별 리트리브 로그</span><span class="sep">→</span>
+            <span class="step">품질 채점</span><span class="sep">→</span>
+            <span class="step">강화 / 감쇠 · 새 관계 · 전략 갱신</span><span class="sep">→</span>
+            <span class="step">SG + KG → 다음 라운드</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="d-cols">
+      <div>
+        <div class="d-col-title">쿼리 경로</div>
+        <div class="d-defs">
+          <div class="d-def"><b>키워드 쿼링</b><span>질문에서 핵심 키워드를 뽑아 벡터와 별도의 정확-일치 채널로도 검색 — ID·코드성 질문은 키워드 경로로 강제 라우팅.</span></div>
+          <div class="d-def"><b>캐시 히트</b><span>키워드 지문이 거의 같고 저장된 플랜의 품질이 기준선 이상일 때만 재사용 — 골조가 비슷하면 통했던 전략을 다시 쓴다.</span></div>
+          <div class="d-def"><b>품질 채점</b><span>정답 없이 계산하는 신뢰도 — 유사도 강도 · 랭킹 간 문서 합의도 · 용어 커버리지의 합성. 기준선은 자가보정.</span></div>
+        </div>
+      </div>
+      <div>
+        <div class="d-col-title">Evolving 전략</div>
+        <div class="d-defs">
+          <div class="d-def gray"><b>SG 강화 · 감쇠</b><span>질의와 그 검색 결과들 사이의 관계(공동 검색 통계)로 문서 연결을 강화하고, 안 쓰이는 연결은 서서히 감쇠.</span></div>
+          <div class="d-def gray"><b>지름길 관계</b><span>자주 함께 답이 되는 문서쌍에 증거를 보고 타입드 관계를 뚫어, 다음 검색은 한 번에 도달.</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="pageno">3 / 4</div>
+</section>
+
+<!-- ══════════ SLIDE 4 · EVAL ══════════ -->
+<section class="slide">
+  <div class="kicker">Eval</div>
+  <h2>SHS Final Benchmark 100 <span style="font-weight:400; color:var(--muted); font-size:.58em;">judge: gpt-5.3-codex</span></h2>
+  <div class="s3-body">
+    <div class="hero">
+      <div>
+        <div class="label">Final Score</div>
+        <div class="big">0.7641</div>
+        <div class="cap">recall 30% · precision 20% · completeness 25% · faithfulness 25% 가중 종합</div>
+      </div>
+      <div class="judge">
+        <div class="label">판정 분포 (100문항)</div>
+        <div class="jbar" role="img" aria-label="Pass 38, Partial 55, Fail 7">
+          <div class="jseg p" style="width:38%"></div>
+          <div class="jseg q" style="width:55%"></div>
+          <div class="jseg f" style="width:7%"></div>
+        </div>
+        <div class="jlegend">
+          <span class="lp">Pass 38</span><span class="lq">Partial 55</span><span class="lf">Fail 7</span>
+        </div>
+      </div>
+    </div>
+    <div class="metrics">
+      <div class="mrow">
+        <span class="mname">Evidence Recall <small>(30%)</small></span>
+        <div class="track"><div class="fill" style="width:79.99%"></div></div>
+        <span class="mval">0.7999</span>
+      </div>
+      <div class="mrow">
+        <span class="mname">Evidence Precision <small>(20%)</small></span>
+        <div class="track"><div class="fill" style="width:67.70%"></div></div>
+        <span class="mval">0.6770</span>
+      </div>
+      <div class="mrow">
+        <span class="mname">Answer Completeness <small>(25%)</small></span>
+        <div class="track"><div class="fill" style="width:73.42%"></div></div>
+        <span class="mval">0.7342</span>
+      </div>
+      <div class="mrow">
+        <span class="mname">Faithfulness <small>(25%)</small></span>
+        <div class="track"><div class="fill" style="width:82.07%"></div></div>
+        <span class="mval">0.8207</span>
+      </div>
+      <div class="takeaways">
+        <div>• <b>Faithfulness 최고</b> — 근거 있는 검색 기록으로만 학습하는 설계가 환각을 억제.</div>
+        <div>• <b>Precision이 병목</b> — 넓은 회수의 대가. partial 55건의 주요 원인 추정.</div>
+        <div>• <b>돌릴수록 좋아짐</b> — 반복 실행에서 회수 지표 지속 상승, 롤백 없이 완주.</div>
+      </div>
+    </div>
+  </div>
+  <div class="footnote">Evolving Graph RAG · bwkim</div>
+  <div class="pageno">4 / 4</div>
+</section>
+
+</body>
+</html>
