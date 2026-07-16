@@ -23,15 +23,15 @@ report_path: harness_pjt/structrag/DESIGN_HISTORY.md (tag structrag-v5.21)
 final_score: 0.7641
 
 # 판정 분포 — 세 값을 모두 채우거나, 모두 지울 것
-pass: 0                                # TODO
-partial: 0                             # TODO
-fail: 0                                # TODO
+pass: 38
+partial: 55
+fail: 7
 
 # 4-metric — 네 값을 모두 채우거나, 모두 지울 것 (각 0~1)
-evidence_recall: 0.0000                # TODO (가중 30%)
-evidence_precision: 0.0000             # TODO (가중 20%)
-answer_completeness: 0.0000            # TODO (가중 25%)
-faithfulness: 0.0000                   # TODO (가중 25%)
+evidence_recall: 0.7999                # 가중 30%
+evidence_precision: 0.6770             # 가중 20%
+answer_completeness: 0.7342            # 가중 25%
+faithfulness: 0.8207                   # 가중 25%
 ---
 
 ## 한 줄 요약
@@ -48,12 +48,14 @@ faithfulness: 0.0000                   # TODO (가중 25%)
 
 ## 장점
 
+- SHS Final 100 종합 0.7641 — fail 7건뿐(pass 38 + partial 55 = 93/100 유효 응답), faithfulness 0.8207로 4-metric 중 최고: 근거 인용 필수·quality 게이트 설계가 환각 억제로 이어짐.
 - 반복 실행 시 지표가 개선 추세: v5.20 장기런(10-iter) 기준 ValB co@10 61.1→74.4 마감, 10회 무롤백 — 장기 자기진화 실증. v5.21은 이 학습 루프의 관찰 창을 넓혀 진화 재료를 확대.
 - 균일 저지연: 검증 런 p50 37~43ms / p95 44~59ms, ValB 핫패스 LLM 호출 0회 (cache/rules 티어만으로 서빙).
 - All@20 100 / ValA@20 99.4 유지 — 구조 진화가 base 검색을 오염시키지 않음(투트랙 분리 효과).
 
 ## 단점
 
+- evidence_precision 0.6770으로 4-metric 중 최저 — 넓은 관찰 창·EXPAND(SG 이웃)로 회수는 늘었지만(recall 0.7999) 불필요 근거 혼입이 남음. partial 55건의 주요 원인으로 추정.
 - co@5(상위 정밀)는 33~57%로 변동 폭이 큼 — 상위 랭킹 안정화 미해결.
 - v5.21 단독 10-iter 완주 검증 미완: 5-iter까지 co@10 60.0→72.2→64.4로 변동, 이후 G-시리즈 캠페인으로 전환되며 넓은 관찰창은 G1(v5.22) 스택에 흡수됨.
 - L1 `explicit_ref`는 참조가 기계친화적으로 표기된 코퍼스에 특화된 지름길 — 일반화를 위해 후속 G-시리즈에서 L1 배제 스택을 별도 검증 중.
